@@ -98,7 +98,7 @@ module.exports = {
 		getAddrData(ping);
 	},
 
-	connectRequest: function(req, res, next) {		
+	connectRequest: function(req, res, next){		
 		console.log("Connect request from: "+req.body.IP+":"+req.body.Port);
 
 		Node_server.find({}).then(function(result){

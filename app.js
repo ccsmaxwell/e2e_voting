@@ -20,8 +20,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 var indexRouter = require('./routes/index');
 var handshakeRouter = require('./routes/handshake');
+var ballotRouter = require('./routes/ballot');
 app.use('/', indexRouter);
 app.use('/handshake', handshakeRouter);
+app.use('/ballot', ballotRouter);
 
 var Handshake = require('./controllers/handshake');
 Handshake.init();
