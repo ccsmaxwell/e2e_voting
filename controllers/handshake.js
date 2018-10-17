@@ -43,6 +43,7 @@ module.exports = {
 									console.log(result);
 
 									callback();
+									setInterval(callback, 30000);
 								}).catch(function(err){
 									console.log(err);
 								})
@@ -51,7 +52,7 @@ module.exports = {
 								console.log(err);
 							})
 					}else{
-						callback();
+						setInterval(callback, 30000);
 					}
 				});	
 			}).catch(function(err){
@@ -59,40 +60,38 @@ module.exports = {
 			});
 		};
 
-		var ping = function(){	
-			setInterval(function(){
-				var myIP = ip.address();
-				var myPort = (process.env.PORT+"").trim();
+		var ping = function(){
+			var myIP = ip.address();
+			var myPort = (process.env.PORT+"").trim();
 
-				Node_server.find({}).then(function(all_node_server){
-					all_node_server.forEach(function(e){
-						if (e.IP != myIP || e.port != myPort){
-							console.log("Pinging: "+e.IP+":"+e.port);
+			Node_server.find({}).then(function(all_node_server){
+				all_node_server.forEach(function(e){
+					if (e.IP != myIP || e.port != myPort){
+						console.log("Pinging: "+e.IP+":"+e.port);
 
-							request
-								.get({url:"http://"+e.IP+":"+e.port+"/handshake/ping", form:{
-									IP: myIP,
-									Port: myPort
-								}})
-								.on('data', function(data){
-									// console.log(data);
-								})							
-								.on('error', function(err){
+						request
+							.get({url:"http://"+e.IP+":"+e.port+"/handshake/ping", form:{
+								IP: myIP,
+								Port: myPort
+							}})
+							.on('data', function(data){
+								// console.log(data);
+							})							
+							.on('error', function(err){
+								console.log(err);
+
+								Node_server.deleteOne({
+									IP: e.IP,
+									port: e.port
+								}).then(function(result){
+									console.log("Ping fail & deleted: "+result);
+								}).catch(function(err){
 									console.log(err);
-
-									Node_server.deleteOne({
-										IP: e.IP,
-										port: e.port
-									}).then(function(result){
-										console.log("Ping fail & deleted: "+result);
-									}).catch(function(err){
-										console.log(err);
-									})
 								})
-						}
-					})
-				});
-			}, 10000);
+							})
+					}
+				})
+			});
 		}
 
 		getAddrData(ping);

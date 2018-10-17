@@ -21,12 +21,16 @@ app.use(express.static(path.join(__dirname, 'public')));
 var indexRouter = require('./routes/index');
 var handshakeRouter = require('./routes/handshake');
 var ballotRouter = require('./routes/ballot');
+var blockchainRouter = require('./routes/blockchain');
 app.use('/', indexRouter);
 app.use('/handshake', handshakeRouter);
 app.use('/ballot', ballotRouter);
+app.use('/blockchain', blockchainRouter);
 
 var Handshake = require('./controllers/handshake');
 Handshake.init();
+var Blockchain = require('./controllers/blockchain');
+Blockchain.init();
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

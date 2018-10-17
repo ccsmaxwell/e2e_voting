@@ -4,17 +4,20 @@ mongoose.set('useCreateIndex', true);
 
 var Schema = mongoose.Schema;
 
-var BallotSchema = new Schema({
+var BlockSchema = new Schema({
 	// global
+	blockUUID: String,
 	electionID: String,
-	ballotID: String,
-	choice: String,
+	blockSeq: Number,
+	previousHash: String,
+	blockType: String,
+	data: [],
+	hash:String,
 	// local
 	sign: [{
 		trusteeID: String,
 		signHash: String
-	}],
-	inBlock: Boolean
+	}]
 }, { timestamps: {} });
 
-module.exports = mongoose.model('Ballot', BallotSchema);
+module.exports = mongoose.model('Block', BlockSchema);
