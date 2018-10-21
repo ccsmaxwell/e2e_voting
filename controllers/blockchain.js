@@ -115,23 +115,6 @@ module.exports = {
 		};
 
 		setInterval(generate, 15000);
-
-		// var newBlock = new Block();
-		// newBlock.blockUUID = "56a18953-0553-475b-9ab8-19dbe57f9240";
-		// newBlock.electionID = "test_001";
-		// newBlock.blockSeq = 0;
-		// newBlock.blockType = "Election Details";
-		// newBlock.data = [];
-		// var newBlock_ = {};
-		// newBlock_.blockUUID = "56a18953-0553-475b-9ab8-19dbe57f9240";
-		// newBlock_.electionID = "test_001";
-		// newBlock_.blockSeq = 0;
-		// newBlock_.blockType = "Election Details";
-		// newBlock_.data = [];
-		// console.log(JSON.stringify(newBlock_));
-		// var blockHash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
-		// newBlock.hash = blockHash;
-		// newBlock.save().then(function(result){}).catch(function(err){});
 	},
 
 	signBlock: function(block){

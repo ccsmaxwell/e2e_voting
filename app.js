@@ -22,10 +22,12 @@ var indexRouter = require('./routes/index');
 var handshakeRouter = require('./routes/handshake');
 var ballotRouter = require('./routes/ballot');
 var blockchainRouter = require('./routes/blockchain');
+var electionRouter = require('./routes/election');
 app.use('/', indexRouter);
 app.use('/handshake', handshakeRouter);
 app.use('/ballot', ballotRouter);
 app.use('/blockchain', blockchainRouter);
+app.use('/election', electionRouter);
 
 var Handshake = require('./controllers/handshake');
 Handshake.init();
