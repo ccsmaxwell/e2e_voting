@@ -9,4 +9,8 @@ router.get('/createElection', function(req, res, next) {
 	res.render('createElection');
 });
 
+router.get('/vote', function(req, res, next) {
+	res.render('vote');
+});
+
 module.exports = router;

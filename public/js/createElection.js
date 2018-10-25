@@ -19,6 +19,26 @@ $("#btn_create").click(function(e){
 		trustees_y: $("#elgamal_y").val().split(";")
 	};
 
+	var voter = []
+	if($("#voter_1_key").val()){
+		voter.push({
+			id: 1,
+			public_key: $("#voter_1_key").val()	
+		})
+	}
+	if($("#voter_2_key").val()){
+		voter.push({
+			id: 2,
+			public_key: $("#voter_2_key").val()	
+		})
+	}
+	if($("#voter_3_key").val()){
+		voter.push({
+			id: 3,
+			public_key: $("#voter_3_key").val()	
+		})
+	}
+
 	$.ajax({
 		type: "POST",
 		url: "/election/create",
@@ -27,7 +47,8 @@ $("#btn_create").click(function(e){
 			description: $("#election_description").val(),
 			description: $("#election_description").val(),
 			question_list: JSON.stringify(q_list),
-			key: JSON.stringify(key)
+			key: JSON.stringify(key),
+			voter: JSON.stringify(voter)
 		},	
 		success: function(res){				
 			console.log(res);

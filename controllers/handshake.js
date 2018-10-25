@@ -67,7 +67,7 @@ module.exports = {
 			Node_server.find({}).then(function(all_node_server){
 				all_node_server.forEach(function(e){
 					if (e.IP != myIP || e.port != myPort){
-						console.log("Pinging: "+e.IP+":"+e.port);
+						// console.log("Pinging: "+e.IP+":"+e.port);
 
 						request
 							.get({url:"http://"+e.IP+":"+e.port+"/handshake/ping", form:{
@@ -116,7 +116,7 @@ module.exports = {
 	},
 
 	pingRequest: function(req, res, next){
-		console.log("Ping from: "+req.body.IP+":"+req.body.Port);
+		// console.log("Ping from: "+req.body.IP+":"+req.body.Port);
 
 		Node_server.findOneAndUpdate({
 			IP: req.body.IP,

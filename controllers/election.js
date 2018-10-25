@@ -38,6 +38,7 @@ module.exports = {
 				g: publicKey.g,
 				y: Buffer.from(key_y.toString(16), 'hex').toString('base64')
 			},
+			voters: JSON.parse(data.voter),
 			frozenAt: new Date()
 		}];
 
@@ -90,6 +91,17 @@ module.exports = {
 		// console.log(key.getPublicKey('base64'));
 
 		res.json({success: true});
+	},
+
+	getDetails: function(req, res, next){
+		Block.find({
+			electionID: req.query.electionID,
+			blockType: "Election Details"
+		}).then(function(result){
+			res.json(result);
+		}).catch(function(err){
+			console.log(err)
+		})
 	}
 
 }

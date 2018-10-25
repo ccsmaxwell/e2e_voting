@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+	<body>
+		<main>
+			<div>
+				<label>Election ID:</label>
+				<input type="text" id="election_id" name="election_id">
+			</div>
+			<div>
+				<label>Question 1 - Option 1:</label>
+				<input type="text" id="Q1_opt1" name="Q1_opt1">
+			</div>
+			<div>
+				<label>Question 1 - Option 2:</label>
+				<input type="text" id="Q1_opt2" name="Q1_opt2">
+			</div>
+			<div>
+				<label>Question 2 - Option 1:</label>
+				<input type="text" id="Q2_opt1" name="Q2_opt1">
+			</div>
+			<div>
+				<label>Question 2 - Option 2:</label>
+				<input type="text" id="Q2_opt2" name="Q2_opt2">
+			</div>
+				<label>Voter ID:</label>
+				<input type="text" id="voter_id" name="voter_id">
+			</div>
+			<div>
+				<label>Voter private key:</label>
+				<textarea id="private_key" name="private_key"></textarea>
+			</div>
+
+			<button id="btn_vote" type="button">Vote</button>
+		</main>
+
+		<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+		<script src="http://peterolson.github.com/BigInteger.js/BigInteger.min.js"></script>
+		<script src="/js/vote.js"></script>
+	</body>
+</html>
