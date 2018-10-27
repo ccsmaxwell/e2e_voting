@@ -26,7 +26,7 @@ $("#btn_vote").click(function(e){
 				var c2 = (y.modPow(r,p)).multiply(g.modPow($("#Q1_opt2").val(),p)).mod(p);
 				option_ans.push({c1: hexToBase64(c1.toString(16)), c2: hexToBase64(c2.toString(16))});
 
-				answer.push(option_ans);
+				answers.push(option_ans);
 			}
 
 			if ($("#Q2_opt1").val()){
@@ -42,16 +42,45 @@ $("#btn_vote").click(function(e){
 				var c2 = (y.modPow(r,p)).multiply(g.modPow($("#Q2_opt2").val(),p)).mod(p);
 				option_ans.push({c1: hexToBase64(c1.toString(16)), c2: hexToBase64(c2.toString(16))});
 
-				answer.push(option_ans);
+				answers.push(option_ans);
 			}
 
 			var ballot = {
+				electionID: $("#election_id").val(),
 				voterID: $("#voter_id").val(),
 				answers: answers
 			}
 
-			crypto.subtle.digest('SHA-256', TextEncoder('utf-8').encode(JSON.stringify(ballot))).then(function(hashBuffer){
-				Array.from(new Uint8Array(hashBuffer)).map(b => ('00' + b.toString(16)).slice(-2)).join('');
+			window.crypto.subtle.importKey(
+				"pkcs8",
+				base64ToArrayBuffer($("#private_key").val().split("-----")[2].replace(/[\r\n]*/g,'')),
+				{
+					name: "RSASSA-PKCS1-v1_5",
+					hash: {name: "SHA-256"}
+				},
+				false,
+				["sign"]
+			).then(function(privateKey) {
+				window.crypto.subtle.sign(
+					{name: "RSASSA-PKCS1-v1_5"},
+					privateKey,
+					new TextEncoder('utf-8').encode(JSON.stringify(ballot))
+				)
+				.then(function(sign){
+					$.ajax({
+						type: "POST",
+						url: "/ballot/submit",
+						data:{			
+							electionID: $("#election_id").val(),
+							voterID: $("#voter_id").val(),
+							answers: JSON.stringify(answers),
+							voterSign: arrayBufferToBase64(sign)
+						},	
+						success: function(res){
+							console.log(res);
+						}
+					})
+				})
 			})
 		}
 	})
@@ -70,5 +99,25 @@ function base64toHex(base64) {
 }
 
 function hexToBase64(hex) {
-  return btoa( String.fromCharCode.apply(null, hex.replace(/\r|\n/g, "").replace(/([\da-fA-F]{2}) ?/g, "0x$1 ").replace(/ +$/, "").split(" ")) );
+	return btoa( String.fromCharCode.apply(null, hex.replace(/\r|\n/g, "").replace(/([\da-fA-F]{2}) ?/g, "0x$1 ").replace(/ +$/, "").split(" ")) );
+}
+
+function base64ToArrayBuffer(base64) {
+	var byteString = atob(base64);
+	var byteArray = new Uint8Array(byteString.length);
+	for(var i=0; i < byteString.length; i++) {
+		byteArray[i] = byteString.charCodeAt(i);
+	}
+
+	return byteArray;
+}
+
+function arrayBufferToBase64(arrayBuffer) {
+	var binary = '';
+	var bytes = new Uint8Array(arrayBuffer);
+	var len = bytes.byteLength;
+	for (var i = 0; i < len; i++) {
+		binary += String.fromCharCode(bytes[i]);
+	}
+	return btoa(binary);
 }

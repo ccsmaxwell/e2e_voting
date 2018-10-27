@@ -5,10 +5,14 @@ mongoose.set('useCreateIndex', true);
 var Schema = mongoose.Schema;
 
 var BallotSchema = new Schema({
-	// global
+	// global (by receive)
 	electionID: String,
+	voterID: String,
+	answers: [],
+	voterSign: String,
+	// global (by server)
 	ballotID: String,
-	choice: String,
+	receiveTime: Date,
 	// local
 	sign: [{
 		trusteeID: String,

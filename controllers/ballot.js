@@ -5,14 +5,28 @@ var crypto = require('crypto');
 
 var Node_server = require('../models/node_server');
 var Ballot = require('../models/ballot');
+var Block = require('../models/block');
 
 module.exports = {
 
 	voterSubmit: function(req, res, next){
 		var ballotData = req.body;
+		ballotData.answers = JSON.parse(ballotData.answers);
 		ballotData.ballotID = uuidv4();
-		console.log("Receive ballot submitted for: " + ballotData.electionID + ", " + ballotData.choice);
-		
+		ballotData.receiveTime = new Date();
+		console.log("Receive ballot submitted for: " + ballotData.electionID + ", from voter " + ballotData.voterID);
+
+		var verifyData = {
+			electionID: ballotData.electionID,
+			voterID: ballotData.voterID,
+			answers: JSON.stringify(ballotData.answers),
+		}
+
+		Block.find({
+			electionID: verifyData.electionID,
+			
+		})
+
 		var myIP = ip.address();
 		var myPort = (process.env.PORT+"").trim();
 
@@ -24,8 +38,11 @@ module.exports = {
 					request
 						.post({url:"http://"+e.IP+":"+e.port+"/ballot/broadcastBallot", form:{
 							electionID: ballotData.electionID,
+							voterID: ballotData.voterID,
+							answers: JSON.stringify(ballotData.answers),
+							voterSign: ballotData.voterSign,
 							ballotID: ballotData.ballotID,
-							choice: ballotData.choice
+							receiveTime: ballotData.receiveTime
 						}})
 						.on('data', function(data){
 							// console.log(data);
@@ -44,7 +61,8 @@ module.exports = {
 
 	ballotReceive: function(req, res, next){
 		var ballotData = req.body;
-		console.log("Receive ballot from broadcast: " + ballotData.electionID + ", " + ballotData.choice);
+		ballotData.answers = JSON.parse(ballotData.answers);
+		console.log("Receive ballot from broadcast: " + ballotData.electionID + ", from voter " + ballotData.voterID);
 
 		module.exports.saveAndSignBallot(ballotData);
 
@@ -54,8 +72,11 @@ module.exports = {
 	saveAndSignBallot: function(ballotData){
 		var newBallot = new Ballot();
 		newBallot.electionID = ballotData.electionID;
+		newBallot.voterID = ballotData.voterID;
+		newBallot.answers = ballotData.answers;
+		newBallot.voterSign = ballotData.voterSign;
 		newBallot.ballotID = ballotData.ballotID;
-		newBallot.choice = ballotData.choice;
+		newBallot.receiveTime = ballotData.receiveTime;
 		newBallot.save().then(function(row){
 			console.log("Saved ballot.");
 
