@@ -19,42 +19,38 @@ module.exports = {
 		var verifyData = {
 			electionID: ballotData.electionID,
 			voterID: ballotData.voterID,
-			answers: JSON.stringify(ballotData.answers),
+			answers: ballotData.answers,
 		}
+		module.exports.ballotVerification(verifyData, ballotData.voterSign, function(){
+			var myIP = ip.address();
+			var myPort = (process.env.PORT+"").trim();
 
-		Block.find({
-			electionID: verifyData.electionID,
-			
-		})
+			Node_server.find({}).then(function(all_node_server){
+				all_node_server.forEach(function(e){
+					if (e.IP != myIP || e.port != myPort){
+						console.log("Broadcast ballot to: "+e.IP+":"+e.port);
 
-		var myIP = ip.address();
-		var myPort = (process.env.PORT+"").trim();
+						request
+							.post({url:"http://"+e.IP+":"+e.port+"/ballot/broadcastBallot", form:{
+								electionID: ballotData.electionID,
+								voterID: ballotData.voterID,
+								answers: JSON.stringify(ballotData.answers),
+								voterSign: ballotData.voterSign,
+								ballotID: ballotData.ballotID,
+								receiveTime: ballotData.receiveTime
+							}})
+							.on('data', function(data){
+								// console.log(data);
+							})							
+							.on('error', function(err){
+								console.log(err);
+							})
+					}
+				})
+			});
 
-		Node_server.find({}).then(function(all_node_server){
-			all_node_server.forEach(function(e){
-				if (e.IP != myIP || e.port != myPort){
-					console.log("Broadcast ballot to: "+e.IP+":"+e.port);
-
-					request
-						.post({url:"http://"+e.IP+":"+e.port+"/ballot/broadcastBallot", form:{
-							electionID: ballotData.electionID,
-							voterID: ballotData.voterID,
-							answers: JSON.stringify(ballotData.answers),
-							voterSign: ballotData.voterSign,
-							ballotID: ballotData.ballotID,
-							receiveTime: ballotData.receiveTime
-						}})
-						.on('data', function(data){
-							// console.log(data);
-						})							
-						.on('error', function(err){
-							console.log(err);
-						})
-				}
-			})
+			module.exports.saveAndSignBallot(ballotData);
 		});
-
-		module.exports.saveAndSignBallot(ballotData);
 
 		res.json({success: true});
 	},
@@ -64,9 +60,40 @@ module.exports = {
 		ballotData.answers = JSON.parse(ballotData.answers);
 		console.log("Receive ballot from broadcast: " + ballotData.electionID + ", from voter " + ballotData.voterID);
 
-		module.exports.saveAndSignBallot(ballotData);
+		var verifyData = {
+			electionID: ballotData.electionID,
+			voterID: ballotData.voterID,
+			answers: ballotData.answers,
+		}
+		module.exports.ballotVerification(verifyData, ballotData.voterSign, function(){
+			module.exports.saveAndSignBallot(ballotData);
+		})
 
 		res.json({success: true});
+	},
+
+	ballotVerification: function(verifyData, voterSign, successCallBack){
+		Block.aggregate([
+			{$match: {
+				"electionID": verifyData.electionID,
+				"data.voters.id": verifyData.voterID
+			}},
+			{$unwind: "$data"},
+			{$unwind: "$data.voters"},
+			{$match: {"data.voters.id": verifyData.voterID}},
+			{$project: {"data.voters": 1}}
+		]).then(function(voterBlock){
+			var voterPublicKey = voterBlock[0].data.voters.public_key;
+			var verify = crypto.createVerify('SHA256');
+			verify.update(JSON.stringify(verifyData));
+			var result = verify.verify(voterPublicKey, voterSign, "base64");
+			console.log("Ballot verification: " + result);
+			if(result){
+				successCallBack();
+			}
+		}).catch(function(err){
+			console.log(err);
+		})
 	},
 
 	saveAndSignBallot: function(ballotData){

@@ -10,9 +10,9 @@ var Block = require('../models/block');
 module.exports = {
 
 	init: function(){
-		var generate = function(){
+		var generate = function(electionID){
 			Ballot.find({
-				electionID: 'test_001',
+				electionID: electionID,
 				inBlock: {$ne: true}
 			},
 			null,
@@ -34,13 +34,13 @@ module.exports = {
 
 						if(selectedNode.IP == myIP && selectedNode.port == myPort){
 							Block.find({
-								electionID: 'test_001'
+								electionID: electionID
 							}).sort({
 								blockSeq: -1
 							}).limit(1).then(function(lastBlock){
 								var newBlock_ = {
 									blockUUID: uuidv4(),
-									electionID: 'test_001',
+									electionID: electionID,
 									blockSeq: lastBlock[0].blockSeq+1,
 									previousHash: lastBlock[0].hash,
 									blockType: "Ballot",
@@ -49,8 +49,11 @@ module.exports = {
 								allBallot.forEach(function(e){
 									newBlock_.data.push({
 										electionID: e.electionID,
+										voterID: e.voterID,
+										answers: e.answers,
+										voterSign: e.voterSign,
 										ballotID: e.ballotID,
-										choice: e.choice,
+										receiveTime: e.receiveTime,
 										sign: e.sign
 									})
 								});
@@ -114,7 +117,17 @@ module.exports = {
 			})
 		};
 
-		setInterval(generate, 15000);
+		Block.find({
+			blockSeq: 0
+		}).then(function(allElection){
+			allElection.forEach(function(e){
+				setInterval(function(){
+					generate(e.electionID)
+				}, 15000);
+			})
+		}).catch(function(err){
+			console.log(err)
+		})
 	},
 
 	signBlock: function(block){

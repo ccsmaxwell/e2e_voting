@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+	<body>
+		<main>
+			<div>
+				<label>Election ID:</label>
+				<input type="text" id="election_id" name="election_id">
+			</div>
+			<div>
+				<label>Trustees private key(s):</label>
+				<textarea id="private_key" name="private_key"></textarea>
+			</div>
+
+			<button id="btn_result" type="button">Compute result</button>
+		</main>
+
+		<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+		<script src="http://peterolson.github.com/BigInteger.js/BigInteger.min.js"></script>
+		<script src="/js/lib/encoding.js"></script>
+		<script src="/js/result.js"></script>
+	</body>
+</html>

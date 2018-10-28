@@ -43,7 +43,7 @@ module.exports = {
 									console.log(result);
 
 									callback();
-									setInterval(callback, 30000);
+									setInterval(callback, 60000);
 								}).catch(function(err){
 									console.log(err);
 								})
@@ -52,7 +52,7 @@ module.exports = {
 								console.log(err);
 							})
 					}else{
-						setInterval(callback, 30000);
+						setInterval(callback, 60000);
 					}
 				});	
 			}).catch(function(err){

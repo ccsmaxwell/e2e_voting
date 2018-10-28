@@ -102,6 +102,50 @@ module.exports = {
 		}).catch(function(err){
 			console.log(err)
 		})
+	},
+
+	getAllResult: function(req, res, next){
+		var data = req.body;
+
+		Block.find({
+			electionID: data.electionID
+		}).then(function(allBlocks){
+			var key = {};
+			var ans_c1c2 = [];
+			var p;
+			allBlocks.forEach(function(block){
+				if(block.blockType == "Election Details"){
+					block.data[0].questions.forEach(function(q){
+						ans_c1c2.push([]);
+						q.answers.forEach(function(a){
+							ans_c1c2[ans_c1c2.length-1].push({c1:bigInt(1), c2:bigInt(1)});
+						})
+					})
+					key = block.data[0].key
+					p = bigInt(Buffer.from(key.p, 'base64').toString('hex'),16);
+				}else if(block.blockType == "Ballot"){
+					block.data.forEach(function(ballot){
+						for(var i=0; i<ans_c1c2.length; i++){
+							for(var j=0; j<ans_c1c2[i].length; j++){
+								ans_c1c2[i][j].c1 = ans_c1c2[i][j].c1.multiply(bigInt(Buffer.from(ballot.answers[i][j].c1, 'base64').toString('hex'),16)).mod(p);
+								ans_c1c2[i][j].c2 = ans_c1c2[i][j].c2.multiply(bigInt(Buffer.from(ballot.answers[i][j].c2, 'base64').toString('hex'),16)).mod(p);
+							}
+						}
+					})
+				}
+			})
+
+			ans_c1c2.forEach(function(q){
+				q.forEach(function(a){
+					a.c1 = Buffer.from(a.c1.toString(16), 'hex').toString('base64');
+					a.c2 = Buffer.from(a.c2.toString(16), 'hex').toString('base64');
+				})
+			})
+
+			res.json({key: key, ans_c1c2: ans_c1c2});
+		}).catch(function(err){
+			console.log(err)
+		})
 	}
 
 }

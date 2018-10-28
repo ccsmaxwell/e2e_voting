@@ -22,19 +22,19 @@ $("#btn_create").click(function(e){
 	var voter = []
 	if($("#voter_1_key").val()){
 		voter.push({
-			id: 1,
+			id: "v_1",
 			public_key: $("#voter_1_key").val()	
 		})
 	}
 	if($("#voter_2_key").val()){
 		voter.push({
-			id: 2,
+			id: "v_2",
 			public_key: $("#voter_2_key").val()	
 		})
 	}
 	if($("#voter_3_key").val()){
 		voter.push({
-			id: 3,
+			id: "v_3",
 			public_key: $("#voter_3_key").val()	
 		})
 	}
