@@ -1,4 +1,4 @@
-function base64toHex(base64) {
+function base64ToHex(base64) {
 	var raw = atob(base64);
 	var hex = '';
 
@@ -10,17 +10,10 @@ function base64toHex(base64) {
 	return hex;
 }
 
-// function base64ToHex(str) {
-// 	for (var i = 0, bin = atob(str.replace(/[ \r\n]+$/, "")), hex = []; i < bin.length; ++i) {
-// 		hex[hex.length] = bin.charCodeAt(i).toString(16);
-// 	}
-// 	return hex.join("");
-// }
-
 function hexToBase64(hex) {
-	// if(hex.length % 2 == 1){
-	// 	hex = "0"+hex;
-	// }
+	if(hex.length % 2 == 1){
+		hex = "0"+hex;
+	}
 	return btoa( String.fromCharCode.apply(null, hex.replace(/\r|\n/g, "").replace(/([\da-fA-F]{2}) ?/g, "0x$1 ").replace(/ +$/, "").split(" ")) );
 }
 

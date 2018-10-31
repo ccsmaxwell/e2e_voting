@@ -7,7 +7,9 @@ var bigInt = require("big-integer");
 var Node_server = require('../models/node_server');
 var Block = require('../models/block');
 
-var blockChainController = require('../controllers/blockchain');
+var blockChainController = require('./blockchain');
+
+var encoding = require('./lib/encoding');
 
 module.exports = {
 
@@ -18,9 +20,9 @@ module.exports = {
 
 		var publicKey = JSON.parse(data.key);
 		var key_y = bigInt(1);
-		var p = bigInt(Buffer.from(publicKey.p, 'base64').toString('hex'),16);
+		var p = bigInt(encoding.base64ToHex(publicKey.p),16);
 		publicKey.trustees_y.forEach(function(e){
-			let y = bigInt(Buffer.from(e, 'base64').toString('hex'),16);
+			let y = bigInt(encoding.base64ToHex(e),16);
 			key_y = key_y.multiply(y).mod(p);
 		})
 
@@ -36,7 +38,7 @@ module.exports = {
 			key: {
 				p: publicKey.p,
 				g: publicKey.g,
-				y: Buffer.from(key_y.toString(16), 'hex').toString('base64')
+				y: encoding.hexToBase64(key_y.toString(16))
 			},
 			voters: JSON.parse(data.voter),
 			frozenAt: new Date()
@@ -73,6 +75,10 @@ module.exports = {
 					}
 				})
 			});
+
+			setInterval(function(){
+				blockChainController.generateBlock(newBlock_.electionID)
+			}, 15000);
 
 			blockChainController.signBlock(newBlock_);
 		}).catch(function(err){
@@ -112,6 +118,8 @@ module.exports = {
 		}).then(function(allBlocks){
 			var key = {};
 			var ans_c1c2 = [];
+			var questions = [];
+			var voterCount = 0;
 			var p;
 			allBlocks.forEach(function(block){
 				if(block.blockType == "Election Details"){
@@ -122,13 +130,16 @@ module.exports = {
 						})
 					})
 					key = block.data[0].key
-					p = bigInt(Buffer.from(key.p, 'base64').toString('hex'),16);
+					p = bigInt(encoding.base64ToHex(key.p),16);
+
+					questions = block.data[0].questions;
+					voterCount = block.data[0].voters.length;
 				}else if(block.blockType == "Ballot"){
 					block.data.forEach(function(ballot){
 						for(var i=0; i<ans_c1c2.length; i++){
 							for(var j=0; j<ans_c1c2[i].length; j++){
-								ans_c1c2[i][j].c1 = ans_c1c2[i][j].c1.multiply(bigInt(Buffer.from(ballot.answers[i][j].c1, 'base64').toString('hex'),16)).mod(p);
-								ans_c1c2[i][j].c2 = ans_c1c2[i][j].c2.multiply(bigInt(Buffer.from(ballot.answers[i][j].c2, 'base64').toString('hex'),16)).mod(p);
+								ans_c1c2[i][j].c1 = ans_c1c2[i][j].c1.multiply(bigInt(encoding.base64ToHex(ballot.answers[i][j].c1),16)).mod(p);
+								ans_c1c2[i][j].c2 = ans_c1c2[i][j].c2.multiply(bigInt(encoding.base64ToHex(ballot.answers[i][j].c2),16)).mod(p);
 							}
 						}
 					})
@@ -137,12 +148,12 @@ module.exports = {
 
 			ans_c1c2.forEach(function(q){
 				q.forEach(function(a){
-					a.c1 = Buffer.from(a.c1.toString(16), 'hex').toString('base64');
-					a.c2 = Buffer.from(a.c2.toString(16), 'hex').toString('base64');
+					a.c1 = encoding.hexToBase64(a.c1.toString(16));
+					a.c2 = encoding.hexToBase64(a.c2.toString(16));
 				})
 			})
 
-			res.json({key: key, ans_c1c2: ans_c1c2});
+			res.json({questions: questions, voterCount: voterCount, key: key, ans_c1c2: ans_c1c2});
 		}).catch(function(err){
 			console.log(err)
 		})

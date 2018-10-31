@@ -2,75 +2,15 @@ var request = require('request');
 var ip = require('ip');
 var uuidv4 = require('uuid/v4');
 var crypto = require('crypto');
+var NodeCache = require( "node-cache" );
+
+var ballotCache = new NodeCache();
 
 var Node_server = require('../models/node_server');
 var Ballot = require('../models/ballot');
 var Block = require('../models/block');
 
 module.exports = {
-
-	voterSubmit: function(req, res, next){
-		var ballotData = req.body;
-		ballotData.answers = JSON.parse(ballotData.answers);
-		ballotData.ballotID = uuidv4();
-		ballotData.receiveTime = new Date();
-		console.log("Receive ballot submitted for: " + ballotData.electionID + ", from voter " + ballotData.voterID);
-
-		var verifyData = {
-			electionID: ballotData.electionID,
-			voterID: ballotData.voterID,
-			answers: ballotData.answers,
-		}
-		module.exports.ballotVerification(verifyData, ballotData.voterSign, function(){
-			var myIP = ip.address();
-			var myPort = (process.env.PORT+"").trim();
-
-			Node_server.find({}).then(function(all_node_server){
-				all_node_server.forEach(function(e){
-					if (e.IP != myIP || e.port != myPort){
-						console.log("Broadcast ballot to: "+e.IP+":"+e.port);
-
-						request
-							.post({url:"http://"+e.IP+":"+e.port+"/ballot/broadcastBallot", form:{
-								electionID: ballotData.electionID,
-								voterID: ballotData.voterID,
-								answers: JSON.stringify(ballotData.answers),
-								voterSign: ballotData.voterSign,
-								ballotID: ballotData.ballotID,
-								receiveTime: ballotData.receiveTime
-							}})
-							.on('data', function(data){
-								// console.log(data);
-							})							
-							.on('error', function(err){
-								console.log(err);
-							})
-					}
-				})
-			});
-
-			module.exports.saveAndSignBallot(ballotData);
-		});
-
-		res.json({success: true});
-	},
-
-	ballotReceive: function(req, res, next){
-		var ballotData = req.body;
-		ballotData.answers = JSON.parse(ballotData.answers);
-		console.log("Receive ballot from broadcast: " + ballotData.electionID + ", from voter " + ballotData.voterID);
-
-		var verifyData = {
-			electionID: ballotData.electionID,
-			voterID: ballotData.voterID,
-			answers: ballotData.answers,
-		}
-		module.exports.ballotVerification(verifyData, ballotData.voterSign, function(){
-			module.exports.saveAndSignBallot(ballotData);
-		})
-
-		res.json({success: true});
-	},
 
 	ballotVerification: function(verifyData, voterSign, successCallBack){
 		Block.aggregate([
@@ -151,6 +91,69 @@ module.exports = {
 		});	
 	},
 
+	voterSubmit: function(req, res, next){
+		var ballotData = req.body;
+		ballotData.answers = JSON.parse(ballotData.answers);
+		ballotData.ballotID = uuidv4();
+		ballotData.receiveTime = new Date();
+		console.log("Receive ballot submitted for: " + ballotData.electionID + ", from voter " + ballotData.voterID);
+
+		var verifyData = {
+			electionID: ballotData.electionID,
+			voterID: ballotData.voterID,
+			answers: ballotData.answers,
+		}
+		module.exports.ballotVerification(verifyData, ballotData.voterSign, function(){
+			var myIP = ip.address();
+			var myPort = (process.env.PORT+"").trim();
+
+			Node_server.find({}).then(function(all_node_server){
+				all_node_server.forEach(function(e){
+					if (e.IP != myIP || e.port != myPort){
+						console.log("Broadcast ballot to: "+e.IP+":"+e.port);
+
+						request
+							.post({url:"http://"+e.IP+":"+e.port+"/ballot/broadcastBallot", form:{
+								electionID: ballotData.electionID,
+								voterID: ballotData.voterID,
+								answers: JSON.stringify(ballotData.answers),
+								voterSign: ballotData.voterSign,
+								ballotID: ballotData.ballotID,
+								receiveTime: ballotData.receiveTime
+							}})
+							.on('data', function(data){
+								// console.log(data);
+							})							
+							.on('error', function(err){
+								console.log(err);
+							})
+					}
+				})
+			});
+
+			module.exports.saveAndSignBallot(ballotData);
+		});
+
+		res.json({success: true});
+	},
+
+	ballotReceive: function(req, res, next){
+		var ballotData = req.body;
+		ballotData.answers = JSON.parse(ballotData.answers);
+		console.log("Receive ballot from broadcast: " + ballotData.electionID + ", from voter " + ballotData.voterID);
+
+		var verifyData = {
+			electionID: ballotData.electionID,
+			voterID: ballotData.voterID,
+			answers: ballotData.answers,
+		}
+		module.exports.ballotVerification(verifyData, ballotData.voterSign, function(){
+			module.exports.saveAndSignBallot(ballotData);
+		})
+
+		res.json({success: true});
+	},
+
 	signReceive: function(req, res, next){
 		var signData = req.body;
 		console.log("Receive sign form: " + signData.trusteeID + ", " + signData.ballotID);		
@@ -163,9 +166,18 @@ module.exports = {
 				trusteeID: signData.trusteeID,
 				signHash: signData.signHash
 			}}
-		},{upsert: true})
-		.then(function(result){
-			console.log("Saved sign from: " + signData.trusteeID);
+		}).then(function(result){
+			if(result){
+				console.log("Saved sign from: " + signData.trusteeID);
+			}else{
+				let allSign = ballotCache.get(signData.ballotID);
+				if(!allSign){
+					allSign = []
+				}
+				allSign.push(signData);
+				ballotCache.set(signData.ballotID, allSign, 600);
+				console.log(ballotCache.get(signData.ballotID))
+			}
 
 			res.json({success: true});
 		}).catch(function(err){

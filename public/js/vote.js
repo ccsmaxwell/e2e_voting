@@ -8,9 +8,9 @@ $("#btn_vote").click(function(e){
 		success: function(res){				
 			// console.log(res);
 
-			var y = bigInt(base64toHex(res[0].data[0].key.y), 16);
-			var g = bigInt(base64toHex(res[0].data[0].key.g), 16);
-			var p = bigInt(base64toHex(res[0].data[0].key.p), 16);
+			var y = bigInt(base64ToHex(res[0].data[0].key.y), 16);
+			var g = bigInt(base64ToHex(res[0].data[0].key.g), 16);
+			var p = bigInt(base64ToHex(res[0].data[0].key.p), 16);
 
 			var answers = [];
 			if ($("#Q1_opt1").val()){
