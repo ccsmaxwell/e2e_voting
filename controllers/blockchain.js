@@ -2,6 +2,9 @@ var request = require('request');
 var ip = require('ip');
 var uuidv4 = require('uuid/v4');
 var crypto = require('crypto');
+var NodeCache = require( "node-cache" );
+
+var blockCache = new NodeCache();
 
 var Node_server = require('../models/node_server');
 var Ballot = require('../models/ballot');
@@ -30,7 +33,7 @@ module.exports = {
 		},
 		null,
 		{
-			sort: {"createdAt" : 1}
+			sort: {"receiveTime" : 1}
 		}).then(function(allBallot){
 			if(allBallot.length > 0){
 				Node_server.find({}).sort({
@@ -193,6 +196,31 @@ module.exports = {
 		newBlock_.hash = newBlock.hash;
 
 		newBlock.save().then(function(result){
+			let cacheSign = blockCache.get(newBlock_.blockUUID);
+			if(cacheSign){
+				blockCache.del(newBlock_.blockUUID);
+				let pushSign = []
+				cacheSign.forEach(function(s){
+					pushSign.push({
+						trusteeID: s.trusteeID,
+						signHash: s.signHash
+					})
+				})
+				
+				Block.findOneAndUpdate({
+					electionID: block.electionID,
+					blockUUID: block.blockUUID,
+				},{
+					$push: {sign: {
+						$each: pushSign
+					}}
+				}).then(function(result){
+					console.log("Saved cache sign.");
+				}).catch(function(err){
+					console.log(err);
+				})				
+			}
+
 			module.exports.signBlock(newBlock_);
 
 			if(newBlock_.blockType == "Election Details"){
@@ -233,9 +261,19 @@ module.exports = {
 				trusteeID: signData.trusteeID,
 				signHash: signData.signHash
 			}}
-		},{upsert: true})
+		})
 		.then(function(result){
-			console.log("Saved sign (block) from: " + signData.trusteeID);
+			if(result){
+				console.log("Saved sign (block) from: " + signData.trusteeID);
+			}else{
+				let allSign = blockCache.get(signData.blockUUID);
+				if(!allSign){
+					allSign = []
+				}
+				allSign.push(signData);
+				blockCache.set(signData.blockUUID, allSign, 600);
+				console.log("Saved sign in cache.")
+			}
 
 			res.json({success: true});
 		}).catch(function(err){

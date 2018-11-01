@@ -47,6 +47,31 @@ module.exports = {
 		newBallot.save().then(function(row){
 			console.log("Saved ballot.");
 
+			let cacheSign = ballotCache.get(newBallot.ballotID);
+			if(cacheSign){
+				ballotCache.del(newBallot.ballotID);
+				let pushSign = []
+				cacheSign.forEach(function(s){
+					pushSign.push({
+						trusteeID: s.trusteeID,
+						signHash: s.signHash
+					})
+				})
+
+				Ballot.findOneAndUpdate({
+					electionID: ballotData.electionID,
+					ballotID: ballotData.ballotID
+				},{
+					$push: {sign: {
+						$each: pushSign
+					}}
+				}).then(function(result){
+					console.log("Saved cache sign.");
+				}).catch(function(err){
+					console.log(err);
+				})
+			}
+
 			var signHash = crypto.createHash('sha256').update(JSON.stringify(ballotData)).digest('base64');
 			Ballot.findOneAndUpdate({
 				electionID: ballotData.electionID,
@@ -176,7 +201,7 @@ module.exports = {
 				}
 				allSign.push(signData);
 				ballotCache.set(signData.ballotID, allSign, 600);
-				console.log(ballotCache.get(signData.ballotID))
+				console.log("Saved sign in cache.")
 			}
 
 			res.json({success: true});
