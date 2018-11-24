@@ -2,7 +2,8 @@ var request = require('request');
 var ip = require('ip');
 var uuidv4 = require('uuid/v4');
 var crypto = require('crypto');
-var NodeCache = require( "node-cache" );
+var NodeCache = require("node-cache");
+var chalk = require('chalk');
 
 var blockCache = new NodeCache();
 
@@ -81,13 +82,12 @@ module.exports = {
 							newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
 							newBlock_.hash = newBlock.hash;
 
-							console.log("Generate new block:");
-							console.log(newBlock);
+							console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("Generate new block: "), chalk.grey(newBlock));
 
 							newBlock.save().then(function(result){
 								all_node_server.forEach(function(e){
 									if (e.IP != myIP || e.port != myPort){
-										console.log("Broadcast block to: "+e.IP+":"+e.port);
+										console.log(chalk.bgBlue("[Block]"), "--> Broadcast block to: ", chalk.grey(e.IP+":"+e.port));
 
 										request
 											.post({url:"http://"+e.IP+":"+e.port+"/blockchain/broadcastBlock", form:{
@@ -144,7 +144,7 @@ module.exports = {
 				signHash: signHash
 			}}
 		}).then(function(result){
-			console.log("Signed block: " + block.blockUUID);
+			console.log(chalk.bgBlue("[Block]"), "Signed block:", chalk.grey(block.blockUUID));
 		}).catch(function(err){
 			console.log(err);
 		})
@@ -155,7 +155,7 @@ module.exports = {
 		Node_server.find({}).then(function(all_node_server){
 			all_node_server.forEach(function(e){
 				if (e.IP != myIP || e.port != myPort){
-					console.log("Broadcast sign to: "+e.IP+":"+e.port);
+					console.log(chalk.bgBlue("[Block]"), "--> Broadcast sign to:", chalk.grey(e.IP+":"+e.port));
 
 					request
 						.post({url:"http://"+e.IP+":"+e.port+"/blockchain/broadcastSign", form:{
@@ -177,7 +177,7 @@ module.exports = {
 
 	blockReceive: function(req, res, next){
 		var block = JSON.parse(req.body.block);
-		console.log("Receive block:" + block);
+		console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("<-- Receive block:"), chalk.grey(block));
 
 		var newBlock_ = {
 			blockUUID: block.blockUUID,
@@ -215,7 +215,7 @@ module.exports = {
 						$each: pushSign
 					}}
 				}).then(function(result){
-					console.log("Saved cache sign.");
+					console.log(chalk.bgBlue("[Block]"), "Saved cache sign");
 				}).catch(function(err){
 					console.log(err);
 				})				
@@ -251,7 +251,7 @@ module.exports = {
 
 	signReceive: function(req, res, next){
 		var signData = req.body;
-		console.log("Receive sign (block) form: " + signData.trusteeID + ", " + signData.blockUUID);
+		console.log(chalk.bgBlue("[Block]"), "<-- Receive sign: ", chalk.grey(signData.trusteeID + ", " + signData.blockUUID));
 
 		Block.findOneAndUpdate({
 			electionID: signData.electionID,
@@ -264,7 +264,7 @@ module.exports = {
 		})
 		.then(function(result){
 			if(result){
-				console.log("Saved sign (block) from: " + signData.trusteeID);
+				console.log(chalk.bgBlue("[Block]"), "Saved sign from: " + chalk.grey(signData.trusteeID));
 			}else{
 				let allSign = blockCache.get(signData.blockUUID);
 				if(!allSign){
@@ -272,7 +272,7 @@ module.exports = {
 				}
 				allSign.push(signData);
 				blockCache.set(signData.blockUUID, allSign, 600);
-				console.log("Saved sign in cache.")
+				console.log(chalk.bgBlue("[Block]"), "Saved sign in cache.")
 			}
 
 			res.json({success: true});

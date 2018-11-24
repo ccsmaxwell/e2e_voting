@@ -6,22 +6,10 @@
 				<label>Election ID:</label>
 				<input type="text" id="election_id" name="election_id">
 			</div>
+			<button id="btn_details" type="button">Get details</button>
+			<div id="details"></div>
+
 			<div>
-				<label>Question 1 - Option 1:</label>
-				<input type="text" id="Q1_opt1" name="Q1_opt1">
-			</div>
-			<div>
-				<label>Question 1 - Option 2:</label>
-				<input type="text" id="Q1_opt2" name="Q1_opt2">
-			</div>
-			<div>
-				<label>Question 2 - Option 1:</label>
-				<input type="text" id="Q2_opt1" name="Q2_opt1">
-			</div>
-			<div>
-				<label>Question 2 - Option 2:</label>
-				<input type="text" id="Q2_opt2" name="Q2_opt2">
-			</div>
 				<label>Voter ID:</label>
 				<input type="text" id="voter_id" name="voter_id">
 			</div>
@@ -30,7 +18,11 @@
 				<textarea id="private_key" name="private_key"></textarea>
 			</div>
 
+			<div id="options"></div>
+
 			<button id="btn_vote" type="button">Vote</button>
+
+			<div id="msg"></div>
 		</main>
 
 		<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>

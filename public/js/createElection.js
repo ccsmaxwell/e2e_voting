@@ -50,8 +50,9 @@ $("#btn_create").click(function(e){
 			key: JSON.stringify(key),
 			voter: JSON.stringify(voter)
 		},	
-		success: function(res){				
+		success: function(res){
 			console.log(res);
+			$("#msg").append($("<p>").text("success, election ID: " + res.electionID));
 		}
 	})
 })

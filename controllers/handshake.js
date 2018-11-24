@@ -1,6 +1,7 @@
 var prompt = require('prompt');
 var request = require('request');
 var ip = require('ip');
+var chalk = require('chalk');
 
 var Node_server = require('../models/node_server');
 
@@ -39,8 +40,7 @@ module.exports = {
 								})
 
 								Node_server.insertMany(newNode_servers).then(function(result){
-									console.log("Receive address data and insert: ");
-									console.log(result);
+									console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.whiteBright("Receive address book:"), chalk.grey(result));
 
 									callback();
 									setInterval(callback, 60000);
@@ -84,7 +84,7 @@ module.exports = {
 									IP: e.IP,
 									port: e.port
 								}).then(function(result){
-									console.log("Ping fail & deleted: "+result);
+									console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Ping fail & deleted: "), chalk.grey(e.IP+":"+e.port));
 								}).catch(function(err){
 									console.log(err);
 								})
@@ -97,8 +97,8 @@ module.exports = {
 		getAddrData(ping);
 	},
 
-	connectRequest: function(req, res, next){		
-		console.log("Connect request from: "+req.body.IP+":"+req.body.Port);
+	connectRequest: function(req, res, next){
+		console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.whiteBright("Connect request: "), chalk.grey(req.body.IP+":"+req.body.Port));
 
 		Node_server.find({}).then(function(result){
 			var newNode_server = new Node_server();

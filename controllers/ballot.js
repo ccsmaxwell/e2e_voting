@@ -2,7 +2,8 @@ var request = require('request');
 var ip = require('ip');
 var uuidv4 = require('uuid/v4');
 var crypto = require('crypto');
-var NodeCache = require( "node-cache" );
+var NodeCache = require("node-cache");
+var chalk = require('chalk');
 
 var ballotCache = new NodeCache();
 
@@ -27,7 +28,7 @@ module.exports = {
 			var verify = crypto.createVerify('SHA256');
 			verify.update(JSON.stringify(verifyData));
 			var result = verify.verify(voterPublicKey, voterSign, "base64");
-			console.log("Ballot verification: " + result);
+			console.log(chalk.black.bgCyan("[Ballot]"), "Verification: ", chalk.grey(result));
 			if(result){
 				successCallBack();
 			}
@@ -45,7 +46,7 @@ module.exports = {
 		newBallot.ballotID = ballotData.ballotID;
 		newBallot.receiveTime = ballotData.receiveTime;
 		newBallot.save().then(function(row){
-			console.log("Saved ballot.");
+			console.log(chalk.black.bgCyan("[Ballot]"), "Saved ballot");
 
 			let cacheSign = ballotCache.get(newBallot.ballotID);
 			if(cacheSign){
@@ -66,7 +67,7 @@ module.exports = {
 						$each: pushSign
 					}}
 				}).then(function(result){
-					console.log("Saved cache sign.");
+					console.log(chalk.black.bgCyan("[Ballot]"), "Saved cache sign.");
 				}).catch(function(err){
 					console.log(err);
 				})
@@ -82,7 +83,7 @@ module.exports = {
 					signHash: signHash
 				}}
 			}).then(function(result){
-				console.log("Signed ballot: " + ballotData.ballotID);
+				console.log(chalk.black.bgCyan("[Ballot]"), "Signed ballot: ", chalk.grey(ballotData.ballotID));
 			}).catch(function(err){
 				console.log(err);
 			})
@@ -93,7 +94,7 @@ module.exports = {
 			Node_server.find({}).then(function(all_node_server){
 				all_node_server.forEach(function(e){
 					if (e.IP != myIP || e.port != myPort){
-						console.log("Broadcast sign to: "+e.IP+":"+e.port);
+						console.log(chalk.black.bgCyan("[Ballot]"), "--> Broadcast sign to: ", chalk.grey(e.IP+":"+e.port));
 
 						request
 							.post({url:"http://"+e.IP+":"+e.port+"/ballot/broadcastSign", form:{
@@ -121,7 +122,7 @@ module.exports = {
 		ballotData.answers = JSON.parse(ballotData.answers);
 		ballotData.ballotID = uuidv4();
 		ballotData.receiveTime = new Date();
-		console.log("Receive ballot submitted for: " + ballotData.electionID + ", from voter " + ballotData.voterID);
+		console.log(chalk.black.bgCyanBright("[Ballot]"), chalk.whiteBright("Ballot submit: "), chalk.grey(ballotData.voterID), chalk.grey(ballotData.electionID));
 
 		var verifyData = {
 			electionID: ballotData.electionID,
@@ -135,7 +136,7 @@ module.exports = {
 			Node_server.find({}).then(function(all_node_server){
 				all_node_server.forEach(function(e){
 					if (e.IP != myIP || e.port != myPort){
-						console.log("Broadcast ballot to: "+e.IP+":"+e.port);
+						console.log(chalk.black.bgCyan("[Ballot]"), "--> Broadcast ballot to: ", chalk.grey(e.IP+":"+e.port));
 
 						request
 							.post({url:"http://"+e.IP+":"+e.port+"/ballot/broadcastBallot", form:{
@@ -165,7 +166,7 @@ module.exports = {
 	ballotReceive: function(req, res, next){
 		var ballotData = req.body;
 		ballotData.answers = JSON.parse(ballotData.answers);
-		console.log("Receive ballot from broadcast: " + ballotData.electionID + ", from voter " + ballotData.voterID);
+		console.log(chalk.black.bgCyanBright("[Ballot]"), chalk.whiteBright("<-- Receive from broadcast: "), chalk.grey(ballotData.voterID), chalk.grey(ballotData.electionID));
 
 		var verifyData = {
 			electionID: ballotData.electionID,
@@ -181,7 +182,7 @@ module.exports = {
 
 	signReceive: function(req, res, next){
 		var signData = req.body;
-		console.log("Receive sign form: " + signData.trusteeID + ", " + signData.ballotID);		
+		console.log(chalk.black.bgCyan("[Ballot]"), "<-- Receive sign: ", chalk.grey(signData.trusteeID), chalk.grey(signData.ballotID));
 
 		Ballot.findOneAndUpdate({
 			electionID: signData.electionID,
@@ -193,7 +194,7 @@ module.exports = {
 			}}
 		}).then(function(result){
 			if(result){
-				console.log("Saved sign from: " + signData.trusteeID);
+				console.log(chalk.black.bgCyan("[Ballot]"), "Saved sign from: ", chalk.grey(signData.trusteeID));
 			}else{
 				let allSign = ballotCache.get(signData.ballotID);
 				if(!allSign){
@@ -201,7 +202,7 @@ module.exports = {
 				}
 				allSign.push(signData);
 				ballotCache.set(signData.ballotID, allSign, 600);
-				console.log("Saved sign in cache.")
+				console.log(chalk.black.bgCyan("[Ballot]"), "Saved sign in cache.")
 			}
 
 			res.json({success: true});
