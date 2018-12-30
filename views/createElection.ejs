@@ -39,6 +39,19 @@
 				<textarea id="elgamal_y" name="elgamal_y"></textarea>
 			</div>
 			<div>
+				<label>Crypto - Trustee private keys:</label>
+				<textarea id="trustee_x" name="trustee_x"></textarea>
+			</div>
+			<button id="btn_create_proof" type="button">Create Zero-Knowledge Proof</button>
+			<div>
+				<label>Proof - a:</label>
+				<textarea id="proof_a" name="proof_a"></textarea>
+			</div>
+			<div>
+				<label>Proof - f:</label>
+				<textarea id="proof_f" name="proof_f"></textarea>
+			</div>
+			<div>
 				<label>Voter 1 public key:</label>
 				<textarea id="voter_1_key" name="voter_1_key"></textarea>
 			</div>
@@ -57,6 +70,8 @@
 		</main>
 
 		<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+		<script src="http://peterolson.github.com/BigInteger.js/BigInteger.min.js"></script>
+		<script src="/js/lib/encoding.js"></script>
 		<script src="/js/createElection.js"></script>
 	</body>
 </html>

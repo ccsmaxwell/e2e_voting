@@ -19,12 +19,28 @@ module.exports = {
 		var data = req.body;
 
 		var publicKey = JSON.parse(data.key);
+		var trustees = JSON.parse(data.trustee);
 		var key_y = bigInt(1);
 		var p = bigInt(encoding.base64ToHex(publicKey.p),16);
-		publicKey.trustees_y.forEach(function(e){
-			let y = bigInt(encoding.base64ToHex(e),16);
+		var g = bigInt(encoding.base64ToHex(publicKey.g),16);
+		for(let ti of trustees){
+			let y = bigInt(encoding.base64ToHex(ti.y),16);
+			let a = bigInt(encoding.base64ToHex(ti.a),16);
+			let f = bigInt(encoding.base64ToHex(ti.f),16);
+			let e = bigInt(encoding.base64ToHex(crypto.createHash('sha256').update(publicKey.g + ti.a + ti.y).digest('base64')),16);
+
+			let lhs = g.modPow(f,p);
+			let rhs = a.multiply(y.modPow(e,p)).mod(p);
+			if(lhs.eq(rhs)){
+				console.log(chalk.black.bgMagenta("[Election]"), "A trustee verified.");
+			}else{
+				console.log(chalk.black.bgMagenta("[Election]"), "A trustee NOT verified.");
+				res.json({success: false});
+				return;
+			}
+
 			key_y = key_y.multiply(y).mod(p);
-		})
+		}
 		console.log(chalk.black.bgMagenta("[Election]"), "Calculate public key (y):", chalk.grey(key_y.toString()));
 
 		var newBlock_ = {};
