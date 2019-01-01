@@ -168,7 +168,7 @@ module.exports = {
 					a.c2 = encoding.hexToBase64(a.c2.toString(16));
 				})
 			})
-			console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Aggregate ballots: "), ans_c1c2);
+			console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Aggregate ballots: "), chalk.grey(JSON.stringify(ans_c1c2)));
 
 			res.json({questions: questions, voterCount: voterCount, key: key, ans_c1c2: ans_c1c2});
 		}).catch(function(err){

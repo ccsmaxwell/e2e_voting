@@ -7,6 +7,10 @@
 				<input type="text" id="election_id" name="election_id">
 			</div>
 			<div>
+				<label>Trustees public key(s):</label>
+				<textarea id="public_key" name="public_key"></textarea>
+			</div>
+			<div>
 				<label>Trustees private key(s):</label>
 				<textarea id="private_key" name="private_key"></textarea>
 			</div>
@@ -14,6 +18,15 @@
 			<button id="btn_result" type="button">Compute result</button>
 
 			<div id="msg"></div>
+
+			<div>
+				<label>Generated proof:</label>
+				<textarea id="proof_a1a2f" name="proof_a1a2f"></textarea>
+			</div>
+
+			<button id="btn_proof" type="button">Verify proof</button>
+
+			<div id="verify_msg"></div>
 		</main>
 
 		<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
