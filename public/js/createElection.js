@@ -9,7 +9,7 @@ $("#btn_create_proof").click(function(e){
 	var e = [];
 	var f = [];
 	public_keys.forEach(function(yi, i){
-		s.push(bigInt.randBetween(1, p));
+		s.push(bigInt.randBetween(1, p-1));
 		a.push(bigInt(g).modPow(s[i], p));
 
 		let msg = $("#elgamal_g").val() + hexToBase64(a[i].toString(16)) + yi;
@@ -30,13 +30,17 @@ $("#btn_create").click(function(e){
 	if($("#question_1").val()){
 		q_list.push({
 			question: $("#question_1").val(),
-			answers:  $("#question_1_opt").val().split(";")
+			answers:  $("#question_1_opt").val().split(";"),
+			max_choice: parseInt($("#question_1_max").val()),
+			min_choice: parseInt($("#question_1_min").val()),
 		})
 	}
 	if($("#question_2").val()){
 		q_list.push({
 			question: $("#question_2").val(),
-			answers:  $("#question_2_opt").val().split(";")
+			answers:  $("#question_2_opt").val().split(";"),
+			max_choice: parseInt($("#question_2_max").val()),
+			min_choice: parseInt($("#question_s_min").val()),
 		})
 	}
 

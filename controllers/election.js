@@ -20,6 +20,9 @@ module.exports = {
 
 		var publicKey = JSON.parse(data.key);
 		var trustees = JSON.parse(data.trustee);
+		data.question_list = JSON.parse(data.question_list);
+		data.voter = JSON.parse(data.voter);
+
 		var key_y = bigInt(1);
 		var p = bigInt(encoding.base64ToHex(publicKey.p),16);
 		var g = bigInt(encoding.base64ToHex(publicKey.g),16);
@@ -51,13 +54,13 @@ module.exports = {
 		newBlock_.data = [{
 			name: data.name,
 			description: data.description,
-			questions: JSON.parse(data.question_list),
+			questions: data.question_list,
 			key: {
 				p: publicKey.p,
 				g: publicKey.g,
 				y: encoding.hexToBase64(key_y.toString(16))
 			},
-			voters: JSON.parse(data.voter),
+			voters: data.voter,
 			frozenAt: new Date()
 		}];
 
@@ -154,8 +157,8 @@ module.exports = {
 					block.data.forEach(function(ballot){
 						for(var i=0; i<ans_c1c2.length; i++){
 							for(var j=0; j<ans_c1c2[i].length; j++){
-								ans_c1c2[i][j].c1 = ans_c1c2[i][j].c1.multiply(bigInt(encoding.base64ToHex(ballot.answers[i][j].c1),16)).mod(p);
-								ans_c1c2[i][j].c2 = ans_c1c2[i][j].c2.multiply(bigInt(encoding.base64ToHex(ballot.answers[i][j].c2),16)).mod(p);
+								ans_c1c2[i][j].c1 = ans_c1c2[i][j].c1.multiply(bigInt(encoding.base64ToHex(ballot.answers[i].choices[j].c1),16)).mod(p);
+								ans_c1c2[i][j].c2 = ans_c1c2[i][j].c2.multiply(bigInt(encoding.base64ToHex(ballot.answers[i].choices[j].c2),16)).mod(p);
 							}
 						}
 					})
