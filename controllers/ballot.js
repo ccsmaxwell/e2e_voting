@@ -69,19 +69,8 @@ module.exports = {
 							c1: verifyData.answers[i].choices[j].c1,
 							c2: verifyData.answers[i].choices[j].c2
 						}
-						let e_all = bigInt(encoding.base64ToHex(crypto.createHash('sha256').update(JSON.stringify(msg)).digest('base64')),16).mod(p);
-						let e_sum = bigInt(0);
-						for(let v=0 ; v<=1 ; v++){
-							let proof = zkProof.proofToHex(verifyData.answers[i].choices[j].proof[v]);
-							e_sum = e_sum.add(proof.e).mod(p);
-
-							if(!zkProof.verifyBallot(p,g,y,proof.a1,proof.a2,proof.e,proof.f,c1,c2,v)){
-								throw chalk.black.bgCyan("[Ballot]") + " Choice 0/1 verification FAIL (q:"+i+",c:"+j+",v:"+v+")";
-							}
-						}
-
-						if(!e_sum.eq(e_all)){
-							throw chalk.black.bgCyan("[Ballot]") + " Choice 0/1 (e_sum) verification FAIL (q:"+i+",c:"+j+")";
+						if(!zkProof.ballotProofVerify(msg,p,g,y,0,1,c1,c2,verifyData.answers[i].choices[j].proof)){
+							throw chalk.black.bgCyan("[Ballot]") + " Choice 0/1 verification FAIL (q:"+i+",c:"+j+")";
 						}
 					})
 
@@ -91,19 +80,8 @@ module.exports = {
 						question_c1: encoding.hexToBase64(question_c1.toString(16)),
 						question_c2: encoding.hexToBase64(question_c2.toString(16)),
 					}
-					let e_all = bigInt(encoding.base64ToHex(crypto.createHash('sha256').update(JSON.stringify(msg)).digest('base64')),16).mod(p);
-					let e_sum = bigInt(0);
-					for(let v=q.min_choice ; v<=q.max_choice ; v++){
-						let proof = zkProof.proofToHex(verifyData.answers[i].overall_proof[v-q.min_choice]);
-						e_sum = e_sum.add(proof.e).mod(p);
-
-						if(!zkProof.verifyBallot(p,g,y,proof.a1,proof.a2,proof.e,proof.f,question_c1,question_c2,v)){
-							throw chalk.black.bgCyan("[Ballot]") + " Question overall proof verification FAIL (q:"+i+",v:"+v+")";
-						}
-					}
-
-					if(!e_sum.eq(e_all)){
-						throw chalk.black.bgCyan("[Ballot]") + " Question overall proof (e_sum) verification FAIL (q:"+i+")";
+					if(!zkProof.ballotProofVerify(msg,p,g,y,q.min_choice,q.max_choice,question_c1,question_c2,verifyData.answers[i].overall_proof)){
+						throw chalk.black.bgCyan("[Ballot]") + " Question overall proof verification FAIL (q:"+i+")";
 					}
 
 					console.log(chalk.black.bgCyan("[Ballot]"), "Question "+i+" verification success");
