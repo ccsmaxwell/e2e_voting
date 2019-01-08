@@ -58,10 +58,10 @@ $("#btn_vote").click(function(e){
 			let id = "#Q"+(i+1)+"_opt"+(j+1);
 			$("#msg").append($("<p>").text("Option " + (j+1) + ":"));
 
-			let value = $(id).val();
+			let value = parseInt($(id).val());
 			question_value += value;
 			let r = bigInt.randBetween(1, p.minus(2));
-			question_r = question_r.add(r).mod(p);
+			question_r = question_r.add(r).mod(p.minus(1));
 			$("#msg").append($("<p>").text("r (random): " + r.toString()));
 			let c1 = g.modPow(r,p);
 			let c1_base64 = hexToBase64(c1.toString(16));
@@ -90,7 +90,7 @@ $("#btn_vote").click(function(e){
 				proof[1-value] = proofToBase64(simProof);
 				proof[value] = proofToBase64(realProof);
 
-				answers[i].choices[j]["proof"] = proof;				
+				answers[i].choices[j]["proof"] = proof;
 			}))
 
 			answers[i].choices[j]["c1"] = c1_base64;
