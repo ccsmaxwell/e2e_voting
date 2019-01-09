@@ -1,5 +1,3 @@
-var request = require('request');
-var ip = require('ip');
 var uuidv4 = require('uuid/v4');
 var crypto = require('crypto');
 var NodeCache = require("node-cache");
@@ -8,12 +6,12 @@ var bigInt = require("big-integer");
 
 var ballotCache = new NodeCache();
 
-var Node_server = require('../models/node_server');
 var Ballot = require('../models/ballot');
 var Block = require('../models/block');
 
 var encoding = require('./lib/encoding');
 var zkProof = require('./lib/zkProof');
+var connection = require('./lib/connection');
 
 module.exports = {
 
@@ -148,30 +146,13 @@ module.exports = {
 				console.log(err);
 			})
 
-			var myIP = ip.address();
-			var myPort = (process.env.PORT+"").trim();
-
-			Node_server.find({}).then(function(all_node_server){
-				all_node_server.forEach(function(e){
-					if (e.IP != myIP || e.port != myPort){
-						console.log(chalk.black.bgCyan("[Ballot]"), "--> Broadcast sign to: ", chalk.grey(e.IP+":"+e.port));
-
-						request
-							.post({url:"http://"+e.IP+":"+e.port+"/ballot/broadcastSign", form:{
-								electionID: ballotData.electionID,
-								ballotID: ballotData.ballotID,
-								trusteeID: (process.env.PORT+"").trim(),
-								signHash: signHash
-							}})
-							.on('data', function(data){
-								// console.log(data.toString());
-							})							
-							.on('error', function(err){
-								console.log(err);
-							})
-					}
-				})
-			});	
+			console.log(chalk.black.bgCyan("[Ballot]"), "--> Broadcast sign to other nodes");
+			connection.broadcast("POST", "/ballot/broadcastSign", {
+				electionID: ballotData.electionID,
+				ballotID: ballotData.ballotID,
+				trusteeID: (process.env.PORT+"").trim(),
+				signHash: signHash
+			}, null, null, null);
 		}).catch(function(err){
 			console.log(err);
 		});	
@@ -190,32 +171,15 @@ module.exports = {
 			answers: ballotData.answers,
 		}
 		module.exports.ballotVerification(verifyData, ballotData.voterSign, function(){
-			var myIP = ip.address();
-			var myPort = (process.env.PORT+"").trim();
-
-			Node_server.find({}).then(function(all_node_server){
-				all_node_server.forEach(function(e){
-					if (e.IP != myIP || e.port != myPort){
-						console.log(chalk.black.bgCyan("[Ballot]"), "--> Broadcast ballot to: ", chalk.grey(e.IP+":"+e.port));
-
-						request
-							.post({url:"http://"+e.IP+":"+e.port+"/ballot/broadcastBallot", form:{
-								electionID: ballotData.electionID,
-								voterID: ballotData.voterID,
-								answers: JSON.stringify(ballotData.answers),
-								voterSign: ballotData.voterSign,
-								ballotID: ballotData.ballotID,
-								receiveTime: ballotData.receiveTime
-							}})
-							.on('data', function(data){
-								// console.log(data);
-							})							
-							.on('error', function(err){
-								console.log(err);
-							})
-					}
-				})
-			});
+			console.log(chalk.black.bgCyan("[Ballot]"), "--> Broadcast ballot to other nodes");
+			connection.broadcast("POST", "/ballot/broadcastBallot", {
+				electionID: ballotData.electionID,
+				voterID: ballotData.voterID,
+				answers: JSON.stringify(ballotData.answers),
+				voterSign: ballotData.voterSign,
+				ballotID: ballotData.ballotID,
+				receiveTime: ballotData.receiveTime
+			}, null, null, null);
 
 			module.exports.saveAndSignBallot(ballotData);
 			res.json({success: true});

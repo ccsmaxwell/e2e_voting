@@ -1,16 +1,14 @@
-var request = require('request');
-var ip = require('ip');
 var uuidv4 = require('uuid/v4');
 var crypto = require('crypto');
 var bigInt = require("big-integer");
 var chalk = require('chalk');
 
-var Node_server = require('../models/node_server');
 var Block = require('../models/block');
 
 var blockChainController = require('./blockchain');
 
 var encoding = require('./lib/encoding');
+var connection = require('./lib/connection');
 
 module.exports = {
 
@@ -73,27 +71,10 @@ module.exports = {
 
 		console.log(chalk.black.bgMagenta("[Election]"), "Created new block");
 		newBlock.save().then(function(result){
-			var myIP = ip.address();
-			var myPort = (process.env.PORT+"").trim();
-
-			Node_server.find({}).then(function(all_node_server){
-				all_node_server.forEach(function(e){
-					if (e.IP != myIP || e.port != myPort){
-						console.log(chalk.white.bgBlue("[Block]"), "Broadcast block: ", chalk.grey(e.IP+":"+e.port));
-
-						request
-							.post({url:"http://"+e.IP+":"+e.port+"/blockchain/broadcastBlock", form:{
-								block: JSON.stringify(newBlock_)
-							}})
-							.on('data', function(data){
-								// console.log(data.toString());
-							})							
-							.on('error', function(err){
-								console.log(err);
-							})
-					}
-				})
-			});
+			console.log(chalk.white.bgBlue("[Block]"), "--> Broadcast block to other nodes");
+			connection.broadcast("POST", "/blockchain/broadcastBlock", {
+				block: JSON.stringify(newBlock_)
+			}, null, null, null);
 
 			setInterval(function(){
 				blockChainController.generateBlock(newBlock_.electionID)

@@ -5,6 +5,8 @@ var chalk = require('chalk');
 
 var Node_server = require('../models/node_server');
 
+var connection = require('./lib/connection');
+
 module.exports = {
 
 	init: function(){
@@ -64,34 +66,19 @@ module.exports = {
 			var myIP = ip.address();
 			var myPort = (process.env.PORT+"").trim();
 
-			Node_server.find({}).then(function(all_node_server){
-				all_node_server.forEach(function(e){
-					if (e.IP != myIP || e.port != myPort){
-						// console.log("Pinging: "+e.IP+":"+e.port);
-
-						request
-							.get({url:"http://"+e.IP+":"+e.port+"/handshake/ping", form:{
-								IP: myIP,
-								Port: myPort
-							}})
-							.on('data', function(data){
-								// console.log(data);
-							})							
-							.on('error', function(err){
-								console.log(err);
-
-								Node_server.deleteOne({
-									IP: e.IP,
-									port: e.port
-								}).then(function(result){
-									console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Ping fail & deleted: "), chalk.grey(e.IP+":"+e.port));
-								}).catch(function(err){
-									console.log(err);
-								})
-							})
-					}
+			connection.broadcast("GET", "/handshake/ping", {
+				IP: myIP,
+				Port: myPort
+			}, null, function(err){
+				Node_server.deleteOne({
+					IP: e.IP,
+					port: e.port
+				}).then(function(result){
+					console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Ping fail & deleted: "), chalk.grey(e.IP+":"+e.port));
+				}).catch(function(err){
+					console.log(err);
 				})
-			});
+			}, null);
 		}
 
 		getAddrData(ping);
@@ -116,8 +103,6 @@ module.exports = {
 	},
 
 	pingRequest: function(req, res, next){
-		// console.log("Ping from: "+req.body.IP+":"+req.body.Port);
-
 		Node_server.findOneAndUpdate({
 			IP: req.body.IP,
 			port: req.body.Port

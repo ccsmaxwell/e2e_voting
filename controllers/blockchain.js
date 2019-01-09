@@ -11,6 +11,8 @@ var Node_server = require('../models/node_server');
 var Ballot = require('../models/ballot');
 var Block = require('../models/block');
 
+var connection = require('./lib/connection');
+
 module.exports = {
 
 	init: function(){
@@ -149,30 +151,13 @@ module.exports = {
 			console.log(err);
 		})
 
-		var myIP = ip.address();
-		var myPort = (process.env.PORT+"").trim();
-
-		Node_server.find({}).then(function(all_node_server){
-			all_node_server.forEach(function(e){
-				if (e.IP != myIP || e.port != myPort){
-					console.log(chalk.bgBlue("[Block]"), "--> Broadcast sign to:", chalk.grey(e.IP+":"+e.port));
-
-					request
-						.post({url:"http://"+e.IP+":"+e.port+"/blockchain/broadcastSign", form:{
-							electionID: block.electionID,
-							blockUUID: block.blockUUID,
-							trusteeID: (process.env.PORT+"").trim(),
-							signHash: signHash
-						}})
-						.on('data', function(data){
-							// console.log(data.toString());
-						})							
-						.on('error', function(err){
-							console.log(err);
-						})
-				}
-			})
-		});	
+		console.log(chalk.bgBlue("[Block]"), "--> Broadcast sign to other nodes");
+		connection.broadcast("POST", "/blockchain/broadcastSign", {
+			electionID: block.electionID,
+			blockUUID: block.blockUUID,
+			trusteeID: (process.env.PORT+"").trim(),
+			signHash: signHash
+		}, null, null, null);
 	},
 
 	blockReceive: function(req, res, next){
