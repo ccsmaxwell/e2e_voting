@@ -76,10 +76,8 @@ module.exports = {
 				block: JSON.stringify(newBlock_)
 			}, null, null, null);
 
-			setInterval(function(){
-				blockChainController.generateBlock(newBlock_.electionID)
-			}, 15000);
-
+			blockChainController.initTimer(newBlock_.data[0].frozenAt, newBlock_.electionID);
+			
 			blockChainController.signBlock(newBlock_);
 
 			res.json({success: true, electionID: newBlock_.electionID});

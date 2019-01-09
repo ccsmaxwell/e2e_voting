@@ -20,13 +20,21 @@ module.exports = {
 			blockSeq: 0
 		}).then(function(allElection){
 			allElection.forEach(function(e){
-				setInterval(function(){
-					module.exports.generateBlock(e.electionID)
-				}, 15000);
+				module.exports.initTimer(e.data[0].frozenAt, e.electionID)
 			})
 		}).catch(function(err){
 			console.log(err)
 		})
+	},
+
+	initTimer: function(electionFrozen, electionID){
+		const timerInterval = 15000
+		let diff = timerInterval - (((new Date()) - (new Date(electionFrozen))) % timerInterval);
+		setTimeout(function(){
+			setInterval(function(){
+				module.exports.generateBlock(electionID)
+			}, timerInterval);
+		}, diff);
 	},
 
 	generateBlock: function(electionID){
@@ -209,9 +217,7 @@ module.exports = {
 			module.exports.signBlock(newBlock_);
 
 			if(newBlock_.blockType == "Election Details"){
-				setInterval(function(){
-					module.exports.generateBlock(newBlock_.electionID)
-				}, 15000);
+				module.exports.initTimer(newBlock_.data[0].frozenAt, newBlock_.electionID);
 			}else if(newBlock_.blockType == "Ballot"){
 				var allBallotID = [];
 				newBlock_.data.forEach(function(e){
