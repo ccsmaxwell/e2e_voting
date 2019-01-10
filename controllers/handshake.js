@@ -26,34 +26,31 @@ module.exports = {
 					if(err){
 						console.log(err)
 					}else if(input.Address != ""){
-						request
-							.get({url:"http://"+input.Address+"/handshake/connect", form:{
+						request.get({
+							url:"http://"+input.Address+"/handshake/connect", form:{
 								IP: myAddr.IP,
 								Port: myAddr.port
-							}})
-							.on('data', function(data){
-								current_nodes = JSON.parse(data);
+							}
+						}).on('data', function(data){
+							current_nodes = JSON.parse(data);
 
-								var newNode_servers = []
-								current_nodes.forEach(function(e){
-									newNode_servers.push({
-										IP: e.IP,
-										port: e.port
-									})
-								})
+							let promArr = []
+							current_nodes.forEach(function(e){
+								promArr.push(new Promise(function(resolve, reject){
+									module.exports.updateNode(e.IP, e.port, function(){
+										resolve();
+									});
+								}));
+							});
 
-								Node_server.insertMany(newNode_servers).then(function(result){
-									console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.whiteBright("Receive address book:"), chalk.grey(result));
-
-									callback();
-									setInterval(callback, pingInterval);
-								}).catch(function(err){
-									console.log(err);
-								})
+							Promise.all(promArr).then(function(){
+								console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.whiteBright("Receive address book:"), chalk.grey(data));
+								callback();
+								setInterval(callback, pingInterval);
 							})
-							.on('error', function(err){
-								console.log(err);
-							})
+						}).on('error', function(err){
+							console.log(err);
+						})
 					}else{
 						setInterval(callback, pingInterval);
 					}
@@ -87,15 +84,9 @@ module.exports = {
 	connectRequest: function(req, res, next){
 		console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.whiteBright("Connect request: "), chalk.grey(req.body.IP+":"+req.body.Port));
 
-		Node_server.find({}).then(function(result){
-			var newNode_server = new Node_server();
-			newNode_server.IP = req.body.IP;
-			newNode_server.port = req.body.Port;
-
-			newNode_server.save().then(function(row){
-				res.json(result);	
-			}).catch(function(err){
-				console.log(err);
+		Node_server.find({}).then(function(allNodes){
+			module.exports.updateNode(req.body.IP, req.body.Port, function(){
+				res.json(allNodes);
 			});
 		}).catch(function(err){
 			console.log(err);
@@ -103,14 +94,22 @@ module.exports = {
 	},
 
 	pingRequest: function(req, res, next){
+		module.exports.updateNode(req.body.IP, req.body.Port, function(){
+			res.json({success: true});
+		});
+	},
+
+	updateNode: function(ip, port, successCallback){
 		Node_server.findOneAndUpdate({
-			IP: req.body.IP,
-			port: req.body.Port
+			IP: ip,
+			port: port
 		},
 		{},
 		{upsert: true},
 		).then(function(result){
-			res.json({success: true});
+			if(successCallback){
+				successCallback();
+			}
 		}).catch(function(err){
 			console.log(err);
 		})
