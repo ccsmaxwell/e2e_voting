@@ -108,7 +108,7 @@ module.exports = {
 		})
 	},
 
-	getAllResult: function(req, res, next){
+	getResult: function(req, res, next){
 		var data = req.body;
 
 		Block.find({
@@ -153,6 +153,19 @@ module.exports = {
 			console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Aggregate ballots: "), chalk.grey(JSON.stringify(ans_c1c2)));
 
 			res.json({questions: questions, voterCount: voterCount, key: key, ans_c1c2: ans_c1c2});
+		}).catch(function(err){
+			console.log(err)
+		})
+	},
+
+	getAllElection: function(req, res, next){
+		Block.aggregate([
+			{$group: {
+				_id: "$electionID",
+				"maxSeq": {$max:"$blockSeq"}
+			}}
+		]).then(function(result){
+			res.json(result);
 		}).catch(function(err){
 			console.log(err)
 		})

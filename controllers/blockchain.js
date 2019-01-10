@@ -1,5 +1,4 @@
 var request = require('request');
-var ip = require('ip');
 var uuidv4 = require('uuid/v4');
 var crypto = require('crypto');
 var NodeCache = require("node-cache");

@@ -1,6 +1,5 @@
 var prompt = require('prompt');
 var request = require('request');
-var ip = require('ip');
 var chalk = require('chalk');
 
 var Node_server = require('../models/node_server');
@@ -24,7 +23,8 @@ module.exports = {
 						console.log(err)
 					}else if(input.Address != ""){
 						request.get({
-							url:"http://"+input.Address+"/handshake/connect", form:{
+							url: "http://"+input.Address+"/handshake/connect",
+							form: {
 								IP: myAddr.IP,
 								Port: myAddr.port
 							}
@@ -45,6 +45,15 @@ module.exports = {
 								pingCallback();
 								setInterval(pingCallback, pingInterval);
 							})
+						}).on('error', function(err){
+							console.log(err);
+						})
+
+						request.get({
+							url: "http://"+input.Address+"/election/getAllElection",
+							form: {}
+						}).on('data', function(data){
+							// console.log(data);
 						}).on('error', function(err){
 							console.log(err);
 						})

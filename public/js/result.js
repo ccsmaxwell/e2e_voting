@@ -3,7 +3,7 @@ var _result = null;
 $("#btn_result").click(function(e){
 	$.ajax({
 		type: "POST",
-		url: "/election/getAllResult",
+		url: "/election/getResult",
 		data:{			
 			electionID: $("#election_id").val()
 		},	
