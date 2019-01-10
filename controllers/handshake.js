@@ -12,16 +12,13 @@ const pingInterval = 60000;
 module.exports = {
 
 	init: function(){
-		var getAddrData = function(callback){
+		var getAddrData = function(pingCallback){
 			var myAddr = connection.getSelfAddr();
 
-			var newNode_server = new Node_server();
-			newNode_server.IP = myAddr.IP;
-			newNode_server.port = myAddr.port;
+			module.exports.updateNode(myAddr.IP, myAddr.port, function(){
+				pingCallback();
 
-			newNode_server.save().then(function(row){
 				prompt.start();
-
 				prompt.get(['Address'], function (err, input) {
 					if(err){
 						console.log(err)
@@ -45,18 +42,16 @@ module.exports = {
 
 							Promise.all(promArr).then(function(){
 								console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.whiteBright("Receive address book:"), chalk.grey(data));
-								callback();
-								setInterval(callback, pingInterval);
+								pingCallback();
+								setInterval(pingCallback, pingInterval);
 							})
 						}).on('error', function(err){
 							console.log(err);
 						})
 					}else{
-						setInterval(callback, pingInterval);
+						setInterval(pingCallback, pingInterval);
 					}
-				});	
-			}).catch(function(err){
-				console.log(err);
+				});				
 			});
 		};
 
@@ -71,6 +66,9 @@ module.exports = {
 					IP: eIP,
 					port: ePort
 				}).then(function(result){
+					if(err.code != 'ECONNREFUSED'){
+						console.log(err);
+					}
 					console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Ping fail & deleted: "), chalk.grey(eIP+":"+ePort));
 				}).catch(function(err){
 					console.log(err);
@@ -103,10 +101,9 @@ module.exports = {
 		Node_server.findOneAndUpdate({
 			IP: ip,
 			port: port
-		},
-		{},
-		{upsert: true},
-		).then(function(result){
+		}, {}, {
+			upsert: true
+		}).then(function(result){
 			if(successCallback){
 				successCallback();
 			}

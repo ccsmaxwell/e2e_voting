@@ -21,10 +21,10 @@ module.exports = {
 						}
 					})
 					.on('error', function(err){
-						console.log(err);
-
 						if(onError){
 							onError(e.IP, e.port, myAddr.IP, myAddr.port, err);
+						}else{
+							console.log(err);
 						}
 					})
 				}
