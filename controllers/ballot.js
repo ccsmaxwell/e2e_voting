@@ -4,14 +4,14 @@ var NodeCache = require("node-cache");
 var chalk = require('chalk');
 var bigInt = require("big-integer");
 
-var ballotCache = new NodeCache();
-
 var Ballot = require('../models/ballot');
 var Block = require('../models/block');
 
 var encoding = require('./lib/encoding');
 var zkProof = require('./lib/zkProof');
 var connection = require('./lib/connection');
+
+var ballotCache = new NodeCache();
 
 module.exports = {
 

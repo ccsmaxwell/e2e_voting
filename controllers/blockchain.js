@@ -5,13 +5,18 @@ var crypto = require('crypto');
 var NodeCache = require("node-cache");
 var chalk = require('chalk');
 
-var blockCache = new NodeCache();
-
 var Node_server = require('../models/node_server');
 var Ballot = require('../models/ballot');
 var Block = require('../models/block');
 
 var connection = require('./lib/connection');
+
+const timerInterval = 15000;
+const timerBuffer = 3000;
+
+var blockCache = new NodeCache();
+var ballotCache = new NodeCache();
+var bftStatus = {};
 
 module.exports = {
 
@@ -28,116 +33,176 @@ module.exports = {
 	},
 
 	initTimer: function(electionFrozen, electionID){
-		const timerInterval = 15000
-		let diff = timerInterval - (((new Date()) - (new Date(electionFrozen))) % timerInterval);
+		bftStatus[electionID] = {
+			counter: null,
+			seq: {}
+		};
+
+		var diffTime = (new Date()) - (new Date(electionFrozen));
+		var nextRun = timerInterval - (diffTime % timerInterval);
+		bftStatus[electionID].counter = ~~(diffTime / timerInterval);
+
 		setTimeout(function(){
+			bftStatus[electionID].counter++;
+			if(nextRun>timerBuffer){
+				module.exports.nodeSelection(electionID);
+			}
 			setInterval(function(){
-				module.exports.generateBlock(electionID)
+				bftStatus[electionID].counter++;
+				module.exports.nodeSelection(electionID);
 			}, timerInterval);
-		}, diff);
+		}, nextRun);
 	},
 
-	generateBlock: function(electionID){
+	nodeSelection: function(electionID){
+		var selectionSeq = bftStatus[electionID].counter;
+		if (bftStatus[electionID].seq[selectionSeq-1]){
+			delete bftStatus[electionID].seq[selectionSeq-1];
+		}
+
 		Ballot.find({
 			electionID: electionID,
-			inBlock: {$ne: true}
-		},
-		null,
-		{
+			inBlock: {$ne: true},
+			receiveTime: {$lte: (new Date()) - timerBuffer}
+		},null,{
 			sort: {"receiveTime" : 1}
 		}).then(function(allBallot){
 			if(allBallot.length > 0){
+				ballotCache.set(selectionSeq, allBallot, timerInterval/1000*2);
+
 				Node_server.find({}).sort({
 					IP: 1,
 					port: 1
 				}).then(function(all_node_server){
-					// console.log(all_node_server);
-					let lastHashArray = new Buffer(allBallot[allBallot.length-1].ballotID, "ascii");
-					let lastHash = lastHashArray.reduce(function(acc, curr){return acc + curr}, 0);
-					let selectedNode = all_node_server[lastHash%(all_node_server.length)];
+					if(all_node_server.length>1){
+						let lastHash =  new Buffer(allBallot[allBallot.length-1].ballotID, "ascii").reduce(function(acc, curr){return acc + curr}, 0);
+						let selectedNode = all_node_server[lastHash%(all_node_server.length)];
+						let selectedAddr = selectedNode.IP+":"+selectedNode.port;
 
-					var myIP = ip.address();
-					var myPort = (process.env.PORT+"").trim();
+						module.exports.bftUpdate(electionID, selectionSeq, selectedAddr, all_node_server.length);
 
-					if(selectedNode.IP == myIP && selectedNode.port == myPort){
-						Block.find({
-							electionID: electionID
-						}).sort({
-							blockSeq: -1
-						}).limit(1).then(function(lastBlock){
-							var newBlock_ = {
-								blockUUID: uuidv4(),
-								electionID: electionID,
-								blockSeq: lastBlock[0].blockSeq+1,
-								previousHash: lastBlock[0].hash,
-								blockType: "Ballot",
-								data: []
-							};
-							allBallot.forEach(function(e){
-								newBlock_.data.push({
-									electionID: e.electionID,
-									voterID: e.voterID,
-									answers: e.answers,
-									voterSign: e.voterSign,
-									ballotID: e.ballotID,
-									receiveTime: e.receiveTime,
-									sign: e.sign
-								})
-							});
-
-							var newBlock = new Block();
-							Object.keys(newBlock_).forEach(function(key){
-								newBlock[key] = newBlock_[key];
-							});
-							newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
-							newBlock_.hash = newBlock.hash;
-
-							console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("Generate new block: "), chalk.grey(newBlock));
-
-							newBlock.save().then(function(result){
-								all_node_server.forEach(function(e){
-									if (e.IP != myIP || e.port != myPort){
-										console.log(chalk.bgBlue("[Block]"), "--> Broadcast block to: ", chalk.grey(e.IP+":"+e.port));
-
-										request
-											.post({url:"http://"+e.IP+":"+e.port+"/blockchain/broadcastBlock", form:{
-												block: JSON.stringify(newBlock_)
-											}})
-											.on('data', function(data){
-												// console.log(data.toString());
-											})							
-											.on('error', function(err){
-												console.log(err);
-											})
-									}
-								})
-
-								module.exports.signBlock(newBlock_);
-
-								var allBallotID = [];
-								allBallot.forEach(function(e){
-									allBallotID.push(e.ballotID);
-								})
-								Ballot.updateMany({
-									ballotID: {$in: allBallotID}
-								},{
-									inBlock: true
-								}).then(function(result){
-									console.log("Updated ballot 'inBlock'.");
-								}).catch(function(err){
-									console.log(err);
-								})
-							}).catch(function(err){
-								console.log(err);	
-							});
-						}).catch(function(err){
-							console.log(err);
-						})
+						console.log(chalk.whiteBright.bgBlueBright("[Block]"), "--> Broadcast BFT node selection, selected:", selectedAddr);
+						connection.broadcast("POST", "/blockchain/broadcastSelection", {
+							electionID: electionID,
+							selectionSeq: selectionSeq,
+							selectedAddr: selectedAddr,
+							trusteeID: (process.env.PORT+"").trim(),
+						}, null, null, null);
+					}else{
+						module.exports.generateBlock(electionID, selectionSeq);
 					}
 				}).catch(function(err){
 					console.log(err);
 				})
 			}
+		}).catch(function(err){
+			console.log(err);
+		})
+	},
+
+	bftReceive: function(req, res, next){
+		var data = req.body;
+		console.log(chalk.bgBlue("[Block]"), "<-- Receive BFT node selection from", data.trusteeID);
+
+		module.exports.bftUpdate(data.electionID, data.selectionSeq, data.selectedAddr, null);
+
+		res.json({success: true});
+	},
+
+	bftUpdate: function(electionID, selectionSeq, selectedAddr, noOfNode){
+		if(bftStatus[electionID] && (selectionSeq == bftStatus[electionID].counter || selectionSeq == bftStatus[electionID].counter+1)){
+			if(!bftStatus[electionID].seq[selectionSeq]){
+				bftStatus[electionID].seq[selectionSeq] = {
+					noOfNode: null,
+					addr: {},
+					sum: 0,
+					result: null
+				}
+			}
+			let seqObj = bftStatus[electionID].seq[selectionSeq];
+
+			seqObj.noOfNode = noOfNode ? noOfNode : seqObj.noOfNode;
+
+			seqObj.addr[selectedAddr] = seqObj.addr[selectedAddr] ? seqObj.addr[selectedAddr]+1 : 1;
+			seqObj.sum++;
+
+			let myAddr = connection.getSelfAddr();
+			let myAddrStr = myAddr.IP+":"+myAddr.port;
+			let maxValueAddr = Object.keys(seqObj.addr).reduce((a,b) =>
+				((seqObj.addr[a]>seqObj.addr[b]) || (seqObj.addr[a]=seqObj.addr[b] && a>b)) ? a : b
+			);
+			console.log(maxValueAddr);
+			if(!seqObj.result && seqObj.noOfNode && (seqObj.addr[maxValueAddr] > noOfNode/2 || seqObj.sum == seqObj.noOfNode)){
+				console.log("GG");
+				seqObj.result = maxValueAddr;
+				if(maxValueAddr == myAddrStr){
+					module.exports.generateBlock(electionID, selectionSeq);
+				}
+			}
+		}
+	},
+
+	generateBlock: function(electionID, selectionSeq){
+		var allBallot = ballotCache.get(selectionSeq);
+
+		Block.find({
+			electionID: electionID
+		}).sort({
+			blockSeq: -1
+		}).limit(1).then(function(lastBlock){
+			var newBlock_ = {
+				blockUUID: uuidv4(),
+				electionID: electionID,
+				blockSeq: lastBlock[0].blockSeq+1,
+				previousHash: lastBlock[0].hash,
+				blockType: "Ballot",
+				data: []
+			};
+			allBallot.forEach(function(e){
+				newBlock_.data.push({
+					electionID: e.electionID,
+					voterID: e.voterID,
+					answers: e.answers,
+					voterSign: e.voterSign,
+					ballotID: e.ballotID,
+					receiveTime: e.receiveTime,
+					sign: e.sign
+				})
+			});
+
+			var newBlock = new Block();
+			Object.keys(newBlock_).forEach(function(key){
+				newBlock[key] = newBlock_[key];
+			});
+			newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
+			newBlock_.hash = newBlock.hash;
+
+			console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("Generate new block: "), chalk.grey(newBlock));
+
+			newBlock.save().then(function(result){
+				console.log(chalk.bgBlue("[Block]"), "--> Broadcast block to other nodes");
+				connection.broadcast("POST", "/blockchain/broadcastBlock", {
+					block: JSON.stringify(newBlock_)
+				}, null, null, null);
+
+				module.exports.signBlock(newBlock_);
+
+				let allBallotID = [];
+				allBallot.forEach(function(e){
+					allBallotID.push(e.ballotID);
+				})
+				Ballot.updateMany({
+					ballotID: {$in: allBallotID}
+				},{
+					inBlock: true
+				}).then(function(result){
+					console.log("Updated ballot 'inBlock'.");
+				}).catch(function(err){
+					console.log(err);
+				})
+			}).catch(function(err){
+				console.log(err);	
+			});
 		}).catch(function(err){
 			console.log(err);
 		})

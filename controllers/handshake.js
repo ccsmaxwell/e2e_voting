@@ -7,16 +7,17 @@ var Node_server = require('../models/node_server');
 
 var connection = require('./lib/connection');
 
+const pingInterval = 60000;
+
 module.exports = {
 
 	init: function(){
-		var getAddrData = function(callback){			
-			var myIP = ip.address();
-			var myPort = (process.env.PORT+"").trim();
+		var getAddrData = function(callback){
+			var myAddr = connection.getSelfAddr();
 
 			var newNode_server = new Node_server();
-			newNode_server.IP = myIP;
-			newNode_server.port = myPort;
+			newNode_server.IP = myAddr.IP;
+			newNode_server.port = myAddr.port;
 
 			newNode_server.save().then(function(row){
 				prompt.start();
@@ -27,11 +28,11 @@ module.exports = {
 					}else if(input.Address != ""){
 						request
 							.get({url:"http://"+input.Address+"/handshake/connect", form:{
-								IP: myIP,
-								Port: myPort
+								IP: myAddr.IP,
+								Port: myAddr.port
 							}})
 							.on('data', function(data){
-								current_nodes = JSON.parse(data);								
+								current_nodes = JSON.parse(data);
 
 								var newNode_servers = []
 								current_nodes.forEach(function(e){
@@ -45,7 +46,7 @@ module.exports = {
 									console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.whiteBright("Receive address book:"), chalk.grey(result));
 
 									callback();
-									setInterval(callback, 60000);
+									setInterval(callback, pingInterval);
 								}).catch(function(err){
 									console.log(err);
 								})
@@ -54,7 +55,7 @@ module.exports = {
 								console.log(err);
 							})
 					}else{
-						setInterval(callback, 60000);
+						setInterval(callback, pingInterval);
 					}
 				});	
 			}).catch(function(err){
@@ -63,18 +64,17 @@ module.exports = {
 		};
 
 		var ping = function(){
-			var myIP = ip.address();
-			var myPort = (process.env.PORT+"").trim();
+			var myAddr = connection.getSelfAddr();
 
 			connection.broadcast("GET", "/handshake/ping", {
-				IP: myIP,
-				Port: myPort
-			}, null, function(err){
+				IP: myAddr.IP,
+				Port: myAddr.port
+			}, null, function(eIP, ePort, myIP, myPort, err){
 				Node_server.deleteOne({
-					IP: e.IP,
-					port: e.port
+					IP: eIP,
+					port: ePort
 				}).then(function(result){
-					console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Ping fail & deleted: "), chalk.grey(e.IP+":"+e.port));
+					console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Ping fail & deleted: "), chalk.grey(eIP+":"+ePort));
 				}).catch(function(err){
 					console.log(err);
 				})
