@@ -233,7 +233,11 @@ module.exports = {
 	},
 
 	blockReceive: function(req, res, next){
-		var block = JSON.parse(req.body.block);
+		module.exports.blockReceiveProcess(JSON.parse(req.body.block));
+		res.json({success: true});
+	},
+
+	blockReceiveProcess: function(block, afterSaveCallback){
 		console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("<-- Receive block:"), chalk.grey(block));
 
 		var newBlock_ = {
@@ -298,7 +302,9 @@ module.exports = {
 				})
 			}
 
-			res.json({success: true});
+			if(afterSaveCallback){
+				afterSaveCallback();
+			}
 		}).catch(function(err){
 			console.log(err);
 		})
@@ -334,6 +340,24 @@ module.exports = {
 		}).catch(function(err){
 			console.log(err);
 		})	
+	},
+
+	getBlock: function(req, res, next){
+		var data = req.body;
+
+		Block.find({
+			electionID: data.electionID,
+			blockSeq: {
+				"$gte": data.fromSeq,
+				"$lte": data.toSeq
+			}
+		}).sort({
+			"blockSeq": 1
+		}).then(function(result){
+			res.json(result);
+		}).catch(function(err){
+			console.log(err);
+		})
 	}
 
 }

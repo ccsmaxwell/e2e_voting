@@ -2,7 +2,10 @@ var prompt = require('prompt');
 var request = require('request');
 var chalk = require('chalk');
 
+var Block = require('../models/block');
 var Node_server = require('../models/node_server');
+
+var blockChainController = require('./blockchain');
 
 var connection = require('./lib/connection');
 
@@ -22,13 +25,10 @@ module.exports = {
 					if(err){
 						console.log(err)
 					}else if(input.Address != ""){
-						request.get({
-							url: "http://"+input.Address+"/handshake/connect",
-							form: {
-								IP: myAddr.IP,
-								Port: myAddr.port
-							}
-						}).on('data', function(data){
+						connection.sendRequest("GET", input.Address, "/handshake/connect", {
+							IP: myAddr.IP,
+							Port: myAddr.port
+						}, function(data){
 							current_nodes = JSON.parse(data);
 
 							let promArr = []
@@ -44,17 +44,61 @@ module.exports = {
 								console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.whiteBright("Receive address book:"), chalk.grey(data));
 								pingCallback();
 								setInterval(pingCallback, pingInterval);
+							})							
+						}, null);
+
+						let remoteList = [];
+						let localListObj = {};
+						let promReq = new Promise(function(resolve, reject){
+							connection.sendRequest("GET", input.Address, "/election/getAllElection", {}, function(data){
+								remoteList = JSON.parse(data);
+								resolve();
+							}, function(err){
+								console.log(err);
+								reject();
+							});
+						})
+						let promDb = Block.aggregate([
+							{$group: {
+								_id: "$electionID",
+								"maxSeq": {$max:"$blockSeq"}
+							}}
+						]).then(function(result){
+							result.forEach(function(e){
+								localListObj[e._id] = e.maxSeq;
 							})
-						}).on('error', function(err){
-							console.log(err);
+						}).catch(function(err){
+							console.log(err)
 						})
 
-						request.get({
-							url: "http://"+input.Address+"/election/getAllElection",
-							form: {}
-						}).on('data', function(data){
-							// console.log(data);
-						}).on('error', function(err){
+						Promise.all([promReq, promDb]).then(function(result){
+							remoteList.forEach(function(e){
+								let fromSeq = -1;
+								if(!localListObj[e._id]){
+									fromSeq = 0;
+								}else if(localListObj[e._id] < e.maxSeq){
+									fromSeq = localListObj[e._id] + 1;
+								}
+
+								if(fromSeq >= 0){
+									console.log(chalk.bgBlue("[Block]"), chalk.whiteBright("Found an Election not yet sync:"), chalk.grey(e._id));
+									connection.sendRequest("GET", input.Address, "/blockchain/getBlock", {
+										electionID: e._id,
+										fromSeq: fromSeq,
+										toSeq: e.maxSeq
+									}, function(data){
+										blockArr = JSON.parse(data);
+
+										var recursiveAdd = function(blockArr){
+											if(blockArr.length){
+												blockChainController.blockReceiveProcess(blockArr[0], recursiveAdd(blockArr.splice(1)));
+											}
+										}
+										recursiveAdd(blockArr);
+									}, null);
+								}
+							})
+						}).catch(function(err){
 							console.log(err);
 						})
 					}else{

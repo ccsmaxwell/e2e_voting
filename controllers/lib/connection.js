@@ -13,8 +13,8 @@ module.exports = {
 				if (e.IP != myAddr.IP || e.port != myAddr.port){
 					request({
 						method: method,
-						url:"http://"+e.IP+":"+e.port+path,
-						form:form
+						url: "http://"+e.IP+":"+e.port+path,
+						form: form
 					}).on('data', function(data){
 						if(onData){
 							onData(e.IP, e.port, myAddr.IP, myAddr.port, data);
@@ -35,6 +35,24 @@ module.exports = {
 			}
 		}).catch(function(err){
 			console.log(err);
+		})
+	},
+
+	sendRequest: function(method, addr, path, form, onData, onError){
+		request({
+			method: method,
+			url: "http://"+addr+path,
+			form: form
+		}).on('data', function(data){
+			if(onData){
+				onData(data);
+			}
+		}).on('error', function(err){
+			if(onError){
+				onError(err);
+			}else{
+				console.log(err);
+			}
 		})
 	},
 

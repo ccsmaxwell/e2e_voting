@@ -6,5 +6,6 @@ var Blockchain = require('../controllers/blockchain');
 router.post('/broadcastSelection', Blockchain.bftReceive);
 router.post('/broadcastBlock', Blockchain.blockReceive);
 router.post('/broadcastSign', Blockchain.signReceive);
+router.get('/getBlock', Blockchain.getBlock);
 
 module.exports = router;
