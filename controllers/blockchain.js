@@ -342,6 +342,74 @@ module.exports = {
 		})	
 	},
 
+	syncAllChain: function(fromAddr){
+		var remoteList = [];
+		var localListObj = {};
+		var promReq = new Promise(function(resolve, reject){
+			connection.sendRequest("GET", fromAddr, "/election/getAllElection", {}, function(data){
+				remoteList = JSON.parse(data);
+				resolve();
+			}, function(err){
+				console.log(err);
+				reject();
+			});
+		})
+		var promDb = Block.aggregate([
+			{$sort: {electionID: 1, blockSeq: 1}},
+			{$group: {
+				_id: "$electionID",
+				"maxSeq": {$last:"$blockSeq"},
+				"lastHash": {$last:"$hash"},
+			}}
+		]).then(function(result){
+			result.forEach(function(e){
+				localListObj[e._id] = {
+					maxSeq: e.maxSeq,
+					lastHash: e.lastHash
+				}
+			})
+		}).catch(function(err){
+			console.log(err)
+		})
+
+		Promise.all([promReq, promDb]).then(function(result){
+			remoteList.forEach(function(e){
+				let fromSeq = -1;
+				if(!localListObj[e._id]){
+					fromSeq = 0;
+				}else if(localListObj[e._id].maxSeq < e.maxSeq){
+					fromSeq = localListObj[e._id].maxSeq + 1;
+				}else if(localListObj[e._id].lastHash != e.lastHash){
+					fromSeq = localListObj[e._id].maxSeq;
+				}
+
+				if(fromSeq >= 0){
+					console.log(chalk.bgBlue("[Block]"), chalk.whiteBright("Found an Election not yet sync:"), chalk.grey(e._id));
+					module.exports.syncOneChain(fromAddr, e._id, fromSeq, e.maxSeq);
+				}
+			})
+		}).catch(function(err){
+			console.log(err);
+		})
+	},
+
+	syncOneChain: function(fromAddr, electionID, fromSeq, toSeq){
+		connection.sendRequest("GET", fromAddr, "/blockchain/getBlock", {
+			electionID: electionID,
+			fromSeq: fromSeq,
+			toSeq: toSeq
+		}, function(data){
+			blockArr = JSON.parse(data);
+
+			var recursiveAdd = function(blockArr){
+				if(blockArr.length){
+					module.exports.blockReceiveProcess(blockArr[0], recursiveAdd(blockArr.splice(1)));
+				}
+			}
+			recursiveAdd(blockArr);
+		}, null);
+	},
+
 	getBlock: function(req, res, next){
 		var data = req.body;
 

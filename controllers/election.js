@@ -160,9 +160,11 @@ module.exports = {
 
 	getAllElection: function(req, res, next){
 		Block.aggregate([
+			{$sort: {electionID: 1, blockSeq: 1}},
 			{$group: {
 				_id: "$electionID",
-				"maxSeq": {$max:"$blockSeq"}
+				"maxSeq": {$last:"$blockSeq"},
+				"lastHash": {$last:"$hash"},
 			}}
 		]).then(function(result){
 			res.json(result);

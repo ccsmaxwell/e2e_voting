@@ -2,7 +2,6 @@ var prompt = require('prompt');
 var request = require('request');
 var chalk = require('chalk');
 
-var Block = require('../models/block');
 var Node_server = require('../models/node_server');
 
 var blockChainController = require('./blockchain');
@@ -13,100 +12,46 @@ const pingInterval = 60000;
 
 module.exports = {
 
-	init: function(){
-		var getAddrData = function(pingCallback){
-			var myAddr = connection.getSelfAddr();
+	init: function(){	
+		var myAddr = connection.getSelfAddr();
 
-			module.exports.updateNode(myAddr.IP, myAddr.port, function(){
-				pingCallback();
+		module.exports.updateNode(myAddr.IP, myAddr.port, function(){
+			ping();
 
-				prompt.start();
-				prompt.get(['Address'], function (err, input) {
-					if(err){
-						console.log(err)
-					}else if(input.Address != ""){
-						connection.sendRequest("GET", input.Address, "/handshake/connect", {
-							IP: myAddr.IP,
-							Port: myAddr.port
-						}, function(data){
-							current_nodes = JSON.parse(data);
+			prompt.start();
+			prompt.get(['Address'], function (err, input) {
+				if(err){
+					console.log(err)
+				}else if(input.Address != ""){
+					connection.sendRequest("GET", input.Address, "/handshake/connect", {
+						IP: myAddr.IP,
+						Port: myAddr.port
+					}, function(data){
+						current_nodes = JSON.parse(data);
 
-							let promArr = []
-							current_nodes.forEach(function(e){
-								promArr.push(new Promise(function(resolve, reject){
-									module.exports.updateNode(e.IP, e.port, function(){
-										resolve();
-									});
-								}));
-							});
+						let promArr = []
+						current_nodes.forEach(function(e){
+							promArr.push(new Promise(function(resolve, reject){
+								module.exports.updateNode(e.IP, e.port, function(){
+									resolve();
+								});
+							}));
+						});
 
-							Promise.all(promArr).then(function(){
-								console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.whiteBright("Receive address book:"), chalk.grey(data));
-								pingCallback();
-								setInterval(pingCallback, pingInterval);
-							})							
-						}, null);
+						Promise.all(promArr).then(function(){
+							console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.whiteBright("Receive address book:"), chalk.grey(data));
+							ping();
+							setInterval(ping, pingInterval);
+						})							
+					}, null);
 
-						let remoteList = [];
-						let localListObj = {};
-						let promReq = new Promise(function(resolve, reject){
-							connection.sendRequest("GET", input.Address, "/election/getAllElection", {}, function(data){
-								remoteList = JSON.parse(data);
-								resolve();
-							}, function(err){
-								console.log(err);
-								reject();
-							});
-						})
-						let promDb = Block.aggregate([
-							{$group: {
-								_id: "$electionID",
-								"maxSeq": {$max:"$blockSeq"}
-							}}
-						]).then(function(result){
-							result.forEach(function(e){
-								localListObj[e._id] = e.maxSeq;
-							})
-						}).catch(function(err){
-							console.log(err)
-						})
-
-						Promise.all([promReq, promDb]).then(function(result){
-							remoteList.forEach(function(e){
-								let fromSeq = -1;
-								if(!localListObj[e._id]){
-									fromSeq = 0;
-								}else if(localListObj[e._id] < e.maxSeq){
-									fromSeq = localListObj[e._id] + 1;
-								}
-
-								if(fromSeq >= 0){
-									console.log(chalk.bgBlue("[Block]"), chalk.whiteBright("Found an Election not yet sync:"), chalk.grey(e._id));
-									connection.sendRequest("GET", input.Address, "/blockchain/getBlock", {
-										electionID: e._id,
-										fromSeq: fromSeq,
-										toSeq: e.maxSeq
-									}, function(data){
-										blockArr = JSON.parse(data);
-
-										var recursiveAdd = function(blockArr){
-											if(blockArr.length){
-												blockChainController.blockReceiveProcess(blockArr[0], recursiveAdd(blockArr.splice(1)));
-											}
-										}
-										recursiveAdd(blockArr);
-									}, null);
-								}
-							})
-						}).catch(function(err){
-							console.log(err);
-						})
-					}else{
-						setInterval(pingCallback, pingInterval);
-					}
-				});				
+					blockChainController.syncAllChain(input.Address);
+				}else{
+					setInterval(ping, pingInterval);
+				}
 			});
-		};
+		});
+		
 
 		var ping = function(){
 			var myAddr = connection.getSelfAddr();
@@ -128,8 +73,6 @@ module.exports = {
 				})
 			}, null);
 		}
-
-		getAddrData(ping);
 	},
 
 	connectRequest: function(req, res, next){
