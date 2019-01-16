@@ -59,7 +59,7 @@ module.exports = {
 	getSelfAddr: function(){
 		return {
 			IP: ip.address(),
-			port: (process.env.PORT+"").trim()
+			port: _config.port
 		}
 	}
 

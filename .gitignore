@@ -2,3 +2,5 @@ node_modules/
 
 fyp_voting.sublime-workspace
 fyp_voting.sublime-project
+
+config?*.json

@@ -137,7 +137,7 @@ module.exports = {
 				ballotID: ballotData.ballotID
 			},{
 				$push: {sign: {
-					trusteeID: (process.env.PORT+"").trim(),
+					trusteeID: _config.port,
 					signHash: signHash
 				}}
 			}).then(function(result){
@@ -150,7 +150,7 @@ module.exports = {
 			connection.broadcast("POST", "/ballot/broadcastSign", {
 				electionID: ballotData.electionID,
 				ballotID: ballotData.ballotID,
-				trusteeID: (process.env.PORT+"").trim(),
+				trusteeID: _config.port,
 				signHash: signHash
 			}, null, null, null);
 		}).catch(function(err){

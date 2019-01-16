@@ -4,8 +4,6 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-var mongoose = require('./config/db');
-
 var app = express();
 
 // view engine setup
@@ -17,6 +15,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+var Config = require('./config/configGlobal');
+Config.init();
+var mongoose = require('./config/db');
 
 var indexRouter = require('./routes/index');
 var handshakeRouter = require('./routes/handshake');

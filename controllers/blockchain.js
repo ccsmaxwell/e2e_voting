@@ -10,8 +10,8 @@ var Block = require('../models/block');
 
 var connection = require('./lib/connection');
 
-const timerInterval = 15000;
-const timerBuffer = 3000;
+const timerInterval = _config.blockTimerInterval;
+const timerBuffer = _config.blockTimerBuffer;
 
 var blockCache = new NodeCache();
 var ballotCache = new NodeCache();
@@ -85,7 +85,7 @@ module.exports = {
 							electionID: electionID,
 							selectionSeq: selectionSeq,
 							selectedAddr: selectedAddr,
-							trusteeID: (process.env.PORT+"").trim(),
+							trusteeID: _config.port,
 						}, null, null, null);
 					}else{
 						module.exports.generateBlock(electionID, selectionSeq);
@@ -214,7 +214,7 @@ module.exports = {
 			blockUUID: block.blockUUID,
 		},{
 			$push: {sign: {
-				trusteeID: (process.env.PORT+"").trim(),
+				trusteeID: _config.port,
 				signHash: signHash
 			}}
 		}).then(function(result){
@@ -227,7 +227,7 @@ module.exports = {
 		connection.broadcast("POST", "/blockchain/broadcastSign", {
 			electionID: block.electionID,
 			blockUUID: block.blockUUID,
-			trusteeID: (process.env.PORT+"").trim(),
+			trusteeID: _config.port,
 			signHash: signHash
 		}, null, null, null);
 	},

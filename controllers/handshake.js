@@ -8,7 +8,7 @@ var blockChainController = require('./blockchain');
 
 var connection = require('./lib/connection');
 
-const pingInterval = 60000;
+const pingInterval = _config.pingInterval;
 
 module.exports = {
 
@@ -52,7 +52,6 @@ module.exports = {
 			});
 		});
 		
-
 		var ping = function(){
 			var myAddr = connection.getSelfAddr();
 
