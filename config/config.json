@@ -5,5 +5,5 @@
 
 	"blockTimerInterval": 15000,
 	"blockTimerBuffer": 3000,
-	"pingInterval": 6000
+	"pingInterval": 60000
 }

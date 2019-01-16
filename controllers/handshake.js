@@ -1,6 +1,7 @@
 var prompt = require('prompt');
 var request = require('request');
 var chalk = require('chalk');
+var uuidv4 = require('uuid/v4');
 
 var Node_server = require('../models/node_server');
 
@@ -9,6 +10,7 @@ var blockChainController = require('./blockchain');
 var connection = require('./lib/connection');
 
 const pingInterval = _config.pingInterval;
+const instanceID = uuidv4();
 
 module.exports = {
 
@@ -57,18 +59,21 @@ module.exports = {
 
 			connection.broadcast("GET", "/handshake/ping", {
 				IP: myAddr.IP,
-				Port: myAddr.port
-			}, null, function(eIP, ePort, myIP, myPort, err){
-				Node_server.deleteOne({
-					IP: eIP,
-					port: ePort
-				}).then(function(result){
-					if(err.code != 'ECONNREFUSED'){
-						console.log(err);
-					}
-					console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Ping fail & deleted: "), chalk.grey(eIP+":"+ePort));
-				}).catch(function(err){
+				Port: myAddr.port,
+				instanceID: instanceID
+			}, function(eIP, ePort, myIP, myPort, data){
+				let updated = JSON.parse(data).updated;
+
+				if(!updated){
+					module.exports.deleteNode(eIP, ePort, null);
+				}
+			}, function(eIP, ePort, myIP, myPort, err){
+				if(err.code != 'ECONNREFUSED'){
 					console.log(err);
+				}
+
+				module.exports.deleteNode(eIP, ePort, function(){
+					console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Ping fail & deleted: "), chalk.grey(eIP+":"+ePort));
 				})
 			}, null);
 		}
@@ -87,9 +92,13 @@ module.exports = {
 	},
 
 	pingRequest: function(req, res, next){
-		module.exports.updateNode(req.body.IP, req.body.Port, function(){
-			res.json({success: true});
-		});
+		if(req.body.instanceID == instanceID){
+			res.json({updated: false});
+		}else{
+			module.exports.updateNode(req.body.IP, req.body.Port, function(){
+				res.json({updated: true});
+			});
+		}
 	},
 
 	updateNode: function(ip, port, successCallback){
@@ -98,6 +107,19 @@ module.exports = {
 			port: port
 		}, {}, {
 			upsert: true
+		}).then(function(result){
+			if(successCallback){
+				successCallback();
+			}
+		}).catch(function(err){
+			console.log(err);
+		})
+	},
+
+	deleteNode: function(ip, port, successCallback){
+		Node_server.deleteOne({
+			IP: ip,
+			port: port
 		}).then(function(result){
 			if(successCallback){
 				successCallback();
