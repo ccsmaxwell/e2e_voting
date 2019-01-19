@@ -4,10 +4,46 @@ var router = express.Router();
 var Election = require('../controllers/election');
 
 router.get('/create', function(req, res, next) {
-	res.render('createDetails');
+	res.render('eCreate');
+});
+router.post('/create', Election.create);
+router.get('/manage/:electionID', function(req, res, next) {
+	// res.render('createDetails');
+});
+router.get('/manage/:electionID/details', function(req, res, next) {
+	// res.render('createDetails');
+});
+router.post('/manage/:electionID/details', function(req, res, next) {
+	// res.render('createDetails');
+});
+router.get('/manage/:electionID/questions', function(req, res, next) {
+	// res.render('createDetails');
+});
+router.post('/manage/:electionID/questions', function(req, res, next) {
+	// res.render('createDetails');
+});
+router.get('/manage/:electionID/voters', function(req, res, next) {
+	// res.render('createDetails');
+});
+router.post('/manage/:electionID/voters', function(req, res, next) {
+	// res.render('createDetails');
+});
+router.get('/manage/:electionID/trustees', function(req, res, next) {
+	// res.render('createDetails');
+});
+router.post('/manage/:electionID/trustees', function(req, res, next) {
+	// res.render('createDetails');
+});
+router.get('/manage/:electionID/servers', function(req, res, next) {
+	// res.render('createDetails');
+});
+router.post('/manage/:electionID/servers', function(req, res, next) {
+	// res.render('createDetails');
+});
+router.post('/manage/:electionID/freeze', function(req, res, next) {
+	// res.render('createDetails');
 });
 
-router.post('/create', Election.create);
 router.get('/getDetails', Election.getDetails);
 router.post('/getResult', Election.getResult);
 router.get('/getAllElection', Election.getAllElection);

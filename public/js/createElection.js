@@ -83,7 +83,7 @@ $("#btn_create").click(function(e){
 
 	$.ajax({
 		type: "POST",
-		url: "/election/create",
+		// url: "/election/create",
 		data:{			
 			name: $("#election_name").val(),
 			description: $("#election_description").val(),

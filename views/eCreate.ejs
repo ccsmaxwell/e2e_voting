@@ -1,0 +1,93 @@
+<%- include('./inc/header', { page_title: "eVoting", css: ""}); %>
+
+<main>
+	<div class="row">
+		<div class="col s12 l4">
+			<div class="card">
+				<div class="card-content">
+					<h1 class="center-align thin">Create election</h1>
+				</div>
+			</div>
+		</div>
+
+		<div class="col s12 l8">
+			<div class="row">
+				<div class="col s12">
+					<div class="card">
+						<dic class="row">
+							<div class="col s12">
+								<h5>About the election</h5>
+							</div>
+							<div class="input-field col s12">
+								<input id="election_name" name="election_name" type="text" class="validate">
+								<label for="election_name">Election name</label>
+							</div>
+							<div class="input-field col s12">
+								<textarea id="election_description" name="election_description" class="materialize-textarea"></textarea>
+								<label for="election_description">Election description</label>
+							</div>
+							<div class="input-field col s12 l6">
+								<input id="election_startDate" type="text" class="datepicker">
+								<label for="election_startDate">Start date</label>
+							</div>
+							<div class="input-field col s12 l6">
+								<input id="election_startTime" type="text" class="timepicker">
+								<label for="election_startTime">Start time</label>
+							</div>
+							<div class="input-field col s12 l6">
+								<input id="election_endDate" type="text" class="datepicker">
+								<label for="election_endDate">End date</label>
+							</div>
+							<div class="input-field col s12 l6">
+								<input id="election_endTime" type="text" class="timepicker">
+								<label for="election_endTime">End time</label>
+							</div>
+						</dic>
+					</div>
+				</div>
+
+				<div class="col s12">
+					<div class="card">
+						<dic class="row">
+							<div class="col s12">
+								<h5>Election public key <button class="btn waves-effect waves-light right" disabled>Generate</button></h5>
+							</div>
+							<div class="input-field col s12">
+								<input id="elgamal_p" name="elgamal_p" type="text" class="validate">
+								<label for="elgamal_p">Prime number - p (Base64 Encode)</label>
+							</div>
+							<div class="input-field col s12">
+								<input id="elgamal_g" name="elgamal_g" type="text" class="validate">
+								<label for="elgamal_g">Generator - g (Base64 Encode)</label>
+							</div>
+						</dic>
+					</div>
+				</div>
+
+				<div class="col s12">
+					<div class="card">
+						<dic class="row">
+							<div class="col s12">
+								<h5>Election administrator key <button class="btn waves-effect waves-light right" disabled>Generate</button></h5>
+							</div>
+							<div class="input-field col s12">
+								<textarea id="admin_pub" name="admin_pub" class="materialize-textarea"></textarea>
+								<label for="admin_pub">Public key</label>	
+							</div>
+							<div class="input-field col s12">
+								<textarea id="admin_pri" name="admin_pri" class="materialize-textarea"></textarea>
+								<label for="admin_pri">Private key (for signing only, wont send to server)</label>
+							</div>
+						</dic>
+					</div>
+				</div>
+
+				<div class="col s12">
+					<button id="btn_create" class="btn waves-effect waves-light right">Create</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</main>
+
+<%- include('./inc/footer', {script: "<script src=\"/js/eCreate.js\"></script>"}); %>

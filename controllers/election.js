@@ -13,6 +13,32 @@ var connection = require('./lib/connection');
 module.exports = {
 
 	create: function(req, res, next){
+		var data = req.body;
+		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Create election:"), chalk.grey(JSON.stringify(data)));
+		
+		var blockData = {
+			name: data.name,
+			description: data.description,
+			start: data.start,
+			end: data.end,
+			key: JSON.parse(data.key),
+			admin: JSON.parse(data.admin)
+		}
+
+		var verify = crypto.createVerify('SHA256');
+		verify.update(JSON.stringify(blockData));
+		if(verify.verify(blockData.admin.pubKey, data.adminSign, "base64")){
+			console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification success");
+
+			
+			res.json({success: true});
+		}else{
+			console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
+			res.json({success: false, msg: "Cannot verify Admin key."});
+		}
+	},
+
+	create_: function(req, res, next){
 		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Create election:"), chalk.grey(JSON.stringify(req.body)));
 		var data = req.body;
 
