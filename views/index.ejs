@@ -1,10 +1,7 @@
-<!DOCTYPE html>
-<html>
-	<head>
-		<title><%= title %></title>
-		<link rel='stylesheet' href='/css/style.css' />
-	</head>
-	<body>
-		<p>Welcome to <%= title %></p>
-	</body>
-</html>
+<%- include('./inc/header', { page_title: "eVoting", css: ""}); %>
+
+<main>
+	<p>Welcome to eVoting</p>
+</main>
+
+<%- include('./inc/footer', {script: ""}); %>

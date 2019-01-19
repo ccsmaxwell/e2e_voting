@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title><%= page_title %></title>
+
+		<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+		<link href="/css/html_global.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+		<% if (locals.css) { %>
+  			<%- css %>
+		<% } %>
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+		<!-- <meta name="theme-color" content="#80cbc4"> -->
+	</head>
+
+	<body>
+		<nav>
+			<div class="nav-wrapper cyan lighten-3">
+				<div class="container">
+					<a href="/" class="brand-logo black-text">eVoting</a>
+					
+					<ul id="nav-mobile" class="right hide-on-med-and-down">
+						<li><a class="black-text" href="/vote">Vote</a></li>
+						<li><a class="black-text" href="/election/create">Create</a></li>
+					</ul>
+				</div>
+			</div>
+		</nav>
