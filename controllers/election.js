@@ -60,6 +60,35 @@ module.exports = {
 		}
 	},
 
+	getManage: function(req, res, next){
+		Block.aggregate([
+			{$match: {
+				"electionID": req.params.electionID,
+				"blockType": "Election Details"
+			}},
+			{$sort: {blockSeq: -1}},
+			{$unwind: "$data"},
+			{$group: {
+				_id: "$electionID",
+				"name": {$push:"$data.name"},
+				"description": {$push:"$data.description"},
+			}},
+			{$project: {
+				"_id": "$_id",
+				"name": {$arrayElemAt: ["$name", 0]},
+				"description": {$arrayElemAt: ["$description", 0]} 
+			}}
+		]).then(function(result){
+			res.render('eMan', {
+				electionName: result[0].name,
+				electionDescription: result[0].description
+			})
+		}).catch(function(err){
+			console.log(err);
+			next();
+		})
+	},
+
 	create_: function(req, res, next){
 		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Create election:"), chalk.grey(JSON.stringify(req.body)));
 		var data = req.body;

@@ -38,7 +38,11 @@ $("#btn_create").click(function(e){
 			url: "/election/create",
 			data: data,	
 			success: function(res){
-				console.log(res);
+				if(res.success){
+					$(location).attr('href', '/election/manage/' + res.electionID);
+				}else{
+					console.log(res);
+				}
 			}
 		})
 	})

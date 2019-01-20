@@ -1,0 +1,73 @@
+<%- include('./inc/header', { page_title: "eVoting", css: ""}); %>
+
+<main>
+	<div class="container">
+		<div class="row">
+			<div class="col s12">
+				<div class="card">
+					<div class="card-content center-align">
+						<h1><%= electionName %></h1>
+						<h5><%= electionDescription %></h5>
+					</div>
+				</div>			
+			</div>
+
+			<div class="col s12 m6 l4">
+				<div class="card">
+					<div class="card-content">
+						<span class="card-title">Details</span>
+					</div>
+					<div class="card-action">
+						<a href="#">Edit Details</a>
+					</div>
+				</div>
+			</div>
+
+			<div class="col s12 m6 l4">
+				<div class="card">
+					<div class="card-content">
+						<span class="card-title">Questions</span>
+					</div>
+					<div class="card-action">
+						<a href="#">Edit Questions</a>
+					</div>
+				</div>
+			</div>
+			
+			<div class="col s12 m6 l4">
+				<div class="card">
+					<div class="card-content">
+						<span class="card-title">Voters</span>
+					</div>
+					<div class="card-action">
+						<a href="#">Edit Voters</a>
+					</div>
+				</div>
+			</div>
+			
+			<div class="col s12 m6 l4">
+				<div class="card">
+					<div class="card-content">
+						<span class="card-title">Trustees</span>
+					</div>
+					<div class="card-action">
+						<a href="#">Edit Trustees</a>
+					</div>
+				</div>
+			</div>
+			
+			<div class="col s12 m6 l4">
+				<div class="card">
+					<div class="card-content">
+						<span class="card-title">Servers</span>
+					</div>
+					<div class="card-action">
+						<a href="#">Edit Servers</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</main>
+
+<%- include('./inc/footer', {script: ""}); %>

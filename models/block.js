@@ -15,8 +15,8 @@ var BlockSchema = new Schema({
 	hash:String,
 	// local
 	sign: [{
-		trusteeID: String,
-		signHash: String
+		serverID: String,
+		BlockHashSign: String
 	}]
 }, { timestamps: {} });
 

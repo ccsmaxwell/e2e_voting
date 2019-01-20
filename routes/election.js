@@ -7,9 +7,7 @@ router.get('/create', function(req, res, next) {
 	res.render('eCreate');
 });
 router.post('/create', Election.create);
-router.get('/manage/:electionID', function(req, res, next) {
-	// res.render('createDetails');
-});
+router.get('/manage/:electionID', Election.getManage);
 router.get('/manage/:electionID/details', function(req, res, next) {
 	// res.render('createDetails');
 });

@@ -208,14 +208,14 @@ module.exports = {
 	},
 
 	signBlock: function(block, broadcast=true){
-		var signHash = crypto.createHash('sha256').update(block.hash).digest('base64');
+		var BlockHashSign = crypto.createHash('sha256').update(block.hash).digest('base64');
 		Block.findOneAndUpdate({
 			electionID: block.electionID,
 			blockUUID: block.blockUUID,
 		},{
 			$push: {sign: {
-				trusteeID: _config.port,
-				signHash: signHash
+				serverID: _config.serverID,
+				BlockHashSign: BlockHashSign
 			}}
 		}).then(function(result){
 			console.log(chalk.bgBlue("[Block]"), "Signed block:", chalk.grey(block.blockUUID));
@@ -228,8 +228,8 @@ module.exports = {
 			connection.broadcast("POST", "/blockchain/broadcastSign", {
 				electionID: block.electionID,
 				blockUUID: block.blockUUID,
-				trusteeID: _config.port,
-				signHash: signHash
+				trusteeID: _config.serverID,
+				BlockHashSign: BlockHashSign
 			}, null, null, null);
 		}
 	},

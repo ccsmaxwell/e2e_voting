@@ -1,4 +1,4 @@
-<%- include('./inc/header', { page_title: "eVoting", css: ""}); %>
+<%- include('./inc/header', { page_title: "eVoting", css: "<link href='/css/eCreate.css' rel='stylesheet' type='text/css' />"}); %>
 
 <main>
 	<div class="row">
@@ -13,8 +13,8 @@
 		<div class="col s12 l8">
 			<div class="row">
 				<div class="col s12">
-					<div class="card">
-						<dic class="row">
+					<div class="card" id="about_card">
+						<div class="row">
 							<div class="col s12">
 								<h5>About the election</h5>
 							</div>
@@ -42,13 +42,13 @@
 								<input id="election_endTime" type="text" class="timepicker">
 								<label for="election_endTime">End time</label>
 							</div>
-						</dic>
+						</div>
 					</div>
 				</div>
 
 				<div class="col s12">
-					<div class="card">
-						<dic class="row">
+					<div class="card" id="pubKey_card">
+						<div class="row">
 							<div class="col s12">
 								<h5>Election public key <button class="btn waves-effect waves-light right" disabled>Generate</button></h5>
 							</div>
@@ -60,13 +60,13 @@
 								<input id="elgamal_g" name="elgamal_g" type="text" class="validate">
 								<label for="elgamal_g">Generator - g (Base64 Encode)</label>
 							</div>
-						</dic>
+						</div>
 					</div>
 				</div>
 
 				<div class="col s12">
-					<div class="card">
-						<dic class="row">
+					<div class="card" id="admin_card">
+						<div class="row">
 							<div class="col s12">
 								<h5>Election administrator key <button class="btn waves-effect waves-light right" disabled>Generate</button></h5>
 							</div>
@@ -78,7 +78,7 @@
 								<textarea id="admin_pri" name="admin_pri" class="materialize-textarea"></textarea>
 								<label for="admin_pri">Private key (for signing only, wont send to server)</label>
 							</div>
-						</dic>
+						</div>
 					</div>
 				</div>
 
@@ -90,4 +90,4 @@
 	</div>
 </main>
 
-<%- include('./inc/footer', {script: "<script src=\"/js/eCreate.js\"></script>"}); %>
+<%- include('./inc/footer', {script: "<script src='/js/eCreate.js'></script>"}); %>
