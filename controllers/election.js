@@ -29,9 +29,31 @@ module.exports = {
 		verify.update(JSON.stringify(blockData));
 		if(verify.verify(blockData.admin.pubKey, data.adminSign, "base64")){
 			console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification success");
+			blockData["adminSign"] = data.adminSign;
 
-			
-			res.json({success: true});
+			let newBlock_ = {};
+			newBlock_.blockUUID = uuidv4();
+			newBlock_.electionID = uuidv4();
+			newBlock_.blockSeq = 0;
+			newBlock_.blockType = "Election Details";
+			newBlock_.data = [blockData];
+
+			var newBlock = new Block();
+			Object.keys(newBlock_).forEach(function(key){
+				newBlock[key] = newBlock_[key];
+			});
+			newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
+			newBlock_.hash = newBlock.hash;
+
+			newBlock.save().then(function(result){
+				console.log(chalk.black.bgMagenta("[Election]"), "Created new election chain");
+				blockChainController.signBlock(newBlock_, false);
+
+				res.json({success: true, electionID: newBlock_.electionID});
+			}).catch(function(err){
+				console.log(err);
+				res.json({success: false, msg: "Cannot save new block."});
+			});
 		}else{
 			console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
 			res.json({success: false, msg: "Cannot verify Admin key."});

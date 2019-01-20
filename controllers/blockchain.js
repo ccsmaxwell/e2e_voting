@@ -207,7 +207,7 @@ module.exports = {
 		})
 	},
 
-	signBlock: function(block){
+	signBlock: function(block, broadcast=true){
 		var signHash = crypto.createHash('sha256').update(block.hash).digest('base64');
 		Block.findOneAndUpdate({
 			electionID: block.electionID,
@@ -223,13 +223,15 @@ module.exports = {
 			console.log(err);
 		})
 
-		console.log(chalk.bgBlue("[Block]"), "--> Broadcast sign to other nodes");
-		connection.broadcast("POST", "/blockchain/broadcastSign", {
-			electionID: block.electionID,
-			blockUUID: block.blockUUID,
-			trusteeID: _config.port,
-			signHash: signHash
-		}, null, null, null);
+		if(broadcast){
+			console.log(chalk.bgBlue("[Block]"), "--> Broadcast sign to other nodes");
+			connection.broadcast("POST", "/blockchain/broadcastSign", {
+				electionID: block.electionID,
+				blockUUID: block.blockUUID,
+				trusteeID: _config.port,
+				signHash: signHash
+			}, null, null, null);
+		}
 	},
 
 	blockReceive: function(req, res, next){
