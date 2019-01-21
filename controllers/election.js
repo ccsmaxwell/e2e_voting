@@ -80,6 +80,7 @@ module.exports = {
 			}}
 		]).then(function(result){
 			res.render('eMan', {
+				electionID: req.params.electionID,
 				electionName: result[0].name,
 				electionDescription: result[0].description
 			})
@@ -87,6 +88,11 @@ module.exports = {
 			console.log(err);
 			next();
 		})
+	},
+
+	getManageQuestion: function(req, res, next){
+
+		res.render('eManQuestion');
 	},
 
 	create_: function(req, res, next){

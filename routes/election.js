@@ -14,9 +14,7 @@ router.get('/manage/:electionID/details', function(req, res, next) {
 router.post('/manage/:electionID/details', function(req, res, next) {
 	// res.render('createDetails');
 });
-router.get('/manage/:electionID/questions', function(req, res, next) {
-	// res.render('createDetails');
-});
+router.get('/manage/:electionID/questions', Election.getManageQuestion);
 router.post('/manage/:electionID/questions', function(req, res, next) {
 	// res.render('createDetails');
 });
