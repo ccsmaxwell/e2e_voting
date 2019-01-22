@@ -91,8 +91,30 @@ module.exports = {
 	},
 
 	getManageQuestion: function(req, res, next){
-
-		res.render('eManQuestion');
+		Block.aggregate([
+			{$match: {
+				"electionID": req.params.electionID,
+				"blockType": "Election Details"
+			}},
+			{$sort: {blockSeq: -1}},
+			{$unwind: "$data"},
+			{$group: {
+				_id: "$electionID",
+				"questions": {$push:"$data.questions"},
+			}},
+			{$project: {
+				"_id": "$_id",
+				"questions": {$arrayElemAt: ["$questions", 0]},
+			}}
+		]).then(function(result){
+			res.render('eManQuestion', {
+				electionID: req.params.electionID,
+				questions: result[0].questions,
+			})
+		}).catch(function(err){
+			console.log(err);
+			next();
+		})
 	},
 
 	create_: function(req, res, next){

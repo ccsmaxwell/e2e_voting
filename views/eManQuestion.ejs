@@ -12,35 +12,39 @@
 
 		<div class="col s12 l8">
 			<div class="row">
-				<div class="col s12">
-					<div class="card" id="about_card">
-						<div class="row">
-							<div class="col s12">
-								<h5>Question 1</h5>
-							</div>
-							<div class="input-field col s12">
-								<input id="q1_title" name="q1_title" type="text" class="validate">
-								<label for="q1_title">Title</label>
-							</div>
-							<div class="input-field col s12">
-								<i class="material-icons prefix">check_box_outline_blank</i>
-								<input id="q1_ans1" name="q1_ans1" type="text" class="validate">
-								<label for="q1_ans1">Option 1</label>
-							</div>
-							<div class="input-field col s12 l6">
-								<input id="q1_min" name="q1_min" type="text" class="validate">
-								<label for="q1_min">Minimium no. of choice(s)</label>
-							</div>
-							<div class="input-field col s12 l6">
-								<input id="q1_max" name="q1_max" type="text" class="validate">
-								<label for="q1_max">Maximium no. of choice(s)</label>
+				<% questions.forEach(function(q, i){ %>
+					<div class="col s12">
+						<div class="card q_card">
+							<div class="row">
+								<div class="input-field col s12">
+									<input id="title<%= i %>" type="text" class="validate" value="<%= q.question %>">
+									<label for="title<%= i %>" class="active">Question</label>
+								</div>
+								<% q.answers.forEach(function(a, j){ %>
+									<div class="input-field col s12 optDiv">
+										<i class="material-icons prefix">check_box_outline_blank</i>
+										<input id="<%= i %>ans<%= j %>" type="text" class="validate" value="<%= a %>">
+										<label for="<%= i %>ans<%= j %>" class="active">Option</label>
+									</div>
+								<% }) %>
+								<div class="col s12 btn_opt_add">
+									<a class="btn-floating btn-small waves-effect waves-light deep-purple lighten-2"><i class="material-icons">add</i></a>
+								</div>
+								<div class="input-field col s12 l6">
+									<input id="min<%= i %>" type="text" class="validate" value="<%= q.min_choice %>">
+									<label for="min<%= i %>" class="active">Minimium no. of choice(s)</label>
+								</div>
+								<div class="input-field col s12 l6">
+									<input id="max<%= i %>" type="text" class="validate" value="<%= q.max_choice %>">
+									<label for="max<%= i %>" class="active">Maximium no. of choice(s)</label>
+								</div>
 							</div>
 						</div>
 					</div>
-				</div>
+				<% }) %>
 
 				<div class="col s12" id="btn_add_col">
-					<a class="btn-floating btn-large waves-effect waves-light red"><i class="material-icons">add</i></a>
+					<a class="btn-floating btn-large waves-effect waves-light deep-orange lighten-2"><i class="material-icons">add</i></a>
 				</div>
 
 				<div class="col s12">
@@ -57,6 +61,8 @@
 					</div>
 				</div>
 
+				<input id="electionID" type="hidden" value="<%= electionID %>">
+
 				<div class="col s12">
 					<button id="btn_submit" class="btn waves-effect waves-light right">Submit</button>
 				</div>
@@ -65,4 +71,4 @@
 	</div>
 </main>
 
-<%- include('./inc/footer', {script: ""}); %>
+<%- include('./inc/footer', {script: "<script src='/js/eManQuestion.js'></script>"}); %>
