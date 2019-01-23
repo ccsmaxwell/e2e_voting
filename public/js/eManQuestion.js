@@ -1,6 +1,6 @@
 function optAddListener(btnObj){
 	$(btnObj).children().click(function(){
-		let i = $('.q_card').length - 1;
+		let i = $('.q_card').index($(btnObj).parent().parent());
 		let j = $(btnObj).parent().find('.optDiv').length;
 		let tempID = i + "ans" + j;
 
@@ -52,7 +52,8 @@ $("#btn_add_col").children().click(function(){
 		'</div>',
 	].join("\n");
 
-	$("#btn_add_col").before($(template));
-})
+	var element = $(template);
+	optAddListener(element.find('.btn_opt_add'));
 
-//ToDo: line 3-> need dynamic; need add listener after add new question
+	$("#btn_add_col").before(element);
+})
