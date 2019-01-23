@@ -61,59 +61,96 @@ module.exports = {
 	},
 
 	getManage: function(req, res, next){
-		Block.aggregate([
-			{$match: {
-				"electionID": req.params.electionID,
-				"blockType": "Election Details"
-			}},
-			{$sort: {blockSeq: -1}},
-			{$unwind: "$data"},
-			{$group: {
-				_id: "$electionID",
-				"name": {$push:"$data.name"},
-				"description": {$push:"$data.description"},
-			}},
-			{$project: {
-				"_id": "$_id",
-				"name": {$arrayElemAt: ["$name", 0]},
-				"description": {$arrayElemAt: ["$description", 0]} 
-			}}
-		]).then(function(result){
+		module.exports.latestDetails(req.params.electionID, ["name", "description"], function(result){
 			res.render('eMan', {
 				electionID: req.params.electionID,
 				electionName: result[0].name,
 				electionDescription: result[0].description
 			})
-		}).catch(function(err){
-			console.log(err);
-			next();
 		})
 	},
 
 	getManageQuestion: function(req, res, next){
+		module.exports.latestDetails(req.params.electionID, ["questions"], function(result){
+			res.render('eManQuestion', {
+				electionID: req.params.electionID,
+				questions: result[0].questions? result[0].questions : [],
+			})
+		})
+	},
+
+	editQuestion: function(req, res, next){
+		var data = req.body;
+		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Edit question:"), chalk.grey(JSON.stringify(data)));
+
+		var blockData = {
+			questions: JSON.parse(data.questions)
+		}
+
+		module.exports.latestDetails(req.params.electionID, ["admin"], function(result){
+			let verify = crypto.createVerify('SHA256');
+			verify.update(JSON.stringify(blockData));
+			if(verify.verify(result[0].admin.pubKey, data.adminSign, "base64")){
+				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification success");
+				blockData["adminSign"] = data.adminSign;
+
+				let newBlock_ = {};
+				newBlock_.blockUUID = uuidv4();
+				newBlock_.electionID = req.params.electionID;
+				newBlock_.blockSeq = result[0].blockSeq + 1;
+				newBlock_.blockType = "Election Details";
+				newBlock_.data = [blockData];
+
+				var newBlock = new Block();
+				Object.keys(newBlock_).forEach(function(key){
+					newBlock[key] = newBlock_[key];
+				});
+				newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
+				newBlock_.hash = newBlock.hash;
+
+				newBlock.save().then(function(result){
+					console.log(chalk.black.bgMagenta("[Election]"), "Edit question success");
+					blockChainController.signBlock(newBlock_, false);
+
+					res.json({success: true, electionID: newBlock_.electionID});
+				}).catch(function(err){
+					console.log(err);
+					res.json({success: false, msg: "Cannot save new block."});
+				});
+			}else{
+				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
+				res.json({success: false, msg: "Cannot verify Admin key."});
+			}
+		})
+	},
+
+	latestDetails: function(eID, fields, successCallback){
+		var group = {
+			_id: "$electionID",
+			"blockSeq": {$max:"$blockSeq"}
+		};
+		var project = {
+			"_id": "$_id",
+			"blockSeq": "$blockSeq",
+		}
+		fields.forEach(function(f){
+			group[f] = {$push:"$data."+f}
+			project[f] = {$arrayElemAt: ["$"+f, 0]}
+		})
+
 		Block.aggregate([
 			{$match: {
-				"electionID": req.params.electionID,
+				"electionID": eID,
 				"blockType": "Election Details"
 			}},
 			{$sort: {blockSeq: -1}},
 			{$unwind: "$data"},
-			{$group: {
-				_id: "$electionID",
-				"questions": {$push:"$data.questions"},
-			}},
-			{$project: {
-				"_id": "$_id",
-				"questions": {$arrayElemAt: ["$questions", 0]},
-			}}
+			{$group: group},
+			{$project: project}
 		]).then(function(result){
-			res.render('eManQuestion', {
-				electionID: req.params.electionID,
-				questions: result[0].questions,
-			})
+			successCallback(result);
 		}).catch(function(err){
 			console.log(err);
-			next();
 		})
 	},
 

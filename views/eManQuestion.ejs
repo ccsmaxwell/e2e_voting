@@ -17,13 +17,13 @@
 						<div class="card q_card">
 							<div class="row">
 								<div class="input-field col s12">
-									<input id="title<%= i %>" type="text" class="validate" value="<%= q.question %>">
+									<input id="title<%= i %>" type="text" class="q_title" value="<%= q.question %>">
 									<label for="title<%= i %>" class="active">Question</label>
 								</div>
 								<% q.answers.forEach(function(a, j){ %>
 									<div class="input-field col s12 optDiv">
 										<i class="material-icons prefix">check_box_outline_blank</i>
-										<input id="<%= i %>ans<%= j %>" type="text" class="validate" value="<%= a %>">
+										<input id="<%= i %>ans<%= j %>" type="text" value="<%= a %>">
 										<label for="<%= i %>ans<%= j %>" class="active">Option</label>
 									</div>
 								<% }) %>
@@ -31,11 +31,11 @@
 									<a class="btn-floating btn-small waves-effect waves-light deep-purple lighten-2"><i class="material-icons">add</i></a>
 								</div>
 								<div class="input-field col s12 l6">
-									<input id="min<%= i %>" type="text" class="validate" value="<%= q.min_choice %>">
+									<input id="min<%= i %>" type="text" class="q_min" value="<%= q.min_choice %>">
 									<label for="min<%= i %>" class="active">Minimium no. of choice(s)</label>
 								</div>
 								<div class="input-field col s12 l6">
-									<input id="max<%= i %>" type="text" class="validate" value="<%= q.max_choice %>">
+									<input id="max<%= i %>" type="text" class="q_max" value="<%= q.max_choice %>">
 									<label for="max<%= i %>" class="active">Maximium no. of choice(s)</label>
 								</div>
 							</div>

@@ -1,5 +1,5 @@
 var express = require('express');
-var router = express.Router();
+var router = express.Router({strict: true});
 
 var Election = require('../controllers/election');
 
@@ -15,9 +15,7 @@ router.post('/manage/:electionID/details', function(req, res, next) {
 	// res.render('createDetails');
 });
 router.get('/manage/:electionID/questions', Election.getManageQuestion);
-router.post('/manage/:electionID/questions', function(req, res, next) {
-	// res.render('createDetails');
-});
+router.post('/manage/:electionID/questions', Election.editQuestion);
 router.get('/manage/:electionID/voters', function(req, res, next) {
 	// res.render('createDetails');
 });
