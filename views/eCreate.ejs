@@ -1,11 +1,17 @@
-<%- include('./inc/header', { page_title: "eVoting", css: "<link href='/css/eCreate.css' rel='stylesheet' type='text/css' />"}); %>
+<%- include('./inc/header', { page_title: "eVoting", css: "<link href='/css/eCreate.css' rel='stylesheet' type='text/css'/>"}); %>
 
 <main>
 	<div class="row">
 		<div class="col s12 l4">
 			<div class="card">
 				<div class="card-content">
-					<h1 class="center-align thin">Create election</h1>
+					<h1 class="center-align thin">
+						<% if(create){ %>
+							Create election
+						<% }else{ %>
+							Edit election
+						<% } %>
+					</h1>
 				</div>
 			</div>
 		</div>
@@ -53,11 +59,19 @@
 								<h5>Election public key <button class="btn waves-effect waves-light right" disabled>Generate</button></h5>
 							</div>
 							<div class="input-field col s12">
-								<input id="elgamal_p" name="elgamal_p" type="text" class="validate">
+								<input id="elgamal_p" name="elgamal_p" type="text" class="validate"
+									<% if(!create){ %>
+										disabled value="<%= electionKey.p %>"
+									<% } %>
+								>
 								<label for="elgamal_p">Prime number - p (Base64 Encode)</label>
 							</div>
 							<div class="input-field col s12">
-								<input id="elgamal_g" name="elgamal_g" type="text" class="validate">
+								<input id="elgamal_g" name="elgamal_g" type="text" class="validate"
+									<% if(!create){ %>
+										disabled value="<%= electionKey.g %>"
+									<% } %>
+								>
 								<label for="elgamal_g">Generator - g (Base64 Encode)</label>
 							</div>
 						</div>
@@ -71,7 +85,11 @@
 								<h5>Election administrator key <button class="btn waves-effect waves-light right" disabled>Generate</button></h5>
 							</div>
 							<div class="input-field col s12">
-								<textarea id="admin_pub" name="admin_pub" class="materialize-textarea"></textarea>
+								<textarea id="admin_pub" name="admin_pub" class="materialize-textarea"
+									<% if(!create){ %>
+										disabled
+									<% } %>
+								><% if(!create){ %><%= electionAdmin.pubKey %><% } %></textarea>
 								<label for="admin_pub">Public key</label>	
 							</div>
 							<div class="input-field col s12">
@@ -83,7 +101,13 @@
 				</div>
 
 				<div class="col s12">
-					<button id="btn_create" class="btn waves-effect waves-light right">Create</button>
+					<button id="btn_create" class="btn waves-effect waves-light right">
+						<% if(create){ %>
+							Create
+						<% }else{ %>
+							Edit
+						<% } %>
+					</button>
 				</div>
 			</div>
 		</div>

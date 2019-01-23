@@ -70,6 +70,21 @@ module.exports = {
 		})
 	},
 
+	getManageDetail: function(req, res, next){
+		module.exports.latestDetails(req.params.electionID, ["name", "description", "start", "end", "key", "admin"], function(result){
+			res.render('eCreate', {
+				create: false,
+				electionID: req.params.electionID,
+				electionName: result[0].name,
+				electionDescription: result[0].description,
+				electionStart: result[0].start,
+				electionEnd: result[0].end,
+				electionKey: result[0].key,
+				electionAdmin: result[0].admin,
+			})
+		})
+	},
+
 	getManageQuestion: function(req, res, next){
 		module.exports.latestDetails(req.params.electionID, ["questions"], function(result){
 			res.render('eManQuestion', {

@@ -4,13 +4,11 @@ var router = express.Router({strict: true});
 var Election = require('../controllers/election');
 
 router.get('/create', function(req, res, next) {
-	res.render('eCreate');
+	res.render('eCreate', {create: true});
 });
 router.post('/create', Election.create);
 router.get('/manage/:electionID', Election.getManage);
-router.get('/manage/:electionID/details', function(req, res, next) {
-	// res.render('createDetails');
-});
+router.get('/manage/:electionID/details', Election.getManageDetail);
 router.post('/manage/:electionID/details', function(req, res, next) {
 	// res.render('createDetails');
 });

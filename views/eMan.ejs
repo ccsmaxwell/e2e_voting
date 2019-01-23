@@ -1,4 +1,4 @@
-<%- include('./inc/header', { page_title: "eVoting", css: ""}); %>
+<%- include('./inc/header', { page_title: "eVoting", css: "<link href='/css/eMan.css' rel='stylesheet' type='text/css'/>"}); %>
 
 <main>
 	<div class="container">
@@ -18,7 +18,7 @@
 						<span class="card-title">Details</span>
 					</div>
 					<div class="card-action">
-						<a href="#">Edit Details</a>
+						<a href="<%= electionID %>/details">Edit Details</a>
 					</div>
 				</div>
 			</div>
@@ -65,6 +65,10 @@
 						<a href="#">Edit Servers</a>
 					</div>
 				</div>
+			</div>
+
+			<div class="col s12" id="freeze_btn_col">
+				<a class="waves-effect waves-light btn"><i class="material-icons right">lock</i>Freeze Election</a>
 			</div>
 		</div>
 	</div>
