@@ -25,27 +25,47 @@
 								<h5>About the election</h5>
 							</div>
 							<div class="input-field col s12">
-								<input id="election_name" name="election_name" type="text" class="validate">
+								<input id="election_name" name="election_name" type="text" class="validate"
+									<% if(!create){ %>
+										value="<%= electionName %>"
+									<% } %>
+								>
 								<label for="election_name">Election name</label>
 							</div>
 							<div class="input-field col s12">
-								<textarea id="election_description" name="election_description" class="materialize-textarea"></textarea>
+								<textarea id="election_description" name="election_description" class="materialize-textarea"><% if(!create){ %><%= electionDescription %><% } %></textarea>
 								<label for="election_description">Election description</label>
 							</div>
 							<div class="input-field col s12 l6">
-								<input id="election_startDate" type="text" class="datepicker">
+								<input id="election_startDate" type="text" class="datepicker"
+									<% if(!create){ %>
+										value="<%= electionStart %>"
+									<% } %>
+								>
 								<label for="election_startDate">Start date</label>
 							</div>
 							<div class="input-field col s12 l6">
-								<input id="election_startTime" type="text" class="timepicker">
+								<input id="election_startTime" type="text" class="timepicker"
+									<% if(!create){ %>
+										value="<%= electionStart %>"
+									<% } %>
+								>
 								<label for="election_startTime">Start time</label>
 							</div>
 							<div class="input-field col s12 l6">
-								<input id="election_endDate" type="text" class="datepicker">
+								<input id="election_endDate" type="text" class="datepicker"
+									<% if(!create){ %>
+										value="<%= electionEnd %>"
+									<% } %>
+								>
 								<label for="election_endDate">End date</label>
 							</div>
 							<div class="input-field col s12 l6">
-								<input id="election_endTime" type="text" class="timepicker">
+								<input id="election_endTime" type="text" class="timepicker"
+									<% if(!create){ %>
+										value="<%= electionEnd %>"
+									<% } %>
+								>
 								<label for="election_endTime">End time</label>
 							</div>
 						</div>
@@ -101,13 +121,11 @@
 				</div>
 
 				<div class="col s12">
-					<button id="btn_create" class="btn waves-effect waves-light right">
-						<% if(create){ %>
-							Create
-						<% }else{ %>
-							Edit
-						<% } %>
-					</button>
+					<% if(create){ %>
+						<button id="btn_create" class="btn waves-effect waves-light right">Create</button>
+					<% }else{ %>
+						<button id="btn_edit" class="btn waves-effect waves-light right">Edit</button>
+					<% } %>
 				</div>
 			</div>
 		</div>

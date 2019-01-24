@@ -9,9 +9,7 @@ router.get('/create', function(req, res, next) {
 router.post('/create', Election.create);
 router.get('/manage/:electionID', Election.getManage);
 router.get('/manage/:electionID/details', Election.getManageDetail);
-router.post('/manage/:electionID/details', function(req, res, next) {
-	// res.render('createDetails');
-});
+router.post('/manage/:electionID/details', Election.editDetail);
 router.get('/manage/:electionID/questions', Election.getManageQuestion);
 router.post('/manage/:electionID/questions', Election.editQuestion);
 router.get('/manage/:electionID/voters', function(req, res, next) {
