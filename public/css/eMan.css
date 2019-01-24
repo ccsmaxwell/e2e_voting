@@ -1,3 +1,26 @@
 #freeze_btn_col a{
 	width: 100%;
 }
+
+.card .cardMidSection{
+	padding: 5px 0px 0px 24px;
+	border-top: 1px solid rgba(160,160,160,0.2);
+}
+
+label i.tiny {
+    padding-right: 5px;
+}
+
+.cardMidSection p{
+	padding-bottom: 5px;
+}
+
+.card_ul{
+	margin: unset;
+	border: unset;
+	border-top: 1px solid rgba(160,160,160,0.2);
+}
+
+.card_ul .collection-item{
+	border-bottom: 1px solid rgba(160,160,160,0.2);
+}

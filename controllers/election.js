@@ -61,11 +61,14 @@ module.exports = {
 	},
 
 	getManage: function(req, res, next){
-		module.exports.latestDetails(req.params.electionID, ["name", "description"], function(result){
+		module.exports.latestDetails(req.params.electionID, ["name", "description", "start", "end", "questions"], function(result){
 			res.render('eMan', {
 				electionID: req.params.electionID,
 				electionName: result[0].name,
-				electionDescription: result[0].description
+				electionDescription: result[0].description,
+				electionStart: result[0].start,
+				electionEnd: result[0].end,
+				electionQ: result[0].questions? result[0].questions : [],
 			})
 		})
 	},
