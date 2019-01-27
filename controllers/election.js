@@ -22,7 +22,8 @@ module.exports = {
 			start: data.start,
 			end: data.end,
 			key: JSON.parse(data.key),
-			admin: JSON.parse(data.admin)
+			admin: JSON.parse(data.admin),
+			servers: JSON.parse(data.servers)
 		}
 
 		var verify = crypto.createVerify('SHA256');
@@ -61,7 +62,7 @@ module.exports = {
 	},
 
 	getManage: function(req, res, next){
-		module.exports.latestDetails(req.params.electionID, ["name", "description", "start", "end", "questions"], function(result){
+		module.exports.latestDetails(req.params.electionID, ["name", "description", "start", "end", "questions", "servers"], function(result){
 			res.render('eMan', {
 				electionID: req.params.electionID,
 				electionName: result[0].name,
@@ -69,6 +70,7 @@ module.exports = {
 				electionStart: result[0].start,
 				electionEnd: result[0].end,
 				electionQ: result[0].questions? result[0].questions : [],
+				electionServer: result[0].servers
 			})
 		})
 	},

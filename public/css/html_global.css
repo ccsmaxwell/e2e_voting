@@ -1,3 +1,22 @@
+body {
+	display: flex;
+	min-height: 100vh;
+	flex-direction: column;
+}
+
+main {
+	flex: 1 0 auto;
+}
+
+.page-footer{
+	padding-top: unset;
+}
+
+#footerServerIdSpan{
+	max-width: 50%;
+	cursor: pointer;
+}
+
 .hiddendiv{
 	max-width: 100vw;
 }

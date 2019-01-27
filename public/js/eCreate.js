@@ -42,16 +42,16 @@ function ajaxCreateEdit(create){
 	};
 
 	if(create){
-		let key = {
+		data["key"] = {
 			p: $("#elgamal_p").val(),
 			g: $("#elgamal_g").val(),
 		};
-		let admin = {
+		data["admin"] = {
 			pubKey: $("#admin_pub").val()
-		}
-
-		data["key"] = key;
-		data["admin"] = admin;
+		};
+		data["servers"] = [{
+			serverID: $("#footerServerId").text()
+		}]
 	}
 
 	rsaSign($("#admin_pri").val(), JSON.stringify(data), function(sign){
@@ -59,6 +59,7 @@ function ajaxCreateEdit(create){
 		if(create){
 			data.key = JSON.stringify(data.key);
 			data.admin = JSON.stringify(data.admin);
+			data.servers = JSON.stringify(data.servers);
 		}
 
 		$.ajax({
