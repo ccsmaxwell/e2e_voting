@@ -1,0 +1,42 @@
+<%- include('./inc/header', { page_title: "eVoting", css: "<link href='/css/eManVoter.css' rel='stylesheet' type='text/css' />"}); %>
+
+<main>
+	<div class="row">
+		<div class="col s12 l4">
+			<div class="card">
+				<div class="card-content">
+					<h1 class="center-align thin">Manage voters</h1>
+				</div>
+			</div>
+		</div>
+
+		<div class="col s12 l8">
+			<ul id="voter_list" class="collection z-depth-1">
+			</ul>
+
+			<div id="pagination"></div>
+
+			<!-- <div class="col s12">
+				<div class="card" id="admin_card">
+					<div class="row">
+						<div class="col s12">
+							<h5>Election administrator key</h5>
+						</div>
+						<div class="input-field col s12">
+							<textarea id="admin_pri" name="admin_pri" class="materialize-textarea"></textarea>
+							<label for="admin_pri">Private key (for signing only, wont send to server)</label>
+						</div>
+					</div>
+				</div>
+			</div> -->
+
+			<div class="fixed-action-btn">
+				<a id="add_btn" class="btn-floating btn-large red">
+					<i class="large material-icons">add</i>
+				</a>
+			</div>
+		</div>
+	</div>
+</main>
+
+<%- include('./inc/footer', {script: "<script src='/js/lib/materialize-pagination.js'></script><script src='/js/eManVoter.js'></script>"}); %>

@@ -246,6 +246,43 @@ module.exports = {
 		})
 	},
 
+	getManageVoterList: function(req, res, next){
+		var page = parseInt(req.query.page);
+		var limit = parseInt(req.query.limit);
+		var skip = (page-1)*limit;
+
+		Block.aggregate([
+			{$match: {
+				"electionID": req.params.electionID,
+				"blockType": "Election Details"
+			}},
+			{$sort: {blockSeq: -1}},
+			{$unwind: "$data"},
+			{$unwind: "$data.voters"},
+			{$group: {
+				_id: "$data.voters.id",
+				"public_key": {$push:"$data.voters.public_key"}
+			}},
+			{$project: {
+				"public_key": {$arrayElemAt: ["$public_key", 0]}
+			}},
+			{ $group :{
+				_id: null,
+				total: { $sum:1 },
+				result: { $push:"$$ROOT" }
+			}},
+			{ $project :{
+				total: 1,
+				result: { $slice:["$result", skip, limit] }
+			}}  
+		]).then(function(result){
+			res.json(result[0]);
+		}).catch(function(err){
+			console.log(err);
+			res.json({success: false, msg: "Can't access DB."});
+		})
+	},
+
 	latestDetails: function(eID, fields, successCallback){
 		var group = {
 			_id: "$electionID",
