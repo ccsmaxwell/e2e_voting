@@ -192,6 +192,15 @@ module.exports = {
 		})
 	},
 
+	getManageServer: function(req, res, next){
+		module.exports.latestDetails(req.params.electionID, ["servers"], function(result){
+			res.render('eManServer', {
+				electionID: req.params.electionID,
+				servers: result[0].servers
+			})
+		})
+	},
+
 	latestDetails: function(eID, fields, successCallback){
 		var group = {
 			_id: "$electionID",

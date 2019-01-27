@@ -12,6 +12,10 @@ router.get('/manage/:electionID/details', Election.getManageDetail);
 router.post('/manage/:electionID/details', Election.editDetail);
 router.get('/manage/:electionID/questions', Election.getManageQuestion);
 router.post('/manage/:electionID/questions', Election.editQuestion);
+router.get('/manage/:electionID/servers', Election.getManageServer);
+router.post('/manage/:electionID/servers', function(req, res, next) {
+	// res.render('createDetails');
+});
 router.get('/manage/:electionID/voters', function(req, res, next) {
 	// res.render('createDetails');
 });
@@ -22,12 +26,6 @@ router.get('/manage/:electionID/trustees', function(req, res, next) {
 	// res.render('createDetails');
 });
 router.post('/manage/:electionID/trustees', function(req, res, next) {
-	// res.render('createDetails');
-});
-router.get('/manage/:electionID/servers', function(req, res, next) {
-	// res.render('createDetails');
-});
-router.post('/manage/:electionID/servers', function(req, res, next) {
 	// res.render('createDetails');
 });
 router.post('/manage/:electionID/freeze', function(req, res, next) {
