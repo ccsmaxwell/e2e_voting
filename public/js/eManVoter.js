@@ -50,4 +50,40 @@ function updateList(page){
 	});
 }
 
+function addVoterLi(){
+	var i = $('#add_modal li').length;
+
+	var template = [
+		'<li class="collection-item">',
+			'<div class="row">',
+				'<div class="input-field col s12 m6">',
+					$('<input type="text">').attr("id", "voterID"+i).attr('value', uuidv4()).prop('outerHTML'),
+					$('<label class="active">Voter ID</label>').attr("for", "voterID"+i).prop('outerHTML'),
+				'</div>',
+				'<div class="input-field col s12 m6">',
+					$('<input type="text">').attr("id", "voterEmail"+i).prop('outerHTML'),
+					$('<label>Voter Email</label>').attr("for", "voterEmail"+i).prop('outerHTML'),
+				'</div>',
+			'</div>',
+		'</li>',
+	].join("\n");
+
+	$("#add_modal ul").append($(template));
+}
+
 updateList();
+
+$(document).ready(function(){
+	$('#add_modal').modal();
+})
+
+$("#add_btn").click(function(){
+	$("#add_modal li").remove();
+	addVoterLi();
+
+	$('#add_modal').modal('open');
+})
+
+$("#btn_add_li").click(function(){
+	addVoterLi();
+})
