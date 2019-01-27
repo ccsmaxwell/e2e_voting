@@ -13,9 +13,7 @@ router.post('/manage/:electionID/details', Election.editDetail);
 router.get('/manage/:electionID/questions', Election.getManageQuestion);
 router.post('/manage/:electionID/questions', Election.editQuestion);
 router.get('/manage/:electionID/servers', Election.getManageServer);
-router.post('/manage/:electionID/servers', function(req, res, next) {
-	// res.render('createDetails');
-});
+router.post('/manage/:electionID/servers', Election.editServer);
 router.get('/manage/:electionID/voters', function(req, res, next) {
 	// res.render('createDetails');
 });

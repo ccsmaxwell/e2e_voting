@@ -17,51 +17,37 @@ $("#btn_add_col").children().click(function(){
 	$("#btn_add_col").before($(template));
 })
 
-// $("#btn_submit").click(function(){
-// 	var questions = [];
-// 	$('.q_card').each(function(){
-// 		let question = $(this).find('.q_title').val().trim();
-		
-// 		let answers = [];
-// 		$(this).find('.optDiv').find('input').each(function(){
-// 			let opt = $(this).val().trim();
-// 			if(opt != ''){
-// 				answers.push(opt);
-// 			}
-// 		})
+$("#btn_submit").click(function(){
+	var servers = [];
+	$('.s_card').each(function(){
+		let id = $(this).find('.s_id').val().trim();
 
-// 		let min_choice = parseInt($(this).find('.q_min').val());
-// 		let max_choice = parseInt($(this).find('.q_max').val());
+		if(id != ''){
+			servers.push({
+				serverID: id
+			})
+		}
+	})
 
-// 		if(question!='' && answers.length>0 && min_choice>=0 && max_choice<=answers.length){
-// 			questions.push({
-// 				question: question,
-// 				answers: answers,
-// 				min_choice: min_choice,
-// 				max_choice: max_choice
-// 			})
-// 		}
-// 	})
+	var data = {
+		servers: servers
+	}
 
-// 	var data = {
-// 		questions: questions
-// 	}
+	rsaSign($("#admin_pri").val(), JSON.stringify(data), function(sign){
+		data["adminSign"] = arrayBufferToBase64(sign);
+		data.servers = JSON.stringify(data.servers);
 
-// 	rsaSign($("#admin_pri").val(), JSON.stringify(data), function(sign){
-// 		data["adminSign"] = arrayBufferToBase64(sign);
-// 		data.questions = JSON.stringify(data.questions);
-
-// 		$.ajax({
-// 			type: "POST",
-// 			url: "./questions",
-// 			data: data,	
-// 			success: function(res){
-// 				if(res.success){
-// 					$(location).attr('href', '/election/manage/' + res.electionID);
-// 				}else{
-// 					console.log(res);
-// 				}
-// 			}
-// 		})
-// 	})
-// })
+		$.ajax({
+			type: "POST",
+			url: "./servers",
+			data: data,	
+			success: function(res){
+				if(res.success){
+					$(location).attr('href', '/election/manage/' + res.electionID);
+				}else{
+					console.log(res);
+				}
+			}
+		})
+	})
+})
