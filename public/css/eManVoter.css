@@ -1,3 +1,7 @@
+a.secondary-content i{
+	cursor: pointer;
+}
+
 #btn_add_li{
 	text-align: center;
 }

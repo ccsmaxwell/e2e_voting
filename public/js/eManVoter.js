@@ -28,9 +28,15 @@ function updateList(page){
 						'</li>',
 					].join("\n");
 
-					$('#voter_list').append($(template));
+					let el = $(template);
+					el.find('i').click(function(){
+						$("#del_voter_id").val(v._id);
+						M.updateTextFields();
+						
+						$('#del_modal').modal('open');
+					})
 
-					// a.click(function(e){ getUserDatail(e); });
+					$('#voter_list').append(el);
 				})
 
 				if(!page){
@@ -74,7 +80,7 @@ function addVoterLi(){
 updateList();
 
 $(document).ready(function(){
-	$('#add_modal').modal();
+	$('.modal').modal();
 })
 
 $("#add_btn").click(function(){

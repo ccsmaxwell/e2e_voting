@@ -45,7 +45,7 @@
 				<a class="btn-floating btn-small waves-effect waves-light deep-purple"><i class="material-icons">add</i></a>
 			</div>
 
-			<div class="card" id="admin_card">
+			<div class="card">
 				<div class="row">
 					<div class="col s12">
 						<h5>Election administrator key</h5>
@@ -59,7 +59,39 @@
 		</div>
 		<div class="modal-footer">
 			<a class="modal-close waves-effect waves-green btn-flat">Cancel</a>
-			<a class="modal-close waves-effect waves-green btn-flat">Add</a>
+			<a id="btn_add_all" class="modal-close waves-effect waves-green btn-flat">Add</a>
+		</div>
+	</div>
+
+	<div id="del_modal" class="modal modal-fixed-footer">
+		<div class="modal-content cyan darken-1">
+			<div class="card">
+				<div class="row">
+					<div class="col s12">
+						<h5>Delete voter</h5>
+					</div>
+					<div class="input-field col s12">
+						<input id="del_voter_id" type="text" disabled>
+						<label for="del_voter_id">Voter ID</label>
+					</div>
+				</div>
+			</div>
+
+			<div class="card">
+				<div class="row">
+					<div class="col s12">
+						<h5>Election administrator key</h5>
+					</div>
+					<div class="input-field col s12">
+						<textarea id="del_admin_pri" class="materialize-textarea"></textarea>
+						<label for="del_admin_pri">Private key (for signing only, wont send to server)</label>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<a class="modal-close waves-effect waves-green btn-flat">Cancel</a>
+			<a id="btn_del_submit" class="modal-close waves-effect waves-green btn-flat">Delete</a>
 		</div>
 	</div>
 </main>
