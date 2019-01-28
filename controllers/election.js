@@ -2,6 +2,7 @@ var uuidv4 = require('uuid/v4');
 var crypto = require('crypto');
 var bigInt = require("big-integer");
 var chalk = require('chalk');
+var nodeRSA = require('node-rsa');
 
 var Block = require('../models/block');
 
@@ -281,6 +282,33 @@ module.exports = {
 			console.log(err);
 			res.json({success: false, msg: "Can't access DB."});
 		})
+	},
+
+	addVoterReq: function(req, res, next){
+		var voters = JSON.parse(req.body.voters);
+		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Add voter request:"), chalk.grey(JSON.stringify(voters)));
+
+		var signData = [];
+		var fullData = [];
+		voters.forEach(function(v){
+			let key = new nodeRSA({b: 1024});
+			let pub = key.exportKey("public");
+			let pri = key.exportKey("pkcs8");
+
+			signData.push({
+				id: v.id,
+				public_key: pub
+			})
+			fullData.push({
+				id: v.id,
+				email: v.email,
+				public_key: pub,
+				private_key: pri
+			})
+		})
+		console.log(signData, fullData);
+
+		res.json({success: true});
 	},
 
 	latestDetails: function(eID, fields, successCallback){

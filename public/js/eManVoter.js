@@ -32,7 +32,7 @@ function updateList(page){
 					el.find('i').click(function(){
 						$("#del_voter_id").val(v._id);
 						M.updateTextFields();
-						
+
 						$('#del_modal').modal('open');
 					})
 
@@ -63,11 +63,11 @@ function addVoterLi(){
 		'<li class="collection-item">',
 			'<div class="row">',
 				'<div class="input-field col s12 m6">',
-					$('<input type="text">').attr("id", "voterID"+i).attr('value', uuidv4()).prop('outerHTML'),
+					$('<input class="add_v_id" type="text">').attr("id", "voterID"+i).attr('value', uuidv4()).prop('outerHTML'),
 					$('<label class="active">Voter ID</label>').attr("for", "voterID"+i).prop('outerHTML'),
 				'</div>',
 				'<div class="input-field col s12 m6">',
-					$('<input type="text">').attr("id", "voterEmail"+i).prop('outerHTML'),
+					$('<input class="add_v_email" type="text">').attr("id", "voterEmail"+i).prop('outerHTML'),
 					$('<label>Voter Email</label>').attr("for", "voterEmail"+i).prop('outerHTML'),
 				'</div>',
 			'</div>',
@@ -92,4 +92,41 @@ $("#add_btn").click(function(){
 
 $("#btn_add_li").click(function(){
 	addVoterLi();
+})
+
+$("#btn_add_all").click(function(){
+	var voters = [];
+	$('#add_modal li').each(function(){
+		let id = $(this).find('.add_v_id').val().trim();
+		let email = $(this).find('.add_v_email').val().trim();
+
+		if(id != '' && email != ''){
+			voters.push({
+				id: id,
+				email: email
+			})
+		}
+	})
+
+	$.ajax({
+		type: "POST",
+		url: "./voters/add-request",
+		data: {
+			voters: JSON.stringify(voters)
+		},	
+		success: function(res){
+			if(res.success){
+				console.log(res);
+			}else{
+				console.log(res);
+			}
+		}
+	})
+
+	// rsaSign($("#admin_pri").val(), JSON.stringify(data), function(sign){
+	// 	data["adminSign"] = arrayBufferToBase64(sign);
+	// 	data.servers = JSON.stringify(data.servers);
+
+
+	// })
 })
