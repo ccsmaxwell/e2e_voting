@@ -90,7 +90,7 @@ $("#add_btn").click(function(){
 	$('#add_modal').modal('open');
 })
 
-$("#btn_add_li").click(function(){
+$("#btn_add_li a").click(function(){
 	addVoterLi();
 })
 
@@ -117,16 +117,32 @@ $("#btn_add_all").click(function(){
 		success: function(res){
 			if(res.success){
 				console.log(res);
+
+				var data = {
+					voters: res.signData
+				}
+
+				rsaSign($("#add_admin_pri").val(), JSON.stringify(data), function(sign){
+					data["adminSign"] = arrayBufferToBase64(sign);
+					data["tempID"] = res.tempID;
+					delete data.voters;
+
+					$.ajax({
+						type: "POST",
+						url: "./voters/add-confirm",
+						data: data,	
+						success: function(res){
+							if(res.success){
+								updateList();
+							}else{
+								console.log(res);
+							}
+						}
+					})
+				})
 			}else{
 				console.log(res);
 			}
 		}
 	})
-
-	// rsaSign($("#admin_pri").val(), JSON.stringify(data), function(sign){
-	// 	data["adminSign"] = arrayBufferToBase64(sign);
-	// 	data.servers = JSON.stringify(data.servers);
-
-
-	// })
 })
