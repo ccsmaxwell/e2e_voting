@@ -30,39 +30,43 @@ module.exports = {
 			servers: JSON.parse(data.servers)
 		}
 
-		var verify = crypto.createVerify('SHA256');
-		verify.update(JSON.stringify(blockData));
-		if(verify.verify(blockData.admin.pubKey, data.adminSign, "base64")){
-			console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification success");
-			blockData["adminSign"] = data.adminSign;
+		module.exports.verifyAndCreate(null, blockData, data.adminSign, res, false, function(){
+			console.log(chalk.black.bgMagenta("[Election]"), "Created new election chain");
+		}, true);
 
-			let newBlock_ = {};
-			newBlock_.blockUUID = uuidv4();
-			newBlock_.electionID = uuidv4();
-			newBlock_.blockSeq = 0;
-			newBlock_.blockType = "Election Details";
-			newBlock_.data = [blockData];
+		// var verify = crypto.createVerify('SHA256');
+		// verify.update(JSON.stringify(blockData));
+		// if(verify.verify(blockData.admin.pubKey, data.adminSign, "base64")){
+		// 	console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification success");
+		// 	blockData["adminSign"] = data.adminSign;
 
-			var newBlock = new Block();
-			Object.keys(newBlock_).forEach(function(key){
-				newBlock[key] = newBlock_[key];
-			});
-			newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
-			newBlock_.hash = newBlock.hash;
+		// 	let newBlock_ = {};
+		// 	newBlock_.blockUUID = uuidv4();
+		// 	newBlock_.electionID = uuidv4();
+		// 	newBlock_.blockSeq = 0;
+		// 	newBlock_.blockType = "Election Details";
+		// 	newBlock_.data = [blockData];
 
-			newBlock.save().then(function(result){
-				console.log(chalk.black.bgMagenta("[Election]"), "Created new election chain");
-				blockChainController.signBlock(newBlock_, false);
+		// 	var newBlock = new Block();
+		// 	Object.keys(newBlock_).forEach(function(key){
+		// 		newBlock[key] = newBlock_[key];
+		// 	});
+		// 	newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
+		// 	newBlock_.hash = newBlock.hash;
 
-				res.json({success: true, electionID: newBlock_.electionID});
-			}).catch(function(err){
-				console.log(err);
-				res.json({success: false, msg: "Cannot save new block."});
-			});
-		}else{
-			console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
-			res.json({success: false, msg: "Cannot verify Admin key."});
-		}
+		// 	newBlock.save().then(function(result){
+		// 		console.log(chalk.black.bgMagenta("[Election]"), "Created new election chain");
+		// 		blockChainController.signBlock(newBlock_, false);
+
+		// 		res.json({success: true, electionID: newBlock_.electionID});
+		// 	}).catch(function(err){
+		// 		console.log(err);
+		// 		res.json({success: false, msg: "Cannot save new block."});
+		// 	});
+		// }else{
+		// 	console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
+		// 	res.json({success: false, msg: "Cannot verify Admin key."});
+		// }
 	},
 
 	getManage: function(req, res, next){
@@ -105,41 +109,9 @@ module.exports = {
 			end: data.end,
 		}
 
-		module.exports.latestDetails(req.params.electionID, ["admin"], function(result){
-			var verify = crypto.createVerify('SHA256');
-			verify.update(JSON.stringify(blockData));
-			if(verify.verify(result[0].admin.pubKey, data.adminSign, "base64")){
-				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification success");
-				blockData["adminSign"] = data.adminSign;
-
-				let newBlock_ = {};
-				newBlock_.blockUUID = uuidv4();
-				newBlock_.electionID = req.params.electionID;
-				newBlock_.blockSeq = result[0].blockSeq + 1;
-				newBlock_.blockType = "Election Details";
-				newBlock_.data = [blockData];
-
-				var newBlock = new Block();
-				Object.keys(newBlock_).forEach(function(key){
-					newBlock[key] = newBlock_[key];
-				});
-				newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
-				newBlock_.hash = newBlock.hash;
-
-				newBlock.save().then(function(result){
-					console.log(chalk.black.bgMagenta("[Election]"), "Edited election details");
-					blockChainController.signBlock(newBlock_, false);
-
-					res.json({success: true, electionID: newBlock_.electionID});
-				}).catch(function(err){
-					console.log(err);
-					res.json({success: false, msg: "Cannot save new block."});
-				});
-			}else{
-				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
-				res.json({success: false, msg: "Cannot verify Admin key."});
-			}
-		})
+		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+			console.log(chalk.black.bgMagenta("[Election]"), "Edited election details");
+		}, true);
 	},
 
 	getManageQuestion: function(req, res, next){
@@ -159,41 +131,9 @@ module.exports = {
 			questions: JSON.parse(data.questions)
 		}
 
-		module.exports.latestDetails(req.params.electionID, ["admin"], function(result){
-			let verify = crypto.createVerify('SHA256');
-			verify.update(JSON.stringify(blockData));
-			if(verify.verify(result[0].admin.pubKey, data.adminSign, "base64")){
-				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification success");
-				blockData["adminSign"] = data.adminSign;
-
-				let newBlock_ = {};
-				newBlock_.blockUUID = uuidv4();
-				newBlock_.electionID = req.params.electionID;
-				newBlock_.blockSeq = result[0].blockSeq + 1;
-				newBlock_.blockType = "Election Details";
-				newBlock_.data = [blockData];
-
-				var newBlock = new Block();
-				Object.keys(newBlock_).forEach(function(key){
-					newBlock[key] = newBlock_[key];
-				});
-				newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
-				newBlock_.hash = newBlock.hash;
-
-				newBlock.save().then(function(result){
-					console.log(chalk.black.bgMagenta("[Election]"), "Edit question success");
-					blockChainController.signBlock(newBlock_, false);
-
-					res.json({success: true, electionID: newBlock_.electionID});
-				}).catch(function(err){
-					console.log(err);
-					res.json({success: false, msg: "Cannot save new block."});
-				});
-			}else{
-				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
-				res.json({success: false, msg: "Cannot verify Admin key."});
-			}
-		})
+		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+			console.log(chalk.black.bgMagenta("[Election]"), "Edit question success");
+		}, true);
 	},
 
 	getManageServer: function(req, res, next){
@@ -213,41 +153,9 @@ module.exports = {
 			servers: JSON.parse(data.servers)
 		}
 
-		module.exports.latestDetails(req.params.electionID, ["admin"], function(result){
-			let verify = crypto.createVerify('SHA256');
-			verify.update(JSON.stringify(blockData));
-			if(verify.verify(result[0].admin.pubKey, data.adminSign, "base64")){
-				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification success");
-				blockData["adminSign"] = data.adminSign;
-
-				let newBlock_ = {};
-				newBlock_.blockUUID = uuidv4();
-				newBlock_.electionID = req.params.electionID;
-				newBlock_.blockSeq = result[0].blockSeq + 1;
-				newBlock_.blockType = "Election Details";
-				newBlock_.data = [blockData];
-
-				var newBlock = new Block();
-				Object.keys(newBlock_).forEach(function(key){
-					newBlock[key] = newBlock_[key];
-				});
-				newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
-				newBlock_.hash = newBlock.hash;
-
-				newBlock.save().then(function(result){
-					console.log(chalk.black.bgMagenta("[Election]"), "Edit server success");
-					blockChainController.signBlock(newBlock_, false);
-
-					res.json({success: true, electionID: newBlock_.electionID});
-				}).catch(function(err){
-					console.log(err);
-					res.json({success: false, msg: "Cannot save new block."});
-				});
-			}else{
-				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
-				res.json({success: false, msg: "Cannot verify Admin key."});
-			}
-		})
+		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+			console.log(chalk.black.bgMagenta("[Election]"), "Edit server success");
+		}, true);
 	},
 
 	getManageVoterList: function(req, res, next){
@@ -331,44 +239,12 @@ module.exports = {
 			voters: cacheData.signData
 		}
 
-		module.exports.latestDetails(req.params.electionID, ["admin"], function(result){
-			let verify = crypto.createVerify('SHA256');
-			verify.update(JSON.stringify(blockData));
-			if(verify.verify(result[0].admin.pubKey, data.adminSign, "base64")){
-				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification success");
-				blockData["adminSign"] = data.adminSign;
+		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+			console.log(chalk.black.bgMagenta("[Election]"), "Save new voters success");
 
-				let newBlock_ = {};
-				newBlock_.blockUUID = uuidv4();
-				newBlock_.electionID = req.params.electionID;
-				newBlock_.blockSeq = result[0].blockSeq + 1;
-				newBlock_.blockType = "Election Details";
-				newBlock_.data = [blockData];
-
-				var newBlock = new Block();
-				Object.keys(newBlock_).forEach(function(key){
-					newBlock[key] = newBlock_[key];
-				});
-				newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
-				newBlock_.hash = newBlock.hash;
-
-				newBlock.save().then(function(result){
-					console.log(chalk.black.bgMagenta("[Election]"), "Save new voters success");
-					blockChainController.signBlock(newBlock_, false);
-
-					// to be replaced by email
-					console.log(cacheData.fullData);
-
-					res.json({success: true, electionID: newBlock_.electionID});
-				}).catch(function(err){
-					console.log(err);
-					res.json({success: false, msg: "Cannot save new block."});
-				});
-			}else{
-				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
-				res.json({success: false, msg: "Cannot verify Admin key."});
-			}
-		})
+			// to be replaced by email
+			console.log(cacheData.fullData);
+		}, true);
 	},
 
 	delVoter: function(req, res, next){
@@ -379,17 +255,24 @@ module.exports = {
 			voters: JSON.parse(data.voters)
 		}
 
-		module.exports.latestDetails(req.params.electionID, ["admin"], function(result){
+		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+			console.log(chalk.black.bgMagenta("[Election]"), "Delete voter success (marked public_key as empty).");
+		}, true);
+	},
+
+	verifyAndCreate: function(eID, blockData, adminSign, res, broadcastBlockSign, successCallback, sendSuccessRes){
+		var VnC = function(result){
+			let adminPubKey = result ? result[0].admin.pubKey : blockData.admin.pubKey;
 			let verify = crypto.createVerify('SHA256');
 			verify.update(JSON.stringify(blockData));
-			if(verify.verify(result[0].admin.pubKey, data.adminSign, "base64")){
+			if(verify.verify(adminPubKey, adminSign, "base64")){
 				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification success");
-				blockData["adminSign"] = data.adminSign;
+				blockData["adminSign"] = adminSign;
 
 				let newBlock_ = {};
 				newBlock_.blockUUID = uuidv4();
-				newBlock_.electionID = req.params.electionID;
-				newBlock_.blockSeq = result[0].blockSeq + 1;
+				newBlock_.electionID = eID ? eID : uuidv4();
+				newBlock_.blockSeq = result ? result[0].blockSeq + 1 : 0;
 				newBlock_.blockType = "Election Details";
 				newBlock_.data = [blockData];
 
@@ -401,10 +284,14 @@ module.exports = {
 				newBlock_.hash = newBlock.hash;
 
 				newBlock.save().then(function(result){
-					console.log(chalk.black.bgMagenta("[Election]"), "Delete voter success (marked public_key as empty).");
-					blockChainController.signBlock(newBlock_, false);
+					blockChainController.signBlock(newBlock_, broadcastBlockSign);
 
-					res.json({success: true, electionID: newBlock_.electionID});
+					if(successCallback){
+						successCallback();
+					}
+					if(sendSuccessRes){
+						res.json({success: true, electionID: newBlock_.electionID});
+					}
 				}).catch(function(err){
 					console.log(err);
 					res.json({success: false, msg: "Cannot save new block."});
@@ -413,7 +300,13 @@ module.exports = {
 				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
 				res.json({success: false, msg: "Cannot verify Admin key."});
 			}
-		})
+		}
+		
+		if(eID){
+			module.exports.latestDetails(eID, ["admin"], VnC)			
+		}else{
+			VnC(null);
+		}
 	},
 
 	latestDetails: function(eID, fields, successCallback){
