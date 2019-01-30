@@ -28,7 +28,7 @@ module.exports = {
 		var configDir = path.dirname(configPath);
 		var pubKeyPath = path.resolve(configDir, config.serverPubKeyPath);
 		config["serverPubKey"] = fs.readFileSync(pubKeyPath);
-		config["serverID"] = crypto.createHash('sha256').update(config.serverPubKey).digest('base64');
+		config["serverID"] = crypto.createHash('sha256').update(config.serverPubKey.toString().split("-----")[2].replace(/[\r\n]*/g,'')).digest('base64');
 		var priKeyPath = path.resolve(configDir, config.serverPriKeyPath);
 		config["serverPriKey"] = fs.readFileSync(priKeyPath);
 

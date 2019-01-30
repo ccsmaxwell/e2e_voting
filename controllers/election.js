@@ -226,6 +226,10 @@ module.exports = {
 		}, true);
 	},
 
+	voterKeyChangeReq: function(req, res, next){
+
+	},
+
 	verifyAndCreate: function(eID, blockData, adminSign, res, broadcastBlockSign, successCallback, sendSuccessRes){
 		var VnC = function(result){
 			let adminPubKey = result ? result[0].admin.pubKey : blockData.admin.pubKey;
