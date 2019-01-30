@@ -1,3 +1,32 @@
+function rsaGenerate(successCallback) {
+	window.crypto.subtle.generateKey({
+		name: "RSASSA-PKCS1-v1_5",
+		modulusLength: 1024,
+		publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+		hash: {name: "SHA-256"},
+	}, true, ["sign", "verify"]).then(function(key){
+		let pubKey = null;
+		let priKey = null;
+
+		let promPub = window.crypto.subtle.exportKey("spki", key.publicKey).then(function(keyData){
+			pubKey = "-----BEGIN PUBLIC KEY-----\n" + arrayBufferToBase64(keyData) + "\n-----END PUBLIC KEY-----";
+		}).catch(function(err){
+			console.log(err);
+		});
+		let promPri = window.crypto.subtle.exportKey("pkcs8", key.privateKey).then(function(keyData){
+			priKey = "-----BEGIN PRIVATE KEY-----\n" + arrayBufferToBase64(keyData) + "\n-----END PRIVATE KEY-----";
+		}).catch(function(err){
+			console.log(err);
+		});
+
+		Promise.all([promPub, promPri]).then(function(){
+			successCallback(pubKey, priKey);
+		})
+	}).catch(function(err){
+		console.log(err);
+	});
+}
+
 function rsaSign(priKeyStr, textStr, successCallback) {
 	window.crypto.subtle.importKey(
 		"pkcs8",

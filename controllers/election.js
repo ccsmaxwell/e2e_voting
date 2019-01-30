@@ -33,40 +33,6 @@ module.exports = {
 		module.exports.verifyAndCreate(null, blockData, data.adminSign, res, false, function(){
 			console.log(chalk.black.bgMagenta("[Election]"), "Created new election chain");
 		}, true);
-
-		// var verify = crypto.createVerify('SHA256');
-		// verify.update(JSON.stringify(blockData));
-		// if(verify.verify(blockData.admin.pubKey, data.adminSign, "base64")){
-		// 	console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification success");
-		// 	blockData["adminSign"] = data.adminSign;
-
-		// 	let newBlock_ = {};
-		// 	newBlock_.blockUUID = uuidv4();
-		// 	newBlock_.electionID = uuidv4();
-		// 	newBlock_.blockSeq = 0;
-		// 	newBlock_.blockType = "Election Details";
-		// 	newBlock_.data = [blockData];
-
-		// 	var newBlock = new Block();
-		// 	Object.keys(newBlock_).forEach(function(key){
-		// 		newBlock[key] = newBlock_[key];
-		// 	});
-		// 	newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
-		// 	newBlock_.hash = newBlock.hash;
-
-		// 	newBlock.save().then(function(result){
-		// 		console.log(chalk.black.bgMagenta("[Election]"), "Created new election chain");
-		// 		blockChainController.signBlock(newBlock_, false);
-
-		// 		res.json({success: true, electionID: newBlock_.electionID});
-		// 	}).catch(function(err){
-		// 		console.log(err);
-		// 		res.json({success: false, msg: "Cannot save new block."});
-		// 	});
-		// }else{
-		// 	console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
-		// 	res.json({success: false, msg: "Cannot verify Admin key."});
-		// }
 	},
 
 	getManage: function(req, res, next){
@@ -301,9 +267,9 @@ module.exports = {
 				res.json({success: false, msg: "Cannot verify Admin key."});
 			}
 		}
-		
+
 		if(eID){
-			module.exports.latestDetails(eID, ["admin"], VnC)			
+			module.exports.latestDetails(eID, ["admin"], VnC);
 		}else{
 			VnC(null);
 		}

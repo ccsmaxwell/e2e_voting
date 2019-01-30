@@ -102,7 +102,14 @@
 					<div class="card" id="admin_card">
 						<div class="row">
 							<div class="col s12">
-								<h5>Election administrator key <button class="btn waves-effect waves-light right" disabled>Generate</button></h5>
+								<h5>
+									Election administrator key
+									<button id="btn_gen_admin_key" class="btn waves-effect waves-light right"
+										<% if(!create){ %>
+											disabled
+										<% } %>
+									>Generate</button>
+								</h5>
 							</div>
 							<div class="input-field col s12">
 								<textarea id="admin_pub" name="admin_pub" class="materialize-textarea"

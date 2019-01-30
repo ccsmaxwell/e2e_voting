@@ -77,9 +77,20 @@ function ajaxCreateEdit(create){
 	})
 }
 
-$("#btn_create").click(function(e){
+$("#btn_create").click(function(){
 	ajaxCreateEdit(true);
 })
-$("#btn_edit").click(function(e){
+$("#btn_edit").click(function(){
 	ajaxCreateEdit(false);
+})
+
+$("#btn_gen_admin_key").click(function(){
+	rsaGenerate(function(pubKey, priKey){
+		$("#admin_pub").val(pubKey);
+		 M.textareaAutoResize($('#admin_pub'));
+		$("#admin_pri").val(priKey);
+		 M.textareaAutoResize($('#admin_pri'));
+		 
+		 M.updateTextFields();
+	})
 })
