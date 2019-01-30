@@ -20,7 +20,7 @@ router.get('/manage/:electionID/voters', function(req, res, next) {
 router.get('/manage/:electionID/voters/list', Election.getManageVoterList);
 router.post('/manage/:electionID/voters/add-request', Election.addVoterReq);
 router.post('/manage/:electionID/voters/add-confirm', Election.addVoterConfirm);
-router.post('/manage/:electionID/voters/del', function(req, res, next) {});
+router.post('/manage/:electionID/voters/del', Election.delVoter);
 router.get('/manage/:electionID/trustees', function(req, res, next) {
 	// res.render('createDetails');
 });

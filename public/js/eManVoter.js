@@ -146,3 +146,30 @@ $("#btn_add_all").click(function(){
 		}
 	})
 })
+
+$("#btn_del_submit").click(function(){
+	var data = {
+		voters: [{
+			id: $("#del_voter_id").val(),
+			public_key: ""
+		}]
+	}
+
+	rsaSign($("#del_admin_pri").val(), JSON.stringify(data), function(sign){
+		data["adminSign"] = arrayBufferToBase64(sign);
+		data.voters = JSON.stringify(data.voters);
+
+		$.ajax({
+			type: "POST",
+			url: "./voters/del",
+			data: data,	
+			success: function(res){
+				if(res.success){
+					updateList(parseInt($("#pagination li.active").attr('data-page')));
+				}else{
+					console.log(res);
+				}
+			}
+		})
+	})
+})
