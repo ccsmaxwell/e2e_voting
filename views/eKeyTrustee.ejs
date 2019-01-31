@@ -1,0 +1,83 @@
+<%- include('./inc/header', { page_title: "eVoting", css: "<link href='/css/eKeyTrustee.css' rel='stylesheet' type='text/css'/>"}); %>
+
+<main>
+	<div class="container">
+		<div class="row">
+			<div class="col s12">
+				<div class="card">
+					<div class="card-content center-align">
+						<h1>Manage trustee key</h1>
+					</div>
+				</div>			
+			</div>
+		</div>
+
+		<div class="row">
+
+			<div class="col s12">
+				<div class="card cardRowMargin" id="election_key_card">
+					<div class="row">
+						<div class="col s12">
+							<h5>
+								Election public key
+							</h5>
+						</div>
+						<div class="col s12 m6">
+							<label class="valign-wrapper">Prime</label>
+							<p id="eKey_p"><%= electionKey.p %></p>
+						</div>
+						<div class="col s12 m6">
+							<label class="valign-wrapper">Generator</label>
+							<p id="eKey_g"><%= electionKey.g %></p>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col s12">
+				<div class="card cardRowMargin" id="new_key_card">
+					<div class="row">
+						<div class="col s12">
+							<h5>
+								New trustee key
+								<button id="btn_gen_key" class="btn waves-effect waves-light right">Generate</button>
+							</h5>
+						</div>
+						<div class="input-field col s12">
+							<textarea id="new_pub_key" class="materialize-textarea"></textarea>
+							<label for="new_pub_key">Public key</label>
+						</div>
+						<div class="input-field col s12 hide">
+							<textarea id="new_pri_key" class="materialize-textarea"></textarea>
+							<label for="new_pri_key">Private key - please save this somewhere else confidentially</label>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col s12">
+				<div class="card cardRowMargin" id="curr_key_card">
+					<div class="row">
+						<div class="col s12">
+							<h5>Trustee info</h5>
+						</div>
+						<div class="input-field col s12">
+							<input id="trusteeID" type="text">
+							<label for="trusteeID">Trustee ID</label>
+						</div>
+						<div class="input-field col s12">
+							<textarea id="curr_pri" class="materialize-textarea"></textarea>
+							<label for="curr_pri">Private key (for signing only, wont send to server)</label>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col s12">
+				<button id="btn_submit" class="btn waves-effect waves-light right">Submit</button>
+			</div>
+		</div>
+	</div>
+</main>
+
+<%- include('./inc/footer', {script: "<script src='/js/eKeyTrustee.js'></script>"}); %>

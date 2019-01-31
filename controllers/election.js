@@ -343,6 +343,14 @@ module.exports = {
 		}, true);
 	},
 
+	getForTrusteeChangeKey: function(req, res, next){
+		module.exports.latestDetails(req.params.electionID, ["key"], function(result){
+			res.render('eKeyTrustee', {
+				electionKey: result[0].key
+			});
+		});
+	},
+
 	trusteeKeyChangeReq: function(req, res, next){
 		// var data = req.body;
 		// console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Voter change key request:"), chalk.grey(JSON.stringify(data)));

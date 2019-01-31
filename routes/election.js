@@ -37,9 +37,7 @@ router.get('/manage/:electionID/trustees/list', Election.getManageTrusteeList);
 router.post('/manage/:electionID/trustees/add-request', Election.addTrusteeReq);
 router.post('/manage/:electionID/trustees/add-confirm', Election.addTrusteeConfirm);
 router.post('/manage/:electionID/trustees/del', Election.delTrustee);
-router.get('/manage/:electionID/trustees/changeKey', function(req, res, next) {
-	res.render('eKeyTrustee');
-});
+router.get('/manage/:electionID/trustees/changeKey', Election.getForTrusteeChangeKey);
 router.post('/manage/:electionID/trustees/changeKey', Election.trusteeKeyChangeReq);
 
 router.post('/manage/:electionID/freeze', function(req, res, next) {
