@@ -13,6 +13,9 @@ var encoding = require('./lib/encoding');
 var connection = require('./lib/connection');
 
 var reqCache = new NodeCache();
+var keyChangeQueue = {};
+
+const keyChangeWaitTime = _config.keyChangeWaitTime;
 
 module.exports = {
 
@@ -129,39 +132,9 @@ module.exports = {
 		var limit = parseInt(req.query.limit);
 		var skip = (page-1)*limit;
 
-		Block.aggregate([
-			{$match: {
-				"electionID": req.params.electionID,
-				"blockType": "Election Details"
-			}},
-			{$sort: {blockSeq: -1}},
-			{$unwind: "$data"},
-			{$unwind: "$data.voters"},
-			{$group: {
-				_id: "$data.voters.id",
-				"public_key": {$push:"$data.voters.public_key"}
-			}},
-			{$project: {
-				"public_key": {$arrayElemAt: ["$public_key", 0]}
-			}},
-			{$match: {
-				"public_key": {"$ne": ""},
-			}},
-			{ $group :{
-				_id: null,
-				total: { $sum:1 },
-				result: { $push:"$$ROOT" }
-			}},
-			{ $project :{
-				total: 1,
-				result: { $slice:["$result", skip, limit] }
-			}}  
-		]).then(function(result){
-			res.json(result[0]);
-		}).catch(function(err){
-			console.log(err);
-			res.json({success: false, msg: "Can't access DB."});
-		})
+		module.exports.latestVoters(req.params.electionID, null, skip, limit, function(result){
+			res.json(result);
+		});
 	},
 
 	addVoterReq: function(req, res, next){
@@ -227,7 +200,72 @@ module.exports = {
 	},
 
 	voterKeyChangeReq: function(req, res, next){
+		var data = req.body;
+		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Voter change key request:"), chalk.grey(JSON.stringify(data)));
 
+		var verifyData = {
+			id: data.id,
+			public_key: data.public_key,
+		}
+
+		module.exports.latestVoters(req.params.electionID, data.id, null, null, function(result){
+			let verify = crypto.createVerify('SHA256');
+			verify.update(JSON.stringify(verifyData));
+			if(verify.verify(result.result[0].public_key, data.voterSign, "base64")){
+				verifyData["voterSign"] = data.voterSign;
+				verifyData["timeStamp"] = new Date();
+
+				let eID = req.params.electionID;
+				if(!keyChangeQueue[eID]){
+					keyChangeQueue[eID] = {
+						voter: [],
+						voterTimer: null,
+						trustee: [],
+						trusteeTimer: null
+					}
+				}
+				keyChangeQueue[eID].voter.push(verifyData);
+
+				if(!keyChangeQueue[eID].voterTimer){
+					keyChangeQueue[eID].voterTimer = setTimeout(function(){
+						keyChangeQueue[eID].voterTimer = null;
+						var blockData = {
+							voters: keyChangeQueue[eID].voter
+						};
+						keyChangeQueue[eID].voter = [];
+
+						module.exports.latestDetails(eID, [], function(result){
+							let newBlock_ = {};
+							newBlock_.blockUUID = uuidv4();
+							newBlock_.electionID = eID;
+							newBlock_.blockSeq = result[0].blockSeq + 1
+							newBlock_.blockType = "Election Details";
+							newBlock_.data = [blockData];
+
+							var newBlock = new Block();
+							Object.keys(newBlock_).forEach(function(key){
+								newBlock[key] = newBlock_[key];
+							});
+							newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
+							newBlock_.hash = newBlock.hash;
+
+							newBlock.save().then(function(result){
+								blockChainController.signBlock(newBlock_, false);
+
+								console.log(chalk.black.bgMagenta("[Election]"), "Saved new block for key change.");
+							}).catch(function(err){
+								console.log(err);
+							});
+						});
+					}, keyChangeWaitTime)
+				}
+
+				res.json({success: true});
+			}else{
+				console.log(chalk.black.bgMagenta("[Election]"), "Voter key verification FAIL");
+				res.json({success: false, msg: "Cannot verify voter current key."});
+			}
+		});
 	},
 
 	verifyAndCreate: function(eID, blockData, adminSign, res, broadcastBlockSign, successCallback, sendSuccessRes){
@@ -304,6 +342,53 @@ module.exports = {
 			{$project: project}
 		]).then(function(result){
 			successCallback(result);
+		}).catch(function(err){
+			console.log(err);
+		})
+	},
+
+	latestVoters: function(eID, voterID, skip, limit, successCallback){
+		var aggr = [
+			{$match: {
+				"electionID": eID,
+				"blockType": "Election Details"
+			}},
+			{$sort: {blockSeq: -1}},
+			{$unwind: "$data"},
+			{$unwind: "$data.voters"}
+		];
+
+		if(voterID){
+			aggr.push({$match: {
+				"data.voters.id": voterID,
+			}})
+		}
+
+		var slice = skip ? { $slice:["$result", skip, limit] } : "$result";
+		aggr.push(
+			{$group: {
+				_id: "$data.voters.id",
+				"public_key": {$push:"$data.voters.public_key"}
+			}},
+			{$project: {
+				"public_key": {$arrayElemAt: ["$public_key", 0]}
+			}},
+			{$match: {
+				"public_key": {"$ne": ""},
+			}},
+			{ $group :{
+				_id: null,
+				total: { $sum:1 },
+				result: { $push:"$$ROOT" }
+			}},
+			{ $project :{
+				total: 1,
+				result: slice
+			}}
+		)
+
+		Block.aggregate(aggr).then(function(result){
+			successCallback(result[0]);
 		}).catch(function(err){
 			console.log(err);
 		})

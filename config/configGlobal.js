@@ -7,10 +7,12 @@ var configSchema = {
 	"serverType": "",
 	"serverPubKeyPath": "",
 	"serverPriKeyPath": "",
+	"indexURL": "",
 	"mongoDbPath": "",
 	"blockTimerInterval": 0,
 	"blockTimerBuffer": 0,
-	"pingInterval": 0
+	"pingInterval": 0,
+	"keyChangeWaitTime": 0
 }
 
 module.exports = {
