@@ -17,10 +17,13 @@ function updateList(page){
 				console.log(res);
 			}else{
 				res.result.forEach(function(v){
-					var template = [
-						'<li class="collection-item trusteeLi">',
+					let genText = v.a ? "Key & proof generated" : "Key & proof not yet generated"
+					let template = [
+						'<li class="collection-item avatar trusteeLi">',
 							'<div>',
-								$('<span>').text(v._id).prop('outerHTML'),
+								$('<span class="title">').text(v._id).prop('outerHTML'),
+								$('<p>').text(v.email).prop('outerHTML'),
+								$('<p>').text(genText).prop('outerHTML'),
 								'<a class="secondary-content">',
 									'<i class="material-icons red-text">delete</i>',
 								'</a>',

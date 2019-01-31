@@ -269,75 +269,78 @@ module.exports = {
 	},
 
 	getManageTrusteeList: function(req, res, next){
-		// var page = parseInt(req.query.page);
-		// var limit = parseInt(req.query.limit);
-		// var skip = (page-1)*limit;
+		var page = parseInt(req.query.page);
+		var limit = parseInt(req.query.limit);
+		var skip = (page-1)*limit;
 
-		// module.exports.latestVoters(req.params.electionID, null, skip, limit, function(result){
-		// 	res.json(result);
-		// });
+		module.exports.latestTrustees(req.params.electionID, null, skip, limit, function(result){
+			res.json(result);
+		});
 	},
 
 	addTrusteeReq: function(req, res, next){
-		// var voters = JSON.parse(req.body.voters);
-		// console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Add voter request:"), chalk.grey(JSON.stringify(voters)));
+		var trustees = JSON.parse(req.body.trustees);
+		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Add trustee request:"), chalk.grey(JSON.stringify(trustees)));
 
-		// var signData = [];
-		// var fullData = [];
-		// voters.forEach(function(v){
-		// 	let key = new nodeRSA({b: 1024});
-		// 	let pub = key.exportKey("public");
-		// 	let pri = key.exportKey("pkcs8");
+		var signData = [];
+		var fullData = [];
+		module.exports.latestDetails(req.params.electionID, ["key"], function(result){
+			trustees.forEach(function(t){
+				let dh = crypto.createDiffieHellman(result[0].key.p, 'base64', result[0].key.g, 'base64');
+				let pub = dh.generateKeys('base64');
+				let pri = dh.getPrivateKey('base64');
 
-		// 	signData.push({
-		// 		id: v.id,
-		// 		public_key: pub
-		// 	})
-		// 	fullData.push({
-		// 		id: v.id,
-		// 		email: v.email,
-		// 		public_key: pub,
-		// 		private_key: pri
-		// 	})
-		// })
-		// var tempID = uuidv4();
-		// reqCache.set(tempID, {
-		// 	signData: signData,
-		// 	fullData: fullData
-		// }, 600);
+				signData.push({
+					trusteeID: t.trusteeID,
+					email: t.email,
+					y: pub
+				})
+				fullData.push({
+					trusteeID: t.trusteeID,
+					email: t.email,
+					y: pub,
+					x: pri
+				})
+			})
+			var tempID = uuidv4();
+			reqCache.set(tempID, {
+				signData: signData,
+				fullData: fullData
+			}, 600);
 
-		// res.json({success: true, tempID: tempID, signData: signData});
+			res.json({success: true, tempID: tempID, signData: signData});
+		})
 	},
 
 	addTrusteeConfirm: function(req, res, next){
-		// var data = req.body;
-		// console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Add voter receive admin sign:"), chalk.grey(JSON.stringify(data)));
+		var data = req.body;
+		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Add trustee receive admin sign:"), chalk.grey(JSON.stringify(data)));
 
-		// var cacheData = reqCache.get(data.tempID);
-		// reqCache.del(data.tempID);
-		// var blockData = {
-		// 	voters: cacheData.signData
-		// }
+		var cacheData = reqCache.get(data.tempID);
+		reqCache.del(data.tempID);
+		var blockData = {
+			trustees: cacheData.signData
+		}
 
-		// module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
-		// 	console.log(chalk.black.bgMagenta("[Election]"), "Save new voters success");
+		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+			console.log(chalk.black.bgMagenta("[Election]"), "Save new trustees success");
 
-		// 	// to be replaced by email
-		// 	console.log(cacheData.fullData);
-		// }, true);
+			// to be replaced by email
+			console.log(cacheData.fullData);
+		}, true);
 	},
 
 	delTrustee: function(req, res, next){
-		// var data = req.body;
-		// console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Delete voter:"), chalk.grey(JSON.stringify(data)));
+		var data = req.body;
+		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Delete trustee:"), chalk.grey(JSON.stringify(data)));
 
-		// var blockData = {
-		// 	voters: JSON.parse(data.voters)
-		// }
+		var blockData = {
+			trustees: JSON.parse(data.trustees)
+		}
 
-		// module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
-		// 	console.log(chalk.black.bgMagenta("[Election]"), "Delete voter success (marked public_key as empty).");
-		// }, true);
+		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+			console.log(chalk.black.bgMagenta("[Election]"), "Delete trustees success (marked public_key as empty).");
+		}, true);
 	},
 
 	trusteeKeyChangeReq: function(req, res, next){
@@ -535,6 +538,55 @@ module.exports = {
 		})
 	},
 
+	latestTrustees: function(eID, trusteeID, skip, limit, successCallback){
+		var aggr = [
+			{$match: {
+				"electionID": eID,
+				"blockType": "Election Details"
+			}},
+			{$sort: {blockSeq: -1}},
+			{$unwind: "$data"},
+			{$unwind: "$data.trustees"}
+		];
+
+		if(trusteeID){
+			aggr.push({$match: {
+				"data.trustees.trusteeID": trusteeID,
+			}})
+		}
+
+		var slice = skip ? { $slice:["$result", skip, limit] } : "$result";
+		aggr.push(
+			{$group: {
+				_id: "$data.trustees.trusteeID",
+				"y": {$push:"$data.trustees.y"},
+				"email": {$push:"$data.trustees.email"}
+			}},
+			{$project: {
+				"y": {$arrayElemAt: ["$y", 0]},
+				"email": {$arrayElemAt: ["$email", 0]}
+			}},
+			{$match: {
+				"y": {"$ne": ""},
+			}},
+			{ $group :{
+				_id: null,
+				total: { $sum:1 },
+				result: { $push:"$$ROOT" }
+			}},
+			{ $project :{
+				total: 1,
+				result: slice
+			}}
+		)
+
+		Block.aggregate(aggr).then(function(result){
+			successCallback(result[0]);
+		}).catch(function(err){
+			console.log(err);
+		})
+	},
+
 	create_: function(req, res, next){
 		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Create election:"), chalk.grey(JSON.stringify(req.body)));
 		var data = req.body;
@@ -607,17 +659,6 @@ module.exports = {
 		}).catch(function(err){
 			console.log(err);	
 		});
-
-		// var key = crypto.createDiffieHellman(256, 3);
-		// console.log("Prime");
-		// console.log(key.getPrime('base64'));
-		// console.log("G");
-		// console.log(key.getGenerator('base64'));
-		// key.generateKeys();
-		// console.log("Private");
-		// console.log(key.getPrivateKey('base64'));
-		// console.log("Public");
-		// console.log(key.getPublicKey('base64'));
 	},
 
 	getDetails: function(req, res, next){
@@ -697,3 +738,8 @@ module.exports = {
 	}
 
 }
+		// var key = crypto.createDiffieHellman(256, 3);
+		// console.log("Prime");
+		// console.log(key.getPrime('base64'));
+		// console.log("G");
+		// console.log(key.getGenerator('base64'));
