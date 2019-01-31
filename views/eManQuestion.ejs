@@ -1,4 +1,4 @@
-<%- include('./inc/header', { page_title: "eVoting", css: "<link href='/css/eManQuestion.css' rel='stylesheet' type='text/css' />"}); %>
+<%- include('./inc/header', { page_title: "eVoting", css: ""}); %>
 
 <main>
 	<div class="row">
@@ -14,7 +14,7 @@
 			<div class="row">
 				<% questions.forEach(function(q, i){ %>
 					<div class="col s12">
-						<div class="card q_card">
+						<div class="card cardRowMargin q_card">
 							<div class="row">
 								<div class="input-field col s12">
 									<input id="title<%= i %>" type="text" class="q_title" value="<%= q.question %>">
@@ -27,7 +27,7 @@
 										<label for="<%= i %>ans<%= j %>" class="active">Option</label>
 									</div>
 								<% }) %>
-								<div class="col s12 btn_opt_add">
+								<div class="col s12 center-align btn_opt_add">
 									<a class="btn-floating btn-small waves-effect waves-light deep-purple lighten-2"><i class="material-icons">add</i></a>
 								</div>
 								<div class="input-field col s12 l6">
@@ -43,12 +43,12 @@
 					</div>
 				<% }) %>
 
-				<div class="col s12" id="btn_add_col">
+				<div class="col s12 center-align" id="btn_add_col">
 					<a class="btn-floating btn-large waves-effect waves-light deep-orange lighten-2"><i class="material-icons">add</i></a>
 				</div>
 
 				<div class="col s12">
-					<div class="card" id="admin_card">
+					<div class="card cardRowMargin" id="admin_card">
 						<div class="row">
 							<div class="col s12">
 								<h5>Election administrator key</h5>

@@ -3,7 +3,7 @@ $("#btn_add_col").children().click(function(){
 
 	var template = [
 		'<div class="col s12">',
-			'<div class="card s_card">',
+			'<div class="card cardRowMargin s_card">',
 				'<div class="row">',
 					'<div class="input-field col s12">',
 						$('<input type="text" class="s_id">').attr("id", "id"+i).prop('outerHTML'),

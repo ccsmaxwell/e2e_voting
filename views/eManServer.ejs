@@ -1,4 +1,4 @@
-<%- include('./inc/header', { page_title: "eVoting", css: "<link href='/css/eManServer.css' rel='stylesheet' type='text/css' />"}); %>
+<%- include('./inc/header', { page_title: "eVoting", css: ""}); %>
 
 <main>
 	<div class="row">
@@ -14,7 +14,7 @@
 			<div class="row">
 				<% servers.forEach(function(s, i){ %>
 					<div class="col s12">
-						<div class="card s_card">
+						<div class="card cardRowMargin s_card">
 							<div class="row">
 								<div class="input-field col s12">
 									<input id="id<%= i %>" type="text" class="s_id" value="<%= s.serverID %>"
@@ -29,12 +29,12 @@
 					</div>
 				<% }) %>
 
-				<div class="col s12" id="btn_add_col">
+				<div class="col s12 center-align" id="btn_add_col">
 					<a class="btn-floating btn-large waves-effect waves-light deep-orange lighten-2"><i class="material-icons">add</i></a>
 				</div>
 
 				<div class="col s12">
-					<div class="card" id="admin_card">
+					<div class="card cardRowMargin" id="admin_card">
 						<div class="row">
 							<div class="col s12">
 								<h5>Election administrator key</h5>

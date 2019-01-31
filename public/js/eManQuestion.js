@@ -25,7 +25,7 @@ $("#btn_add_col").children().click(function(){
 
 	var template = [
 		'<div class="col s12">',
-			'<div class="card q_card">',
+			'<div class="card cardRowMargin q_card">',
 				'<div class="row">',
 					'<div class="input-field col s12">',
 						$('<input type="text" class="q_title">').attr("id", "title"+i).prop('outerHTML'),
@@ -36,7 +36,7 @@ $("#btn_add_col").children().click(function(){
 						$('<input type="text">').attr("id", i+"ans0").prop('outerHTML'),
 						$('<label>Option</label>').attr("for", i+"ans0").prop('outerHTML'),
 					'</div>',
-					'<div class="col s12 btn_opt_add">',
+					'<div class="col s12 center-align btn_opt_add">',
 						'<a class="btn-floating btn-small waves-effect waves-light deep-purple lighten-2"><i class="material-icons">add</i></a>',
 					'</div>',
 					'<div class="input-field col s12 l6">',

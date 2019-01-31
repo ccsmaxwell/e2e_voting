@@ -20,3 +20,8 @@ main {
 .hiddendiv{
 	max-width: 100vw;
 }
+
+.cardRowMargin .row{
+	margin-left: auto;
+	margin-right: auto;
+}
