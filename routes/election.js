@@ -31,11 +31,17 @@ router.get('/manage/:electionID/voters/changeKey', function(req, res, next) {
 router.post('/manage/:electionID/voters/changeKey', Election.voterKeyChangeReq);
 
 router.get('/manage/:electionID/trustees', function(req, res, next) {
-	// res.render('createDetails');
+	res.render('eManTrustee');
 });
-router.post('/manage/:electionID/trustees', function(req, res, next) {
-	// res.render('createDetails');
+router.get('/manage/:electionID/trustees/list', Election.getManageTrusteeList);
+router.post('/manage/:electionID/trustees/add-request', Election.addTrusteeReq);
+router.post('/manage/:electionID/trustees/add-confirm', Election.addTrusteeConfirm);
+router.post('/manage/:electionID/trustees/del', Election.delTrustee);
+router.get('/manage/:electionID/trustees/changeKey', function(req, res, next) {
+	res.render('eKeyTrustee');
 });
+router.post('/manage/:electionID/trustees/changeKey', Election.trusteeKeyChangeReq);
+
 router.post('/manage/:electionID/freeze', function(req, res, next) {
 	// res.render('createDetails');
 });

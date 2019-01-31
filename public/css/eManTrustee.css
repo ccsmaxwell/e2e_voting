@@ -1,0 +1,15 @@
+a.secondary-content i{
+	cursor: pointer;
+}
+
+#btn_add_li{
+	text-align: center;
+}
+
+#add_modal li{
+	padding-bottom: 0px;
+}
+
+#add_modal li .row{
+	margin-bottom: unset;
+}

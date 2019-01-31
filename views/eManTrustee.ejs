@@ -1,0 +1,87 @@
+<%- include('./inc/header', { page_title: "eVoting", css: "<link href='/css/eManTrustee.css' rel='stylesheet' type='text/css' />"}); %>
+
+<main>
+	<div class="row">
+		<div class="col s12 l4">
+			<div class="card">
+				<div class="card-content">
+					<h1 class="center-align thin">Manage trustees</h1>
+				</div>
+			</div>
+		</div>
+
+		<div class="col s12 l8">
+			<ul id="trustee_list" class="collection z-depth-1">
+			</ul>
+
+			<div id="pagination"></div>
+
+			<div class="fixed-action-btn">
+				<a id="add_btn" class="btn-floating btn-large red">
+					<i class="large material-icons">add</i>
+				</a>
+			</div>
+		</div>
+	</div>
+
+	<div id="add_modal" class="modal modal-fixed-footer">
+		<div class="modal-content cyan darken-1">
+			<ul class="collection">
+			</ul>
+
+			<div id="btn_add_li">
+				<a class="btn-floating btn-small waves-effect waves-light deep-purple"><i class="material-icons">add</i></a>
+			</div>
+
+			<div class="card">
+				<div class="row">
+					<div class="col s12">
+						<h5>Election administrator key</h5>
+					</div>
+					<div class="input-field col s12">
+						<textarea id="add_admin_pri" class="materialize-textarea"></textarea>
+						<label for="add_admin_pri">Private key (for signing only, wont send to server)</label>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<a class="modal-close waves-effect waves-green btn-flat">Cancel</a>
+			<a id="btn_add_all" class="modal-close waves-effect waves-green btn-flat">Add</a>
+		</div>
+	</div>
+
+	<div id="del_modal" class="modal modal-fixed-footer">
+		<div class="modal-content cyan darken-1">
+			<div class="card">
+				<div class="row">
+					<div class="col s12">
+						<h5>Delete trustee</h5>
+					</div>
+					<div class="input-field col s12">
+						<input id="del_trustee_id" type="text" disabled>
+						<label for="del_trustee_id">Trustee ID</label>
+					</div>
+				</div>
+			</div>
+
+			<div class="card">
+				<div class="row">
+					<div class="col s12">
+						<h5>Election administrator key</h5>
+					</div>
+					<div class="input-field col s12">
+						<textarea id="del_admin_pri" class="materialize-textarea"></textarea>
+						<label for="del_admin_pri">Private key (for signing only, wont send to server)</label>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<a class="modal-close waves-effect waves-green btn-flat">Cancel</a>
+			<a id="btn_del_submit" class="modal-close waves-effect waves-green btn-flat">Delete</a>
+		</div>
+	</div>
+</main>
+
+<%- include('./inc/footer', {script: "<script src='/js/lib/materialize-pagination.js'></script><script src='/js/eManTrustee.js'></script>"}); %>

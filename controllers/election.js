@@ -268,6 +268,147 @@ module.exports = {
 		});
 	},
 
+	getManageTrusteeList: function(req, res, next){
+		// var page = parseInt(req.query.page);
+		// var limit = parseInt(req.query.limit);
+		// var skip = (page-1)*limit;
+
+		// module.exports.latestVoters(req.params.electionID, null, skip, limit, function(result){
+		// 	res.json(result);
+		// });
+	},
+
+	addTrusteeReq: function(req, res, next){
+		// var voters = JSON.parse(req.body.voters);
+		// console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Add voter request:"), chalk.grey(JSON.stringify(voters)));
+
+		// var signData = [];
+		// var fullData = [];
+		// voters.forEach(function(v){
+		// 	let key = new nodeRSA({b: 1024});
+		// 	let pub = key.exportKey("public");
+		// 	let pri = key.exportKey("pkcs8");
+
+		// 	signData.push({
+		// 		id: v.id,
+		// 		public_key: pub
+		// 	})
+		// 	fullData.push({
+		// 		id: v.id,
+		// 		email: v.email,
+		// 		public_key: pub,
+		// 		private_key: pri
+		// 	})
+		// })
+		// var tempID = uuidv4();
+		// reqCache.set(tempID, {
+		// 	signData: signData,
+		// 	fullData: fullData
+		// }, 600);
+
+		// res.json({success: true, tempID: tempID, signData: signData});
+	},
+
+	addTrusteeConfirm: function(req, res, next){
+		// var data = req.body;
+		// console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Add voter receive admin sign:"), chalk.grey(JSON.stringify(data)));
+
+		// var cacheData = reqCache.get(data.tempID);
+		// reqCache.del(data.tempID);
+		// var blockData = {
+		// 	voters: cacheData.signData
+		// }
+
+		// module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+		// 	console.log(chalk.black.bgMagenta("[Election]"), "Save new voters success");
+
+		// 	// to be replaced by email
+		// 	console.log(cacheData.fullData);
+		// }, true);
+	},
+
+	delTrustee: function(req, res, next){
+		// var data = req.body;
+		// console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Delete voter:"), chalk.grey(JSON.stringify(data)));
+
+		// var blockData = {
+		// 	voters: JSON.parse(data.voters)
+		// }
+
+		// module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+		// 	console.log(chalk.black.bgMagenta("[Election]"), "Delete voter success (marked public_key as empty).");
+		// }, true);
+	},
+
+	trusteeKeyChangeReq: function(req, res, next){
+		// var data = req.body;
+		// console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Voter change key request:"), chalk.grey(JSON.stringify(data)));
+
+		// var verifyData = {
+		// 	id: data.id,
+		// 	public_key: data.public_key,
+		// }
+
+		// module.exports.latestVoters(req.params.electionID, data.id, null, null, function(result){
+		// 	let verify = crypto.createVerify('SHA256');
+		// 	verify.update(JSON.stringify(verifyData));
+		// 	if(verify.verify(result.result[0].public_key, data.voterSign, "base64")){
+		// 		verifyData["voterSign"] = data.voterSign;
+		// 		verifyData["timeStamp"] = new Date();
+
+		// 		let eID = req.params.electionID;
+		// 		if(!keyChangeQueue[eID]){
+		// 			keyChangeQueue[eID] = {
+		// 				voter: [],
+		// 				voterTimer: null,
+		// 				trustee: [],
+		// 				trusteeTimer: null
+		// 			}
+		// 		}
+		// 		keyChangeQueue[eID].voter.push(verifyData);
+
+		// 		if(!keyChangeQueue[eID].voterTimer){
+		// 			keyChangeQueue[eID].voterTimer = setTimeout(function(){
+		// 				keyChangeQueue[eID].voterTimer = null;
+		// 				var blockData = {
+		// 					voters: keyChangeQueue[eID].voter
+		// 				};
+		// 				keyChangeQueue[eID].voter = [];
+
+		// 				module.exports.latestDetails(eID, [], function(result){
+		// 					let newBlock_ = {};
+		// 					newBlock_.blockUUID = uuidv4();
+		// 					newBlock_.electionID = eID;
+		// 					newBlock_.blockSeq = result[0].blockSeq + 1
+		// 					newBlock_.blockType = "Election Details";
+		// 					newBlock_.data = [blockData];
+
+		// 					var newBlock = new Block();
+		// 					Object.keys(newBlock_).forEach(function(key){
+		// 						newBlock[key] = newBlock_[key];
+		// 					});
+		// 					newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
+		// 					newBlock_.hash = newBlock.hash;
+
+		// 					newBlock.save().then(function(result){
+		// 						blockChainController.signBlock(newBlock_, false);
+
+		// 						console.log(chalk.black.bgMagenta("[Election]"), "Saved new block for key change.");
+		// 					}).catch(function(err){
+		// 						console.log(err);
+		// 					});
+		// 				});
+		// 			}, keyChangeWaitTime)
+		// 		}
+
+		// 		res.json({success: true});
+		// 	}else{
+		// 		console.log(chalk.black.bgMagenta("[Election]"), "Voter key verification FAIL");
+		// 		res.json({success: false, msg: "Cannot verify voter current key."});
+		// 	}
+		// });
+	},
+
 	verifyAndCreate: function(eID, blockData, adminSign, res, broadcastBlockSign, successCallback, sendSuccessRes){
 		var VnC = function(result){
 			let adminPubKey = result ? result[0].admin.pubKey : blockData.admin.pubKey;
