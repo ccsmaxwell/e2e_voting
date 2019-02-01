@@ -352,13 +352,53 @@ module.exports = {
 	},
 
 	trusteeKeyChangeReq: function(req, res, next){
-		// var data = req.body;
-		// console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Voter change key request:"), chalk.grey(JSON.stringify(data)));
+		var data = req.body;
+		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Trustee change key request:"), chalk.grey(JSON.stringify(data)));
 
-		// var verifyData = {
-		// 	id: data.id,
-		// 	public_key: data.public_key,
-		// }
+		var verifyData = {
+			trusteeID: data.trusteeID,
+			y: data.y,
+			a: data.a,
+			f: data.f
+		}
+
+		module.exports.latestDetails(req.params.electionID, ["key"], function(electRes){
+			let p = bigInt(encoding.base64ToHex(electRes[0].key.p),16);
+			let g = bigInt(encoding.base64ToHex(electRes[0].key.g),16);
+
+			let y = bigInt(encoding.base64ToHex(verifyData.y),16);
+			let a = bigInt(encoding.base64ToHex(verifyData.a),16);
+			let f = bigInt(encoding.base64ToHex(verifyData.f),16);
+			let e = bigInt(encoding.base64ToHex(crypto.createHash('sha256').update(electRes[0].key.g + verifyData.a + verifyData.y).digest('base64')),16);
+
+			let lhs = g.modPow(f,p);
+			let rhs = a.multiply(y.modPow(e,p)).mod(p);
+			if(lhs.eq(rhs)){
+				console.log(chalk.black.bgMagenta("[Election]"), "Trustee ZK proof verified.");
+			}else{
+				res.json({success: false, msg: "Proof created by new private key can not verify."});
+				throw chalk.black.bgMagenta("[Election]") + " Trustee ZK proof NOT verified.";
+			}
+
+			module.exports.latestTrustees(req.params.electionID, data.trusteeID, null, null, function(trustRes){
+				let prev_y = bigInt(encoding.base64ToHex(trustRes.result[0].y),16);
+
+				let trusteeSign = JSON.parse(data.trusteeSign);
+				let s1 = bigInt(encoding.base64ToHex(trusteeSign.s1),16);
+				let s2 = bigInt(encoding.base64ToHex(trusteeSign.s2),16);
+				let m = bigInt(encoding.base64ToHex(crypto.createHash('sha256').update(JSON.stringify(verifyData)).digest('base64')),16);
+
+				let lhs = g.modPow(m,p);
+				let rhs = prev_y.modPow(s1,p).multiply(s1.modPow(s2,p)).mod(p);
+				if(lhs.eq(rhs)){
+					console.log(chalk.black.bgMagenta("[Election]"), "Trustee current key verified.");
+				}else{
+					res.json({success: false, msg: "Trustee current key verification FAIL."});
+					throw chalk.black.bgMagenta("[Election]") + " Trustee current key verification FAIL.";
+				}
+
+			})
+		})
 
 		// module.exports.latestVoters(req.params.electionID, data.id, null, null, function(result){
 		// 	let verify = crypto.createVerify('SHA256');
@@ -516,7 +556,7 @@ module.exports = {
 			}})
 		}
 
-		var slice = skip ? { $slice:["$result", skip, limit] } : "$result";
+		var slice = skip!=null ? { $slice:["$result", skip, limit] } : "$result";
 		aggr.push(
 			{$group: {
 				_id: "$data.voters.id",
@@ -563,7 +603,7 @@ module.exports = {
 			}})
 		}
 
-		var slice = skip ? { $slice:["$result", skip, limit] } : "$result";
+		var slice = skip!=null ? { $slice:["$result", skip, limit] } : "$result";
 		aggr.push(
 			{$group: {
 				_id: "$data.trustees.trusteeID",

@@ -47,9 +47,9 @@
 							<textarea id="new_pub_key" class="materialize-textarea"></textarea>
 							<label for="new_pub_key">Public key</label>
 						</div>
-						<div class="input-field col s12 hide">
+						<div class="input-field col s12">
 							<textarea id="new_pri_key" class="materialize-textarea"></textarea>
-							<label for="new_pri_key">Private key - please save this somewhere else confidentially</label>
+							<label for="new_pri_key">Private key (for creating proof only, wont send to server)</label>
 						</div>
 					</div>
 				</div>
@@ -80,4 +80,4 @@
 	</div>
 </main>
 
-<%- include('./inc/footer', {script: "<script src='/js/lib/diffie-hellman.min.js'></script><script src='/js/eKeyTrustee.js'></script>"}); %>
+<%- include('./inc/footer', {script: "<script src='/js/lib/diffie-hellman.min.js'></script><script src='http://peterolson.github.com/BigInteger.js/BigInteger.min.js'></script><script src='/js/eKeyTrustee.js'></script>"}); %>
