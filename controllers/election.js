@@ -11,11 +11,13 @@ var blockChainController = require('./blockchain');
 
 var encoding = require('./lib/encoding');
 var connection = require('./lib/connection');
+var email = require('./lib/email');
 
 var reqCache = new NodeCache();
 var keyChangeQueue = {};
 
 const keyChangeWaitTime = _config.keyChangeWaitTime;
+const indexURL = _config.indexURL;
 
 module.exports = {
 
@@ -181,9 +183,31 @@ module.exports = {
 		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
 			console.log(chalk.black.bgMagenta("[Election]"), "Save new voters success");
 
-			// to be replaced by email
-			console.log(cacheData.fullData);
-		}, true);
+			let promArr = [];
+			let failArr = [];
+			cacheData.fullData.forEach(function(v){
+				let subject = "[eVoting] Vote invitation";
+				let html = [
+					"<p>You have been invited to vote in an election.</p>",
+					"<p>Your voter ID: " + v.id + "</p>",
+					"<p>Here is your private key for this election, please keep it confidential:</p>",
+					"<p>" + v.private_key.replace(/\n/g,'<br/>') + "</p>",
+					"<p>You can change the key via this link if you want to do so:</p>",
+					"<p>" + indexURL+"election/manage/"+req.params.electionID+"/voters/changeKey" + "</p>",
+				].join('');
+
+				promArr.push(email.sendEmail([], [v.email], html, "", subject, []).then(function(data){
+					// console.log(data)
+				}).catch(function(err){
+					console.log(err);
+				}))
+			})
+
+			Promise.all(promArr).then(function(){
+				console.log(chalk.black.bgMagenta("[Election]"), "Sent email.");
+				res.json({success: true});
+			})
+		}, false);
 	},
 
 	delVoter: function(req, res, next){
@@ -281,8 +305,30 @@ module.exports = {
 		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
 			console.log(chalk.black.bgMagenta("[Election]"), "Save new trustees success");
 
-			// to be replaced by email
-			console.log(cacheData.fullData);
+			let promArr = [];
+			let failArr = [];
+			cacheData.fullData.forEach(function(t){
+				let subject = "[eVoting] Trustee invitation";
+				let html = [
+					"<p>You have been invited to be a trustee in an election.</p>",
+					"<p>Your trustee ID: " + t.trusteeID + "</p>",
+					"<p>Here is your trustee private key for this election:</p>",
+					"<p>" + t.x + "</p>",
+					"<p>Please change the private key ASAP, and keep the new key confidential:</p>",
+					"<p>" + indexURL+"election/manage/"+req.params.electionID+"/trustees/changeKey" + "</p>",
+				].join('');
+
+				promArr.push(email.sendEmail([], [t.email], html, "", subject, []).then(function(data){
+					// console.log(data)
+				}).catch(function(err){
+					console.log(err);
+				}))
+			})
+
+			Promise.all(promArr).then(function(){
+				console.log(chalk.black.bgMagenta("[Election]"), "Sent email.");
+				res.json({success: true});
+			})
 		}, true);
 	},
 

@@ -6,6 +6,12 @@
 	"indexURL": "http://localhost:3001/",
 	"mongoDbPath": "mongodb://localhost:27017/fyp_voting_3001",
 
+	"awsEmailEnable": true,
+	"awsEmailFrom": "ccsmaxwell@link.cuhk.edu.hk",
+	"awsAccessKeyId": "AKIAJPUVS2RHUAVXJKPQ",
+	"awsSecretAccessKeyPath": "./key/aws-ses.secret",
+	"awsRegion": "us-west-2",
+
 	"blockTimerInterval": 15000,
 	"blockTimerBuffer": 3000,
 	"pingInterval": 60000,

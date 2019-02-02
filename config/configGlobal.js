@@ -9,6 +9,11 @@ var configSchema = {
 	"serverPriKeyPath": "",
 	"indexURL": "",
 	"mongoDbPath": "",
+	"awsEmailEnable": true,
+	"awsEmailFrom": "",
+	"awsAccessKeyId": "",
+	"awsSecretAccessKeyPath": "",
+	"awsRegion": "",
 	"blockTimerInterval": 0,
 	"blockTimerBuffer": 0,
 	"pingInterval": 0,
@@ -33,6 +38,10 @@ module.exports = {
 		config["serverID"] = crypto.createHash('sha256').update(config.serverPubKey.toString().split("-----")[2].replace(/[\r\n]*/g,'')).digest('base64');
 		var priKeyPath = path.resolve(configDir, config.serverPriKeyPath);
 		config["serverPriKey"] = fs.readFileSync(priKeyPath);
+
+		if(config.awsEmailEnable){
+			config.awsSecretAccessKeyPath = path.resolve(configDir, config.awsSecretAccessKeyPath);
+		}
 
 		global._config = config;
 	}
