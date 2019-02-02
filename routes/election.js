@@ -42,9 +42,8 @@ router.post('/manage/:electionID/trustees/del', Election.delTrustee);
 router.get('/manage/:electionID/trustees/changeKey', Election.getForTrusteeChangeKey);
 router.post('/manage/:electionID/trustees/changeKey', Election.trusteeKeyChangeReq);
 
-router.post('/manage/:electionID/freeze', function(req, res, next) {
-	// res.render('createDetails');
-});
+router.post('/manage/:electionID/freeze-request', Election.freezeReq);
+router.post('/manage/:electionID/freeze-confirm', Election.freezeConfirm);
 
 router.get('/getDetails', Election.getDetails);
 router.post('/getResult', Election.getResult);

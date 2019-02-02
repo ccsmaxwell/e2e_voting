@@ -430,6 +430,68 @@ module.exports = {
 		})
 	},
 
+	freezeReq: function(req, res, next){
+		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Election freeze request"));
+
+		var eleRes;
+		var trustRes;
+		var eProm = new Promise(function(resolve, reject){
+			module.exports.latestDetails(req.params.electionID, ['key'], function(result){
+				eleRes = result;
+				resolve();
+			})
+		})
+		var tProm = new Promise(function(resolve, reject){
+			module.exports.latestTrustees(req.params.electionID, null, null, null, function(result){
+				trustRes = result;
+				resolve();
+			})
+		})
+
+		Promise.all([eProm, tProm]).then(function(){
+			let p = bigInt(encoding.base64ToHex(eleRes[0].key.p),16);
+			let y = bigInt(1);
+			trustRes.result.forEach(function(t){
+				if(!t.a || !t.f){
+					throw "All trustee must generate their private key and proof."
+				}
+				y = y.multiply(bigInt(encoding.base64ToHex(t.y),16)).mod(p);
+			})
+
+			let signData = {
+				key: {
+					p: eleRes[0].key.p,
+					g: eleRes[0].key.g,
+					y: encoding.hexToBase64(y.toString(16))
+				},
+				frozenAt: new Date()
+			}
+			let tempID = uuidv4();
+			reqCache.set(tempID, {
+				signData: signData
+			}, 600);
+
+			res.json({success: true, tempID: tempID, signData: signData});
+		}).catch(function(err){
+			console.log(err);
+			res.json({success: false, msg: err});
+		})
+	},
+
+	freezeConfirm: function(req, res, next){
+		var data = req.body;
+		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Election freeze receive sign: "), chalk.grey(JSON.stringify(data)));
+
+		var blockData = reqCache.get(data.tempID).signData;
+		reqCache.del(data.tempID);
+
+		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+			console.log(chalk.black.bgMagenta("[Election]"), "Election freeze.");
+
+			// blockChainController.initTimer(newBlock_.data[0].frozenAt, newBlock_.electionID);
+		}, true);
+	},
+
 	keyChangeActivate: function(eID, type, pushData){
 		if(!keyChangeQueue[eID]){
 			keyChangeQueue[eID] = {
@@ -651,80 +713,6 @@ module.exports = {
 		}).catch(function(err){
 			console.log(err);
 		})
-	},
-
-	create_: function(req, res, next){
-		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Create election:"), chalk.grey(JSON.stringify(req.body)));
-		var data = req.body;
-
-		var publicKey = JSON.parse(data.key);
-		var trustees = JSON.parse(data.trustee);
-		data.question_list = JSON.parse(data.question_list);
-		data.voter = JSON.parse(data.voter);
-
-		var key_y = bigInt(1);
-		var p = bigInt(encoding.base64ToHex(publicKey.p),16);
-		var g = bigInt(encoding.base64ToHex(publicKey.g),16);
-		for(let ti of trustees){
-			let y = bigInt(encoding.base64ToHex(ti.y),16);
-			let a = bigInt(encoding.base64ToHex(ti.a),16);
-			let f = bigInt(encoding.base64ToHex(ti.f),16);
-			let e = bigInt(encoding.base64ToHex(crypto.createHash('sha256').update(publicKey.g + ti.a + ti.y).digest('base64')),16);
-
-			let lhs = g.modPow(f,p);
-			let rhs = a.multiply(y.modPow(e,p)).mod(p);
-			if(lhs.eq(rhs)){
-				console.log(chalk.black.bgMagenta("[Election]"), "A trustee verified.");
-			}else{
-				console.log(chalk.black.bgMagenta("[Election]"), "A trustee NOT verified.");
-				res.json({success: false});
-				return;
-			}
-
-			key_y = key_y.multiply(y).mod(p);
-		}
-		console.log(chalk.black.bgMagenta("[Election]"), "Calculate public key (y):", chalk.grey(key_y.toString()));
-
-		var newBlock_ = {};
-		newBlock_.blockUUID = uuidv4();
-		newBlock_.electionID = uuidv4();
-		newBlock_.blockSeq = 0;
-		newBlock_.blockType = "Election Details";
-		newBlock_.data = [{
-			name: data.name,
-			description: data.description,
-			questions: data.question_list,
-			key: {
-				p: publicKey.p,
-				g: publicKey.g,
-				y: encoding.hexToBase64(key_y.toString(16))
-			},
-			voters: data.voter,
-			frozenAt: new Date()
-		}];
-
-		var newBlock = new Block();
-		Object.keys(newBlock_).forEach(function(key){
-			newBlock[key] = newBlock_[key];
-		});
-		newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
-		newBlock_.hash = newBlock.hash;
-
-		console.log(chalk.black.bgMagenta("[Election]"), "Created new block");
-		newBlock.save().then(function(result){
-			console.log(chalk.white.bgBlue("[Block]"), "--> Broadcast block to other nodes");
-			connection.broadcast("POST", "/blockchain/broadcastBlock", {
-				block: JSON.stringify(newBlock_)
-			}, null, null, null);
-
-			blockChainController.initTimer(newBlock_.data[0].frozenAt, newBlock_.electionID);
-			
-			blockChainController.signBlock(newBlock_);
-
-			res.json({success: true, electionID: newBlock_.electionID});
-		}).catch(function(err){
-			console.log(err);	
-		});
 	},
 
 	getDetails: function(req, res, next){
