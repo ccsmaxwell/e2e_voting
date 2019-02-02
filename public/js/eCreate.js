@@ -94,3 +94,10 @@ $("#btn_gen_admin_key").click(function(){
 		 M.updateTextFields();
 	})
 })
+
+$("#btn_gen_prime").click(function(){
+	var key = dh.createDiffieHellman(256,'base64','Aw==','base64');
+	$("#elgamal_p").val(key.getPrime('base64'));
+	$("#elgamal_g").val(key.getGenerator('base64'));
+	 M.updateTextFields();
+})

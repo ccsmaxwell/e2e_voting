@@ -2,11 +2,11 @@ $("#btn_gen_key").click(function(){
 	rsaGenerate(function(pubKey, priKey){
 		$("#new_pub_key").val(pubKey);
 		M.textareaAutoResize($('#new_pub_key'));
-		$("#new_pri_key").val(priKey);
-		$("#new_pri_key").parent().removeClass('hide');
-		M.textareaAutoResize($('#new_pri_key'));
-		 
 		M.updateTextFields();
+
+		$("#new_pri_key").text(priKey);
+		$("#new_pri_key").html($("#new_pri_key").html().replace(/\n/g,'<br/>'));
+		$("#new_pri_key").parent().removeClass('hide'); 
 	})
 })
 
