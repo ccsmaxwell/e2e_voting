@@ -384,27 +384,9 @@ module.exports = {
 				}
 
 				module.exports.latestDetails(eID, [], function(result){
-					let newBlock_ = {};
-					newBlock_.blockUUID = uuidv4();
-					newBlock_.electionID = eID;
-					newBlock_.blockSeq = result[0].blockSeq + 1
-					newBlock_.blockType = "Election Details";
-					newBlock_.data = [blockData];
-
-					var newBlock = new Block();
-					Object.keys(newBlock_).forEach(function(key){
-						newBlock[key] = newBlock_[key];
-					});
-					newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
-					newBlock_.hash = newBlock.hash;
-
-					newBlock.save().then(function(result){
-						blockChainController.signBlock(newBlock_, false);
-
+					module.exports.createBlock(eID, result[0].blockSeq + 1, "Election Details", [blockData], result[0].hash, null, false, function(){
 						console.log(chalk.black.bgMagenta("[Election]"), "Saved new block for key change.");
-					}).catch(function(err){
-						console.log(err);
-					});
+					}, false);
 				});
 			}, keyChangeWaitTime)
 		}
@@ -419,33 +401,10 @@ module.exports = {
 				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification success");
 				blockData["adminSign"] = adminSign;
 
-				let newBlock_ = {};
-				newBlock_.blockUUID = uuidv4();
-				newBlock_.electionID = eID ? eID : uuidv4();
-				newBlock_.blockSeq = result ? result[0].blockSeq + 1 : 0;
-				newBlock_.blockType = "Election Details";
-				newBlock_.data = [blockData];
-
-				var newBlock = new Block();
-				Object.keys(newBlock_).forEach(function(key){
-					newBlock[key] = newBlock_[key];
-				});
-				newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
-				newBlock_.hash = newBlock.hash;
-
-				newBlock.save().then(function(result){
-					blockChainController.signBlock(newBlock_, broadcastBlockSign);
-
-					if(successCallback){
-						successCallback();
-					}
-					if(sendSuccessRes){
-						res.json({success: true, electionID: newBlock_.electionID});
-					}
-				}).catch(function(err){
-					console.log(err);
-					res.json({success: false, msg: "Cannot save new block."});
-				});
+				let electionID = eID ? eID : uuidv4();
+				let blockSeq = result ? result[0].blockSeq + 1 : 0;
+				let previousHash = result ? result[0].hash : null
+				module.exports.createBlock(electionID, blockSeq, "Election Details", [blockData], previousHash, res, broadcastBlockSign, successCallback, sendSuccessRes);
 			}else{
 				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
 				res.json({success: false, msg: "Cannot verify Admin key."});
@@ -459,14 +418,49 @@ module.exports = {
 		}
 	},
 
+	createBlock: function(eID, blockSeq, blockType, data, previousHash, res, broadcastBlockSign, successCallback, sendSuccessRes){
+		let newBlock_ = {};
+		newBlock_.blockUUID = uuidv4();
+		newBlock_.electionID = eID;
+		newBlock_.blockSeq = blockSeq;
+		newBlock_.blockType = blockType;
+		newBlock_.data = data;
+		newBlock_.previousHash = previousHash;
+
+		var newBlock = new Block();
+		Object.keys(newBlock_).forEach(function(key){
+			newBlock[key] = newBlock_[key];
+		});
+		newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
+		newBlock_.hash = newBlock.hash;
+
+		newBlock.save().then(function(result){
+			blockChainController.signBlock(newBlock_, broadcastBlockSign);
+
+			if(successCallback){
+				successCallback();
+			}
+			if(sendSuccessRes){
+				res.json({success: true, electionID: newBlock_.electionID});
+			}
+		}).catch(function(err){
+			console.log(err);
+			if(res){
+				res.json({success: false, msg: "Cannot save new block."});
+			}
+		});
+	},
+
 	latestDetails: function(eID, fields, successCallback){
 		var group = {
 			_id: "$electionID",
-			"blockSeq": {$max:"$blockSeq"}
+			"blockSeq": {$first:"$blockSeq"},
+			"hash": {$first:"$hash"}
 		};
 		var project = {
 			"_id": "$_id",
 			"blockSeq": "$blockSeq",
+			"hash": "$hash",
 		}
 		fields.forEach(function(f){
 			group[f] = {$push:"$data."+f}
@@ -740,8 +734,3 @@ module.exports = {
 	}
 
 }
-		// var key = crypto.createDiffieHellman(256, 3);
-		// console.log("Prime");
-		// console.log(key.getPrime('base64'));
-		// console.log("G");
-		// console.log(key.getGenerator('base64'));

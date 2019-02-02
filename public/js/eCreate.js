@@ -87,11 +87,11 @@ $("#btn_edit").click(function(){
 $("#btn_gen_admin_key").click(function(){
 	rsaGenerate(function(pubKey, priKey){
 		$("#admin_pub").val(pubKey);
-		 M.textareaAutoResize($('#admin_pub'));
+		M.textareaAutoResize($('#admin_pub'));
 		$("#admin_pri").val(priKey);
-		 M.textareaAutoResize($('#admin_pri'));
+		M.textareaAutoResize($('#admin_pri'));
 		 
-		 M.updateTextFields();
+		M.updateTextFields();
 	})
 })
 
@@ -99,5 +99,5 @@ $("#btn_gen_prime").click(function(){
 	var key = dh.createDiffieHellman(256,'base64','Aw==','base64');
 	$("#elgamal_p").val(key.getPrime('base64'));
 	$("#elgamal_g").val(key.getGenerator('base64'));
-	 M.updateTextFields();
+	M.updateTextFields();
 })
