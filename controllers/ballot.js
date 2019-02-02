@@ -152,7 +152,7 @@ module.exports = {
 				ballotID: ballotData.ballotID,
 				trusteeID: _config.port,
 				signHash: signHash
-			}, null, null, null);
+			}, false, null, null, null, null);
 		}).catch(function(err){
 			console.log(err);
 		});	
@@ -179,7 +179,7 @@ module.exports = {
 				voterSign: ballotData.voterSign,
 				ballotID: ballotData.ballotID,
 				receiveTime: ballotData.receiveTime
-			}, null, null, null);
+			}, false, null, null, null, null);
 
 			module.exports.saveAndSignBallot(ballotData);
 			res.json({success: true});

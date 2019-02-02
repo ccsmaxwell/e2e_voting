@@ -61,7 +61,7 @@ module.exports = {
 				IP: myAddr.IP,
 				Port: myAddr.port,
 				instanceID: instanceID
-			}, function(eIP, ePort, myIP, myPort, data){
+			}, false, null, function(eIP, ePort, myIP, myPort, data){
 				let updated = JSON.parse(data).updated;
 
 				if(!updated){

@@ -86,7 +86,7 @@ module.exports = {
 							selectionSeq: selectionSeq,
 							selectedAddr: selectedAddr,
 							trusteeID: _config.port,
-						}, null, null, null);
+						}, false, null, null, null, null);
 					}else{
 						module.exports.generateBlock(electionID, selectionSeq);
 					}
@@ -182,7 +182,7 @@ module.exports = {
 				console.log(chalk.bgBlue("[Block]"), "--> Broadcast block to other nodes");
 				connection.broadcast("POST", "/blockchain/broadcastBlock", {
 					block: JSON.stringify(newBlock_)
-				}, null, null, null);
+				}, false, null, null, null, null);
 
 				module.exports.signBlock(newBlock_);
 
@@ -230,7 +230,7 @@ module.exports = {
 				blockUUID: block.blockUUID,
 				trusteeID: _config.serverID,
 				BlockHashSign: BlockHashSign
-			}, null, null, null);
+			}, false, null, null, null, null);
 		}
 	},
 

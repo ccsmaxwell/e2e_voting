@@ -3,11 +3,20 @@ var ip = require('ip');
 
 var Node_server = require('../../models/node_server');
 
+const serverID = _config.serverID;
+const serverPriKey = _config.serverPriKey;
+
 module.exports = {
 
-	broadcast: function(method, path, form, onData, onError, callback){
-		var myAddr = module.exports.getSelfAddr();
+	broadcast: function(method, path, form, signOnData, dest, onData, onError, callback){
+		if(signOnData){
+			form['serverID'] = serverID;
+			let sign = crypto.createSign('SHA256');
+			sign.write(JSON.stringify(form));
+			form['serverSign'] = sign.sign(serverPriKey, 'base64');
+		}
 
+		var myAddr = module.exports.getSelfAddr();
 		Node_server.find({}).then(function(all_node_server){
 			all_node_server.forEach(function(e){
 				if (e.IP != myAddr.IP || e.port != myAddr.port){
