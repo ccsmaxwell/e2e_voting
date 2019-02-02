@@ -373,12 +373,11 @@ module.exports = {
 
 			let lhs = g.modPow(f,p);
 			let rhs = a.multiply(y.modPow(e,p)).mod(p);
-			if(lhs.eq(rhs)){
-				console.log(chalk.black.bgMagenta("[Election]"), "Trustee ZK proof verified.");
-			}else{
+			if(!lhs.eq(rhs)){
 				res.json({success: false, msg: "Proof created by new private key can not verify."});
 				throw chalk.black.bgMagenta("[Election]") + " Trustee ZK proof NOT verified.";
 			}
+			console.log(chalk.black.bgMagenta("[Election]"), "Trustee ZK proof verified.");
 
 			module.exports.latestTrustees(req.params.electionID, data.trusteeID, null, null, function(trustRes){
 				let prev_y = bigInt(encoding.base64ToHex(trustRes.result[0].y),16);
@@ -390,74 +389,63 @@ module.exports = {
 
 				let lhs = g.modPow(m,p);
 				let rhs = prev_y.modPow(s1,p).multiply(s1.modPow(s2,p)).mod(p);
-				if(lhs.eq(rhs)){
-					console.log(chalk.black.bgMagenta("[Election]"), "Trustee current key verified.");
-				}else{
+				if(!lhs.eq(rhs)){
 					res.json({success: false, msg: "Trustee current key verification FAIL."});
 					throw chalk.black.bgMagenta("[Election]") + " Trustee current key verification FAIL.";
 				}
+				console.log(chalk.black.bgMagenta("[Election]"), "Trustee current key verified.");
 
+				verifyData["trusteeSign"] = trusteeSign;
+				verifyData["timeStamp"] = new Date();
+
+				let eID = req.params.electionID;
+				if(!keyChangeQueue[eID]){
+					keyChangeQueue[eID] = {
+						voter: [],
+						voterTimer: null,
+						trustee: [],
+						trusteeTimer: null
+					}
+				}
+				keyChangeQueue[eID].trustee.push(verifyData);
+
+				if(!keyChangeQueue[eID].trusteeTimer){
+					keyChangeQueue[eID].trusteeTimer = setTimeout(function(){
+						keyChangeQueue[eID].trusteeTimer = null;
+						var blockData = {
+							trustees: keyChangeQueue[eID].trustee
+						};
+						keyChangeQueue[eID].trustee = [];
+
+						module.exports.latestDetails(eID, [], function(result){
+							let newBlock_ = {};
+							newBlock_.blockUUID = uuidv4();
+							newBlock_.electionID = eID;
+							newBlock_.blockSeq = result[0].blockSeq + 1
+							newBlock_.blockType = "Election Details";
+							newBlock_.data = [blockData];
+
+							var newBlock = new Block();
+							Object.keys(newBlock_).forEach(function(key){
+								newBlock[key] = newBlock_[key];
+							});
+							newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
+							newBlock_.hash = newBlock.hash;
+
+							newBlock.save().then(function(result){
+								blockChainController.signBlock(newBlock_, false);
+
+								console.log(chalk.black.bgMagenta("[Election]"), "Saved new block for key change.");
+							}).catch(function(err){
+								console.log(err);
+							});
+						});
+					}, keyChangeWaitTime)
+				}
+
+				res.json({success: true});
 			})
 		})
-
-		// module.exports.latestVoters(req.params.electionID, data.id, null, null, function(result){
-		// 	let verify = crypto.createVerify('SHA256');
-		// 	verify.update(JSON.stringify(verifyData));
-		// 	if(verify.verify(result.result[0].public_key, data.voterSign, "base64")){
-		// 		verifyData["voterSign"] = data.voterSign;
-		// 		verifyData["timeStamp"] = new Date();
-
-		// 		let eID = req.params.electionID;
-		// 		if(!keyChangeQueue[eID]){
-		// 			keyChangeQueue[eID] = {
-		// 				voter: [],
-		// 				voterTimer: null,
-		// 				trustee: [],
-		// 				trusteeTimer: null
-		// 			}
-		// 		}
-		// 		keyChangeQueue[eID].voter.push(verifyData);
-
-		// 		if(!keyChangeQueue[eID].voterTimer){
-		// 			keyChangeQueue[eID].voterTimer = setTimeout(function(){
-		// 				keyChangeQueue[eID].voterTimer = null;
-		// 				var blockData = {
-		// 					voters: keyChangeQueue[eID].voter
-		// 				};
-		// 				keyChangeQueue[eID].voter = [];
-
-		// 				module.exports.latestDetails(eID, [], function(result){
-		// 					let newBlock_ = {};
-		// 					newBlock_.blockUUID = uuidv4();
-		// 					newBlock_.electionID = eID;
-		// 					newBlock_.blockSeq = result[0].blockSeq + 1
-		// 					newBlock_.blockType = "Election Details";
-		// 					newBlock_.data = [blockData];
-
-		// 					var newBlock = new Block();
-		// 					Object.keys(newBlock_).forEach(function(key){
-		// 						newBlock[key] = newBlock_[key];
-		// 					});
-		// 					newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
-		// 					newBlock_.hash = newBlock.hash;
-
-		// 					newBlock.save().then(function(result){
-		// 						blockChainController.signBlock(newBlock_, false);
-
-		// 						console.log(chalk.black.bgMagenta("[Election]"), "Saved new block for key change.");
-		// 					}).catch(function(err){
-		// 						console.log(err);
-		// 					});
-		// 				});
-		// 			}, keyChangeWaitTime)
-		// 		}
-
-		// 		res.json({success: true});
-		// 	}else{
-		// 		console.log(chalk.black.bgMagenta("[Election]"), "Voter key verification FAIL");
-		// 		res.json({success: false, msg: "Cannot verify voter current key."});
-		// 	}
-		// });
 	},
 
 	verifyAndCreate: function(eID, blockData, adminSign, res, broadcastBlockSign, successCallback, sendSuccessRes){
