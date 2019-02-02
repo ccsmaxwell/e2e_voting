@@ -54,6 +54,30 @@ module.exports = {
 		})
 	},
 
+	getManageStat: function(req, res, next){
+		var voterRes;
+		var trusteeRes;
+		var vProm = new Promise(function(resolve, reject){
+			module.exports.latestVoters(req.params.electionID, null, 0, 1, function(result){
+				voterRes = result;
+				resolve();
+			})
+		})
+		var tProm = new Promise(function(resolve, reject){
+			module.exports.latestTrustees(req.params.electionID, null, 0, 1, function(result){
+				trusteeRes = result;
+				resolve();
+			})
+		})
+
+		Promise.all([vProm, tProm]).then(function(){
+			res.json({
+				voterCount: voterRes.total,
+				trusteeCount: trusteeRes.total,
+			})
+		})
+	},
+
 	getManageDetail: function(req, res, next){
 		module.exports.latestDetails(req.params.electionID, ["name", "description", "start", "end", "key", "admin"], function(result){
 			res.render('eCreate', {

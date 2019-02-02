@@ -74,7 +74,10 @@
 			<div class="col s12 m6 l4">
 				<div class="card">
 					<div class="card-content">
-						<span class="card-title">Voters</span>
+						<span class="card-title">
+							Voters
+							<span id="voterCount" class="secondary-content"></span>
+						</span>
 					</div>
 					<div class="card-action">
 						<a href="<%= electionID %>/voters">Edit Voters</a>
@@ -85,7 +88,10 @@
 			<div class="col s12 m6 l4">
 				<div class="card">
 					<div class="card-content">
-						<span class="card-title">Trustees</span>
+						<span class="card-title">
+							Trustees
+							<span id="trusteeCount" class="secondary-content"></span>
+						</span>
 					</div>
 					<div class="card-action">
 						<a href="<%= electionID %>/trustees">Edit Trustees</a>
@@ -95,6 +101,8 @@
 		</div>
 
 		<div class="row">
+			<input type="hidden" id="electionID" value="<%= electionID %>">
+
 			<div class="col s12" id="freeze_btn_col">
 				<a class="waves-effect waves-light btn"><i class="material-icons right">lock</i>Freeze Election</a>
 			</div>
@@ -102,4 +110,4 @@
 	</div>
 </main>
 
-<%- include('./inc/footer', {script: ""}); %>
+<%- include('./inc/footer', {script: "<script src='/js/eMan.js'></script>"}); %>

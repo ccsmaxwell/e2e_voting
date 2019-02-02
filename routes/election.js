@@ -7,7 +7,9 @@ router.get('/create', function(req, res, next) {
 	res.render('eCreate', {create: true});
 });
 router.post('/create', Election.create);
+
 router.get('/manage/:electionID', Election.getManage);
+router.get('/manage/:electionID/indexStat', Election.getManageStat);
 
 router.get('/manage/:electionID/details', Election.getManageDetail);
 router.post('/manage/:electionID/details', Election.editDetail);

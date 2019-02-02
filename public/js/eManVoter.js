@@ -133,7 +133,6 @@ $("#btn_add_all").click(function(){
 						data: data,	
 						success: function(res){
 							if(res.success){
-								console.log(res);
 								updateList();
 							}else{
 								console.log(res);
