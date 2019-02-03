@@ -9,6 +9,7 @@ var Ballot = require('../models/ballot');
 var Block = require('../models/block');
 
 var connection = require('./lib/connection');
+// var block = require('./lib/block');
 
 const timerInterval = _config.blockTimerInterval;
 const timerBuffer = _config.blockTimerBuffer;
@@ -415,19 +416,9 @@ module.exports = {
 	getBlock: function(req, res, next){
 		var data = req.body;
 
-		Block.find({
-			electionID: data.electionID,
-			blockSeq: {
-				"$gte": data.fromSeq,
-				"$lte": data.toSeq
-			}
-		}).sort({
-			"blockSeq": 1
-		}).then(function(result){
-			res.json(result);
-		}).catch(function(err){
-			console.log(err);
-		})
+		// block.allBlocks(data.electionID, data.fromSeq, data.toSeq, function(result){
+		// 	res.json(result);
+		// })
 	},
 
 	syncAfterFreeze: function(req, res, next){

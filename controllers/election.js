@@ -12,6 +12,7 @@ var blockChainController = require('./blockchain');
 var encoding = require('./lib/encoding');
 var connection = require('./lib/connection');
 var email = require('./lib/email');
+var block = require('./lib/block');
 
 var reqCache = new NodeCache();
 var keyChangeQueue = {};
@@ -40,7 +41,7 @@ module.exports = {
 	},
 
 	getManage: function(req, res, next){
-		module.exports.latestDetails(req.params.electionID, ["name", "description", "start", "end", "questions", "servers"], function(result){
+		block.latestDetails(req.params.electionID, ["name", "description", "start", "end", "questions", "servers"], function(result){
 			res.render('eMan', {
 				electionID: req.params.electionID,
 				electionName: result[0].name,
@@ -56,13 +57,13 @@ module.exports = {
 	getManageStat: function(req, res, next){
 		var voterRes, trusteeRes;
 		var vProm = new Promise(function(resolve, reject){
-			module.exports.latestVoters(req.params.electionID, null, 0, 1, function(result){
+			block.latestVoters(req.params.electionID, null, 0, 1, function(result){
 				voterRes = result;
 				resolve();
 			})
 		})
 		var tProm = new Promise(function(resolve, reject){
-			module.exports.latestTrustees(req.params.electionID, null, 0, 1, function(result){
+			block.latestTrustees(req.params.electionID, null, 0, 1, function(result){
 				trusteeRes = result;
 				resolve();
 			})
@@ -77,7 +78,7 @@ module.exports = {
 	},
 
 	getManageDetail: function(req, res, next){
-		module.exports.latestDetails(req.params.electionID, ["name", "description", "start", "end", "key", "admin"], function(result){
+		block.latestDetails(req.params.electionID, ["name", "description", "start", "end", "key", "admin"], function(result){
 			res.render('eCreate', {
 				create: false,
 				electionID: req.params.electionID,
@@ -108,7 +109,7 @@ module.exports = {
 	},
 
 	getManageQuestion: function(req, res, next){
-		module.exports.latestDetails(req.params.electionID, ["questions"], function(result){
+		block.latestDetails(req.params.electionID, ["questions"], function(result){
 			res.render('eManQuestion', {
 				electionID: req.params.electionID,
 				questions: result[0].questions? result[0].questions : [],
@@ -130,7 +131,7 @@ module.exports = {
 	},
 
 	getManageServer: function(req, res, next){
-		module.exports.latestDetails(req.params.electionID, ["servers"], function(result){
+		block.latestDetails(req.params.electionID, ["servers"], function(result){
 			res.render('eManServer', {
 				electionID: req.params.electionID,
 				servers: result[0].servers
@@ -156,7 +157,7 @@ module.exports = {
 		var limit = parseInt(req.query.limit);
 		var skip = (page-1)*limit;
 
-		module.exports.latestVoters(req.params.electionID, null, skip, limit, function(result){
+		block.latestVoters(req.params.electionID, null, skip, limit, function(result){
 			res.json(result);
 		});
 	},
@@ -252,7 +253,7 @@ module.exports = {
 			public_key: data.public_key,
 		}
 
-		module.exports.latestVoters(req.params.electionID, data.id, null, null, function(result){
+		block.latestVoters(req.params.electionID, data.id, null, null, function(result){
 			let verify = crypto.createVerify('SHA256');
 			verify.update(JSON.stringify(verifyData));
 			if(verify.verify(result.result[0].public_key, data.voterSign, "base64")){
@@ -273,7 +274,7 @@ module.exports = {
 		var limit = parseInt(req.query.limit);
 		var skip = (page-1)*limit;
 
-		module.exports.latestTrustees(req.params.electionID, null, skip, limit, function(result){
+		block.latestTrustees(req.params.electionID, null, skip, limit, function(result){
 			res.json(result);
 		});
 	},
@@ -283,7 +284,7 @@ module.exports = {
 		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Add trustee request:"), chalk.grey(JSON.stringify(trustees)));
 
 		var signData = [], fullData = [];
-		module.exports.latestDetails(req.params.electionID, ["key"], function(result){
+		block.latestDetails(req.params.electionID, ["key"], function(result){
 			trustees.forEach(function(t){
 				let dh = crypto.createDiffieHellman(result[0].key.p, 'base64', result[0].key.g, 'base64');
 				let pub = dh.generateKeys('base64');
@@ -362,7 +363,7 @@ module.exports = {
 	},
 
 	getForTrusteeChangeKey: function(req, res, next){
-		module.exports.latestDetails(req.params.electionID, ["key"], function(result){
+		block.latestDetails(req.params.electionID, ["key"], function(result){
 			res.render('eKeyTrustee', {
 				electionKey: result[0].key
 			});
@@ -380,7 +381,7 @@ module.exports = {
 			f: data.f
 		}
 
-		module.exports.latestDetails(req.params.electionID, ["key"], function(electRes){
+		block.latestDetails(req.params.electionID, ["key"], function(electRes){
 			let p = bigInt(encoding.base64ToHex(electRes[0].key.p),16);
 			let g = bigInt(encoding.base64ToHex(electRes[0].key.g),16);
 
@@ -397,7 +398,7 @@ module.exports = {
 			}
 			console.log(chalk.black.bgMagenta("[Election]"), "Trustee ZK proof verified.");
 
-			module.exports.latestTrustees(req.params.electionID, data.trusteeID, null, null, function(trustRes){
+			block.latestTrustees(req.params.electionID, data.trusteeID, null, null, function(trustRes){
 				let prev_y = bigInt(encoding.base64ToHex(trustRes.result[0].y),16);
 
 				let trusteeSign = JSON.parse(data.trusteeSign);
@@ -427,13 +428,13 @@ module.exports = {
 
 		var eleRes, trustRes;
 		var eProm = new Promise(function(resolve, reject){
-			module.exports.latestDetails(req.params.electionID, ['key'], function(result){
+			block.latestDetails(req.params.electionID, ['key'], function(result){
 				eleRes = result;
 				resolve();
 			})
 		})
 		var tProm = new Promise(function(resolve, reject){
-			module.exports.latestTrustees(req.params.electionID, null, null, null, function(result){
+			block.latestTrustees(req.params.electionID, null, null, null, function(result){
 				trustRes = result;
 				resolve();
 			})
@@ -480,15 +481,14 @@ module.exports = {
 			console.log(chalk.black.bgMagenta("[Election]"), "Election freeze.");
 
 			let allBlock, serverRes;
-			let blockProm = Block.find({
-				electionID: req.params.electionID
-			}).sort({
-				"blockSeq": 1
-			}).then(function(result){
-				allBlock = result
+			let blockProm = new Promise(function(resolve, reject){
+				block.allBlocks(req.params.electionID, null, null, function(result){
+					allBlock = result
+					resolve();
+				})
 			})
 			let eleProm = new Promise(function(resolve, reject){
-				module.exports.latestDetails(req.params.electionID, ['servers'], function(result){
+				block.latestDetails(req.params.electionID, ['servers'], function(result){
 					serverRes = result[0].servers
 					resolve();
 				})
@@ -529,8 +529,8 @@ module.exports = {
 					keyChangeQueue[eID].trustee = []
 				}
 
-				module.exports.latestDetails(eID, [], function(result){
-					module.exports.createBlock(eID, result[0].blockSeq + 1, "Election Details", [blockData], result[0].hash, null, false, function(){
+				block.latestDetails(eID, [], function(result){
+					block.createBlock(eID, result[0].blockSeq + 1, "Election Details", [blockData], result[0].hash, null, false, function(){
 						console.log(chalk.black.bgMagenta("[Election]"), "Saved new block for key change.");
 					}, false);
 				});
@@ -550,7 +550,7 @@ module.exports = {
 				let electionID = eID ? eID : uuidv4();
 				let blockSeq = result ? result[0].blockSeq + 1 : 0;
 				let previousHash = result ? result[0].hash : null
-				module.exports.createBlock(electionID, blockSeq, "Election Details", [blockData], previousHash, res, broadcastBlockSign, successCallback, sendSuccessRes);
+				block.createBlock(electionID, blockSeq, "Election Details", [blockData], previousHash, res, broadcastBlockSign, successCallback, sendSuccessRes);
 			}else{
 				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
 				res.json({success: false, msg: "Cannot verify Admin key."});
@@ -558,169 +558,10 @@ module.exports = {
 		}
 
 		if(eID){
-			module.exports.latestDetails(eID, ["admin"], VnC);
+			block.latestDetails(eID, ["admin"], VnC);
 		}else{
 			VnC(null);
 		}
-	},
-
-	createBlock: function(eID, blockSeq, blockType, data, previousHash, res, broadcastBlockSign, successCallback, sendSuccessRes){
-		let newBlock_ = {};
-		newBlock_.blockUUID = uuidv4();
-		newBlock_.electionID = eID;
-		newBlock_.blockSeq = blockSeq;
-		newBlock_.blockType = blockType;
-		newBlock_.data = data;
-		newBlock_.previousHash = previousHash;
-
-		var newBlock = new Block();
-		Object.keys(newBlock_).forEach(function(key){
-			newBlock[key] = newBlock_[key];
-		});
-		newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
-		newBlock_.hash = newBlock.hash;
-
-		newBlock.save().then(function(result){
-			blockChainController.signBlock(newBlock_, broadcastBlockSign);
-
-			if(successCallback){
-				successCallback();
-			}
-			if(sendSuccessRes){
-				res.json({success: true, electionID: newBlock_.electionID});
-			}
-		}).catch(function(err){
-			console.log(err);
-			if(res){
-				res.json({success: false, msg: "Cannot save new block."});
-			}
-		});
-	},
-
-	latestDetails: function(eID, fields, successCallback){
-		var group = {
-			_id: "$electionID",
-			"blockSeq": {$first:"$blockSeq"},
-			"hash": {$first:"$hash"}
-		};
-		var project = {
-			"_id": "$_id",
-			"blockSeq": "$blockSeq",
-			"hash": "$hash",
-		}
-		fields.forEach(function(f){
-			group[f] = {$push:"$data."+f}
-			project[f] = {$arrayElemAt: ["$"+f, 0]}
-		})
-
-		Block.aggregate([
-			{$match: {
-				"electionID": eID,
-				"blockType": "Election Details"
-			}},
-			{$sort: {blockSeq: -1}},
-			{$unwind: "$data"},
-			{$group: group},
-			{$project: project}
-		]).then(function(result){
-			successCallback(result);
-		}).catch((err) => console.log(err))
-	},
-
-	latestVoters: function(eID, voterID, skip, limit, successCallback){
-		var aggr = [
-			{$match: {
-				"electionID": eID,
-				"blockType": "Election Details"
-			}},
-			{$sort: {blockSeq: -1}},
-			{$unwind: "$data"},
-			{$unwind: "$data.voters"}
-		];
-
-		if(voterID){
-			aggr.push({$match: {
-				"data.voters.id": voterID,
-			}})
-		}
-
-		var slice = skip!=null ? { $slice:["$result", skip, limit] } : "$result";
-		aggr.push(
-			{$group: {
-				_id: "$data.voters.id",
-				"public_key": {$push:"$data.voters.public_key"}
-			}},
-			{$project: {
-				"public_key": {$arrayElemAt: ["$public_key", 0]}
-			}},
-			{$match: {
-				"public_key": {"$ne": ""},
-			}},
-			{ $group :{
-				_id: null,
-				total: { $sum:1 },
-				result: { $push:"$$ROOT" }
-			}},
-			{ $project :{
-				total: 1,
-				result: slice
-			}}
-		)
-
-		Block.aggregate(aggr).then(function(result){
-			successCallback(result[0]);
-		}).catch((err) => console.log(err))
-	},
-
-	latestTrustees: function(eID, trusteeID, skip, limit, successCallback){
-		var aggr = [
-			{$match: {
-				"electionID": eID,
-				"blockType": "Election Details"
-			}},
-			{$sort: {blockSeq: -1}},
-			{$unwind: "$data"},
-			{$unwind: "$data.trustees"}
-		];
-
-		if(trusteeID){
-			aggr.push({$match: {
-				"data.trustees.trusteeID": trusteeID,
-			}})
-		}
-
-		var slice = skip!=null ? { $slice:["$result", skip, limit] } : "$result";
-		aggr.push(
-			{$group: {
-				_id: "$data.trustees.trusteeID",
-				"y": {$push:"$data.trustees.y"},
-				"a": {$push:"$data.trustees.a"},
-				"f": {$push:"$data.trustees.f"},
-				"email": {$push:"$data.trustees.email"}
-			}},
-			{$project: {
-				"y": {$arrayElemAt: ["$y", 0]},
-				"a": {$arrayElemAt: ["$a", 0]},
-				"f": {$arrayElemAt: ["$f", 0]},
-				"email": {$arrayElemAt: ["$email", 0]}
-			}},
-			{$match: {
-				"y": {"$ne": ""},
-			}},
-			{ $group :{
-				_id: null,
-				total: { $sum:1 },
-				result: { $push:"$$ROOT" }
-			}},
-			{ $project :{
-				total: 1,
-				result: slice
-			}}
-		)
-
-		Block.aggregate(aggr).then(function(result){
-			successCallback(result[0]);
-		}).catch((err) => console.log(err))
 	},
 
 	getDetails: function(req, res, next){
