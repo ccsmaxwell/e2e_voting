@@ -54,8 +54,7 @@ module.exports = {
 	},
 
 	getManageStat: function(req, res, next){
-		var voterRes;
-		var trusteeRes;
+		var voterRes, trusteeRes;
 		var vProm = new Promise(function(resolve, reject){
 			module.exports.latestVoters(req.params.electionID, null, 0, 1, function(result){
 				voterRes = result;
@@ -166,8 +165,7 @@ module.exports = {
 		var voters = JSON.parse(req.body.voters);
 		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Add voter request:"), chalk.grey(JSON.stringify(voters)));
 
-		var signData = [];
-		var fullData = [];
+		var signData = [], fullData = [];
 		voters.forEach(function(v){
 			let key = new nodeRSA({b: 1024});
 			let pub = key.exportKey("public");
@@ -206,8 +204,7 @@ module.exports = {
 		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
 			console.log(chalk.black.bgMagenta("[Election]"), "Save new voters success");
 
-			let promArr = [];
-			let failArr = [];
+			let promArr = [], failArr = [];
 			cacheData.fullData.forEach(function(v){
 				let subject = "[eVoting] Vote invitation";
 				let html = [
@@ -285,8 +282,7 @@ module.exports = {
 		var trustees = JSON.parse(req.body.trustees);
 		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Add trustee request:"), chalk.grey(JSON.stringify(trustees)));
 
-		var signData = [];
-		var fullData = [];
+		var signData = [], fullData = [];
 		module.exports.latestDetails(req.params.electionID, ["key"], function(result){
 			trustees.forEach(function(t){
 				let dh = crypto.createDiffieHellman(result[0].key.p, 'base64', result[0].key.g, 'base64');
@@ -328,8 +324,7 @@ module.exports = {
 		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
 			console.log(chalk.black.bgMagenta("[Election]"), "Save new trustees success");
 
-			let promArr = [];
-			let failArr = [];
+			let promArr = [], failArr = [];
 			cacheData.fullData.forEach(function(t){
 				let subject = "[eVoting] Trustee invitation";
 				let html = [
@@ -430,8 +425,7 @@ module.exports = {
 	freezeReq: function(req, res, next){
 		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Election freeze request"));
 
-		var eleRes;
-		var trustRes;
+		var eleRes, trustRes;
 		var eProm = new Promise(function(resolve, reject){
 			module.exports.latestDetails(req.params.electionID, ['key'], function(result){
 				eleRes = result;
@@ -484,6 +478,29 @@ module.exports = {
 
 		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
 			console.log(chalk.black.bgMagenta("[Election]"), "Election freeze.");
+
+			let allBlock, serverRes;
+			let blockProm = Block.find({
+				electionID: req.params.electionID
+			}).sort({
+				"blockSeq": 1
+			}).then(function(result){
+				allBlock = result
+			})
+			let eleProm = new Promise(function(resolve, reject){
+				module.exports.latestDetails(req.params.electionID, ['servers'], function(result){
+					serverRes = result[0].servers
+					resolve();
+				})
+			})
+
+			Promise.all([blockProm, eleProm]).then(function(){
+				let form = {
+					blocks: JSON.stringify(allBlock),
+				}
+				let servers = serverRes.map((s) => s.serverID)
+				connection.broadcast("POST", "/blockchain/sync/electionFreeze", form, false, servers, null, null, null);
+			})
 
 			// blockChainController.initTimer(newBlock_.data[0].frozenAt, newBlock_.electionID);
 		}, true);

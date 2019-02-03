@@ -21,7 +21,7 @@ module.exports = {
 
 	init: function(){
 		Block.find({
-			blockSeq: 0
+			"frozenAt": {$ne: null}
 		}).then(function(allElection){
 			allElection.forEach(function(e){
 				module.exports.initTimer(e.data[0].frozenAt, e.electionID)
@@ -287,7 +287,7 @@ module.exports = {
 			module.exports.signBlock(newBlock_);
 
 			if(newBlock_.blockType == "Election Details"){
-				module.exports.initTimer(newBlock_.data[0].frozenAt, newBlock_.electionID);
+				// module.exports.initTimer(newBlock_.data[0].frozenAt, newBlock_.electionID);
 			}else if(newBlock_.blockType == "Ballot"){
 				var allBallotID = [];
 				newBlock_.data.forEach(function(e){
@@ -428,6 +428,18 @@ module.exports = {
 		}).catch(function(err){
 			console.log(err);
 		})
+	},
+
+	syncAfterFreeze: function(req, res, next){
+		var allBlocks = JSON.parse(req.body.blocks)
+		console.log(chalk.bgBlue("[Block]"), chalk.whiteBright("Sync block after election freeze"));
+
+		var recursiveAdd = function(blockArr){
+			if(allBlocks.length){
+				module.exports.blockReceiveProcess(allBlocks[0], recursiveAdd(allBlocks.splice(1)));
+			}
+		}
+		recursiveAdd(allBlocks);
 	}
 
 }

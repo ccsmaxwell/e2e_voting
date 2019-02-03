@@ -3,6 +3,8 @@ var router = express.Router();
 
 var Blockchain = require('../controllers/blockchain');
 
+router.post('/sync/electionFreeze', Blockchain.syncAfterFreeze);
+
 router.post('/broadcastSelection', Blockchain.bftReceive);
 router.post('/broadcastBlock', Blockchain.blockReceive);
 router.post('/broadcastSign', Blockchain.signReceive);
