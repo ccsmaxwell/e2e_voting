@@ -351,7 +351,7 @@ module.exports = {
 			connection.sendRequest("GET", fromAddr, "/election/getAllElection", {}, function(data){
 				remoteList = JSON.parse(data);
 				resolve();
-			}, function(err){
+			}, false, function(err){
 				console.log(err);
 				reject();
 			});
@@ -400,7 +400,7 @@ module.exports = {
 			electionID: electionID,
 			fromSeq: fromSeq,
 			toSeq: toSeq
-		}, function(data){
+		}, false, function(data){
 			blockArr = JSON.parse(data);
 
 			var recursiveAdd = function(blockArr){

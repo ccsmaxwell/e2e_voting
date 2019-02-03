@@ -1,23 +1,22 @@
 var request = require('request');
 var ip = require('ip');
+var crypto = require('crypto');
 
 var Node_server = require('../../models/node_server');
 
-const serverID = _config.serverID;
-const serverPriKey = _config.serverPriKey;
+const {serverID, serverPriKey} = _config;
 
 module.exports = {
 
-	broadcast: function(method, path, form, signOnData, dest, onData, onError, callback){
+	broadcast: function(method, path, form, signOnData, destID, onData, onError, callback){
 		if(signOnData){
-			form['serverID'] = serverID;
-			let sign = crypto.createSign('SHA256');
-			sign.write(JSON.stringify(form));
-			form['serverSign'] = sign.sign(serverPriKey, 'base64');
+			module.exports.signOnFormData(form);
 		}
 
 		var myAddr = module.exports.getSelfAddr();
-		Node_server.find({}).then(function(all_node_server){
+		var match = destID ? {serverID: {$in: destID}} : {};
+
+		Node_server.find(match).then(function(all_node_server){
 			all_node_server.forEach(function(e){
 				if (e.IP != myAddr.IP || e.port != myAddr.port){
 					request({
@@ -47,7 +46,11 @@ module.exports = {
 		})
 	},
 
-	sendRequest: function(method, addr, path, form, onData, onError){
+	sendRequest: function(method, addr, path, form, signOnData, onData, onError){
+		if(signOnData){
+			module.exports.signOnFormData(form);
+		}
+		
 		request({
 			method: method,
 			url: "http://"+addr+path,
@@ -63,6 +66,13 @@ module.exports = {
 				console.log(err);
 			}
 		})
+	},
+
+	signOnFormData: function(formData){
+		formData['serverID'] = serverID;
+		var sign = crypto.createSign('SHA256');
+		sign.write(JSON.stringify(formData));
+		formData['serverSign'] = sign.sign(serverPriKey, 'base64');
 	},
 
 	getSelfAddr: function(){

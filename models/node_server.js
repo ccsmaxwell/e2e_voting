@@ -7,6 +7,8 @@ var Schema = mongoose.Schema;
 var Node_serverSchema = new Schema({
   IP: String,
   port: String,
+  serverID: String,
+  serverKey: String
 }, { timestamps: {} });
 
 Node_serverSchema.index({ IP: 1, port: 1}, { unique: true });

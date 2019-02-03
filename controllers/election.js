@@ -16,8 +16,7 @@ var email = require('./lib/email');
 var reqCache = new NodeCache();
 var keyChangeQueue = {};
 
-const keyChangeWaitTime = _config.keyChangeWaitTime;
-const indexURL = _config.indexURL;
+const {keyChangeWaitTime, indexURL} = _config;
 
 module.exports = {
 
@@ -344,9 +343,7 @@ module.exports = {
 
 				promArr.push(email.sendEmail([], [t.email], html, "", subject, []).then(function(data){
 					// console.log(data)
-				}).catch(function(err){
-					console.log(err);
-				}))
+				}).catch((err) => console.log(err)))
 			})
 
 			Promise.all(promArr).then(function(){
@@ -610,9 +607,7 @@ module.exports = {
 			{$project: project}
 		]).then(function(result){
 			successCallback(result);
-		}).catch(function(err){
-			console.log(err);
-		})
+		}).catch((err) => console.log(err))
 	},
 
 	latestVoters: function(eID, voterID, skip, limit, successCallback){
@@ -657,9 +652,7 @@ module.exports = {
 
 		Block.aggregate(aggr).then(function(result){
 			successCallback(result[0]);
-		}).catch(function(err){
-			console.log(err);
-		})
+		}).catch((err) => console.log(err))
 	},
 
 	latestTrustees: function(eID, trusteeID, skip, limit, successCallback){
@@ -710,9 +703,7 @@ module.exports = {
 
 		Block.aggregate(aggr).then(function(result){
 			successCallback(result[0]);
-		}).catch(function(err){
-			console.log(err);
-		})
+		}).catch((err) => console.log(err))
 	},
 
 	getDetails: function(req, res, next){
