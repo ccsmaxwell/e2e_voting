@@ -1,6 +1,7 @@
 var request = require('request');
 var ip = require('ip');
 var crypto = require('crypto');
+var stringify = require('fast-json-stable-stringify');
 
 var Node_server = require('../../models/node_server');
 
@@ -50,7 +51,7 @@ module.exports = {
 		if(signOnData){
 			module.exports.signOnFormData(form);
 		}
-		
+
 		request({
 			method: method,
 			url: "http://"+addr+path,
@@ -71,7 +72,7 @@ module.exports = {
 	signOnFormData: function(formData){
 		formData['serverID'] = serverID;
 		var sign = crypto.createSign('SHA256');
-		sign.write(JSON.stringify(formData));
+		sign.write(stringify(formData));
 		formData['serverSign'] = sign.sign(serverPriKey, 'base64');
 	},
 

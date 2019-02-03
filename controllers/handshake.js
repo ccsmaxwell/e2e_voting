@@ -1,5 +1,7 @@
 var prompt = require('prompt');
 var chalk = require('chalk');
+var crypto = require('crypto');
+var stringify = require('fast-json-stable-stringify');
 
 var Node_server = require('../models/node_server');
 
@@ -24,14 +26,15 @@ module.exports = {
 				}else if(input.Address != ""){
 					connection.sendRequest("GET", input.Address, "/handshake/connect", {
 						IP: myAddr.IP,
-						Port: myAddr.port
+						Port: myAddr.port,
+						serverKey: serverPubKey
 					}, true, function(data){
 						current_nodes = JSON.parse(data);
 
 						let promArr = []
 						current_nodes.forEach(function(e){
 							promArr.push(new Promise(function(resolve, reject){
-								module.exports.updateNode(e.IP, e.port, null, null, resolve);
+								module.exports.updateNode(e.IP, e.port, e.serverID, e.serverKey, resolve);
 							}));
 						});
 
@@ -39,7 +42,7 @@ module.exports = {
 							console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.whiteBright("Receive address book:"), chalk.grey(data));
 							module.exports.pingAll(true);
 							setInterval(() => module.exports.pingAll(false), pingInterval);
-						})							
+						})
 					}, null);
 
 					// blockChainController.syncAllChain(input.Address);
@@ -51,29 +54,64 @@ module.exports = {
 	},
 
 	connectRequest: function(req, res, next){
-		console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.whiteBright("Connect request: "), chalk.grey(req.body.IP+":"+req.body.Port));
+		var data = req.body;
+		console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.whiteBright("Connect request: "), chalk.grey(data.IP+":"+data.Port));
+
+		var serverID = crypto.createHash('sha256').update(data.serverKey.split("-----")[2].replace(/[\r\n]*/g,'')).digest('base64');
+		if(serverID != data.serverID){
+			return console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("server ID verification fail."));
+		}
+
+		var verifyData = {
+			IP: data.IP,
+			Port: data.Port,
+			serverKey: data.serverKey,
+			serverID: data.serverID
+		}
+		if(!module.exports.verifyRsaSign(stringify(verifyData), data.serverKey, data.serverSign)){
+			return console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Server sign verification fail."));
+		}
 
 		Node_server.find({}).then(function(allNodes){
-			module.exports.updateNode(req.body.IP, req.body.Port, null, null, function(){
+			module.exports.updateNode(data.IP, data.Port, data.serverID, data.serverKey, function(){
 				res.json(allNodes);
 			});
-		}).catch(function(err){
-			console.log(err);
-		})
+		}).catch((err) => console.log(err))
 	},
 
 	pingRequest: function(req, res, next){
-		if(req.body.instanceID == instanceID){
-			res.json({sameNode: true});
-		}else{
-			module.exports.updateNode(req.body.IP, req.body.Port, null, null, function(){
-				res.json({sameNode: false});
-			});
+		var data = req.body;
+		if(data.instanceID == instanceID){
+			return res.json({sameNode: true});
 		}
+
+		module.exports.findByServerID(data.serverID, function(result){
+			if(!data.serverKey && !result[0].serverKey){
+				return res.json({sameNode: false, needKey: true});
+			}
+
+			var verifyData = {
+				IP: data.IP,
+				Port: data.Port,
+				instanceID: data.instanceID,
+				serverID: data.serverID
+			}
+			if(data.serverKey){
+				verifyData["serverKey"] = data.serverKey
+			}
+			if(!module.exports.verifyRsaSign(stringify(verifyData), data.serverKey || result[0].serverKey, data.serverSign)){
+				return console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Ping: server sign verification fail."));
+			}
+
+			module.exports.updateNode(data.IP, data.Port, data.serverID, data.serverKey, null);
+			res.json({sameNode: false, needKey: false});
+		})
 	},
 
 	pingAll: function(withKey){
 		var myAddr = connection.getSelfAddr();
+		module.exports.updateNode(myAddr.IP, myAddr.port, serverID, serverPubKey, null);
+
 		var form = {
 			IP: myAddr.IP,
 			Port: myAddr.port,
@@ -84,13 +122,19 @@ module.exports = {
 		}
 
 		connection.broadcast("GET", "/handshake/ping", form, true, null, function(eIP, ePort, myIP, myPort, data){
-			let sameNode = JSON.parse(data).sameNode;
+			data = JSON.parse(data);
 
-			if(sameNode){
-				module.exports.deleteNode(eIP, ePort, null);
+			if(data.sameNode){
+				return module.exports.deleteNode(eIP, ePort, null);
+			}
+			if(data.needKey){
+				console.log(chalk.black.bgGreenBright("[Handshake]"), `Key request from: ${eIP}:${ePort}`);
+				form["serverKey"] = serverPubKey
+				delete form.serverSign
+				connection.sendRequest("GET", `${eIP}:${ePort}`, "/handshake/ping", form, true, null, null);
 			}
 		}, function(eIP, ePort, myIP, myPort, err){
-			if(err.code != 'ECONNREFUSED'){
+			if(err.code != 'ECONNREFUSED' && err.code != 'ETIMEDOUT'){
 				console.log(err);
 			}
 
@@ -130,6 +174,18 @@ module.exports = {
 				successCallback();
 			}
 		}).catch((err) => console.log(err))
+	},
+
+	findByServerID: function(serverID, successCallback){
+		Node_server.find({
+			serverID: serverID
+		}).then(successCallback).catch((err) => console.log(err))
+	},
+
+	verifyRsaSign: function(data, key, sign){
+		var verify = crypto.createVerify('SHA256');
+		verify.update(data);
+		return verify.verify(key, sign, "base64");
 	}
 
 }
