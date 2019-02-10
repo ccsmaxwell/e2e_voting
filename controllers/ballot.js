@@ -18,7 +18,7 @@ module.exports = {
 
 	getEmptyBallot: function(req, res, next){
 		block.cachedDetails(req.params.electionID, ["name", "description", "start", "end", "key", "questions"], false, function(eDetails){
-			res.render('bPrepare', {eDetails: eDetails});
+			res.render('bPrepare', {electionID: req.params.electionID, eDetails: eDetails});
 		})
 	},
 

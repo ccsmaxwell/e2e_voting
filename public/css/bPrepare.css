@@ -1,3 +1,7 @@
-#election_details_card p{
+#election_details_card p, #encrypted_ballot_card p{
 	margin-top: 0px;
+}
+
+#encrypted_ans{
+	cursor: pointer;
 }

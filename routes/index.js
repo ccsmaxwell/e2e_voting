@@ -5,10 +5,6 @@ router.get('/', function(req, res, next) {
 	res.render('index');
 });
 
-router.get('/vote', function(req, res, next) {
-	res.render('vote');
-});
-
 router.get('/result', function(req, res, next) {
 	res.render('result');
 });

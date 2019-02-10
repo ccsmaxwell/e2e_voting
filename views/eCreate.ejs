@@ -76,7 +76,11 @@
 					<div class="card cardRowMargin" id="pubKey_card">
 						<div class="row">
 							<div class="col s12">
-								<h5>Election public key <button id="btn_gen_prime" class="btn waves-effect waves-light right">Generate</button></h5>
+								<h5>Election public key <button id="btn_gen_prime" class="btn waves-effect waves-light right"
+									<% if(!create){ %>
+										disabled
+									<% } %>
+								>Generate</button></h5>
 							</div>
 							<div class="input-field col s12">
 								<input id="elgamal_p" name="elgamal_p" type="text" class="validate"

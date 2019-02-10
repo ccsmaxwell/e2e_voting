@@ -53,12 +53,14 @@
 										Choose between <%= q.min_choice %> to <%= q.max_choice %> answer(s)
 									<% } %>
 								</label>
+								<input type="hidden" class="min_choice" value="<%= q.min_choice %>">
+								<input type="hidden" class="max_choice" value="<%= q.max_choice %>">
 							</div>
 							<% q.answers.forEach(function(a, j){ %>
 								<div class="col s12 m6 xl4">
 									<p>
 										<label>
-											<input type="checkbox" />
+											<input class="q_checkbox" type="checkbox" />
 											<span><%= a %></span>
 										</label>
 									</p>
@@ -84,11 +86,33 @@
 							<label for="priKey">Private key (for signing only, wont send to server)</label>
 						</div>
 						<div class="input-field col s12">
+							<input type="hidden" id="electionID" value="<%= electionID %>">
 							<input type="hidden" id="key_p" value="<%= eDetails.key.p %>">
 							<input type="hidden" id="key_g" value="<%= eDetails.key.g %>">
 							<input type="hidden" id="key_y" value="<%= eDetails.key.y %>">
 
-							<button id="btn_encrypt" class="btn waves-effect waves-light right">Encrypt ballot</button>
+							<button id="btn_encrypt" class="btn waves-effect waves-light right">Encrypted ballot</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col s12">
+				<div class="card cardRowMargin hide" id="encrypted_ballot_card">
+					<div class="row">
+						<div class="col s12">
+							<h5>Encrypt ballot</h5>
+						</div>
+						<div class="col s12">
+							<label class="valign-wrapper">Encrypted answers</label>
+							<p class="wordBreakAll truncate" id="encrypted_ans"></p>
+						</div>
+						<div class="col s12">
+							<label class="valign-wrapper">Signature</label>
+							<p class="wordBreakAll" id="signature"></p>
+						</div>
+						<div class="input-field col s12">
+							<button id="btn_submit" class="btn waves-effect waves-light right">Submit ballot</button>
 						</div>
 					</div>
 				</div>
