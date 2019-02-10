@@ -6,6 +6,8 @@ var Block = require('../../models/block');
 
 var blockChainController = require('../blockchain');
 
+var electionDetails = {};
+
 module.exports = {
 
 	createBlock: function(eID, blockSeq, blockType, data, previousHash, res, broadcastBlockSign, successCallback, sendSuccessRes){
@@ -67,6 +69,25 @@ module.exports = {
 			{$group: group},
 			{$project: project}
 		]).then(successCallback).catch((err) => console.log(err))
+	},
+
+	cachedDetails: function(eID, fields, forceUpdate, successCallback){
+		if(!electionDetails[eID]){
+			electionDetails[eID] = {}
+		}
+		var currField = Object.keys(electionDetails[eID]);
+
+		if(forceUpdate || currField.length == 0 || ! fields.every(e => currField.includes(e))){
+			module.exports.latestDetails(eID, fields, function(result){
+				fields.forEach(function(f){
+					electionDetails[eID][f] = result[0][f]
+				})
+
+				successCallback(electionDetails[eID]);
+			})
+		}else{
+			successCallback(electionDetails[eID]);
+		}
 	},
 
 	latestVoters: function(eID, voterID, skip, limit, successCallback){

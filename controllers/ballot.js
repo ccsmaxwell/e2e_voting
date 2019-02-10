@@ -10,10 +10,17 @@ var Block = require('../models/block');
 var encoding = require('./lib/encoding');
 var zkProof = require('./lib/zkProof');
 var connection = require('./lib/connection');
+var block = require('./lib/block');
 
 var ballotCache = new NodeCache();
 
 module.exports = {
+
+	getEmptyBallot: function(req, res, next){
+		block.cachedDetails(req.params.electionID, ["name", "description", "start", "end", "key", "questions"], false, function(eDetails){
+			res.render('bPrepare', {eDetails: eDetails});
+		})
+	},
 
 	ballotVerification: function(verifyData, voterSign, successCallBack){
 		Block.aggregate([
