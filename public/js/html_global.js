@@ -9,3 +9,5 @@ $('#footerServerIdSpan').click(function(){
 
 	M.toast({html: 'Copied Server ID to clipboard', classes: 'rounded'})
 })
+
+ M.AutoInit();

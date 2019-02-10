@@ -37,7 +37,8 @@ router.post('/manage/:electionID/trustees/changeKey', Election.trusteeKeyChangeR
 router.post('/manage/:electionID/freeze-request', Election.freezeReq);
 router.post('/manage/:electionID/freeze-confirm', Election.freezeConfirm);
 
-router.get('/getDetails', Election.getDetails);
+router.get('/:electionID', Election.getIndex);
+
 router.post('/getResult', Election.getResult);
 router.get('/getAllElection', Election.getAllElection);
 

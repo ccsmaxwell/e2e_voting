@@ -208,14 +208,15 @@ module.exports = {
 			let promArr = [], failArr = [];
 			cacheData.fullData.forEach(function(v){
 				let subject = "[eVoting] Vote invitation";
-				let html = [
-					"<p>You have been invited to vote in an election.</p>",
-					"<p>Your voter ID: " + v.id + "</p>",
-					"<p>Here is your private key for this election, please keep it confidential:</p>",
-					"<p>" + v.private_key.replace(/\n/g,'<br/>') + "</p>",
-					"<p>You can change the key via this link if you want to do so:</p>",
-					"<p>" + indexURL+"election/manage/"+req.params.electionID+"/voters/changeKey" + "</p>",
-				].join('');
+				let html = `
+					<p>You have been invited to vote in an election.</p>
+					<p>Your voter ID: ${v.id}</p>
+					<p>Here is your private key for this election, please keep it confidential:</p>
+					<p>${v.private_key.replace(/\n/g,'<br/>')}</p>
+					<p>You can change the key via this link if you want to do so:</p>
+					<p>${indexURL}election/manage/${req.params.electionID}/voters/changeKey</p>
+					<p>Please vote via this link when the election started:</p>
+					<p>${indexURL}ballot/prepare/${req.params.electionID}</p>`
 
 				promArr.push(email.sendEmail([], [v.email], html, "", subject, []).then(function(data){
 					// console.log(data)
@@ -328,14 +329,13 @@ module.exports = {
 			let promArr = [], failArr = [];
 			cacheData.fullData.forEach(function(t){
 				let subject = "[eVoting] Trustee invitation";
-				let html = [
-					"<p>You have been invited to be a trustee in an election.</p>",
-					"<p>Your trustee ID: " + t.trusteeID + "</p>",
-					"<p>Here is your trustee private key for this election:</p>",
-					"<p>" + t.x + "</p>",
-					"<p>Please change the private key ASAP, and keep the new key confidential:</p>",
-					"<p>" + indexURL+"election/manage/"+req.params.electionID+"/trustees/changeKey" + "</p>",
-				].join('');
+				let html = `
+					<p>You have been invited to be a trustee in an election.</p>
+					<p>Your trustee ID: ${t.trusteeID}</p>
+					<p>Here is your trustee private key for this election:</p>
+					<p>${t.x}</p>
+					<p>Please change the private key ASAP, and keep the new key confidential:</p>
+					<p>${indexURL}election/manage/${req.params.electionID}/trustees/changeKey</p>`
 
 				promArr.push(email.sendEmail([], [t.email], html, "", subject, []).then(function(data){
 					// console.log(data)
@@ -564,14 +564,9 @@ module.exports = {
 		}
 	},
 
-	getDetails: function(req, res, next){
-		Block.find({
-			electionID: req.query.electionID,
-			blockType: "Election Details"
-		}).then(function(result){
-			res.json(result);
-		}).catch(function(err){
-			console.log(err)
+	getIndex: function(req, res, next){
+		block.cachedDetails(req.params.electionID, ["name", "description", "start", "end", "questions", "servers"], false, function(eDetails){
+			res.render('eIndex', {electionID: req.params.electionID, eDetails: eDetails});
 		})
 	},
 

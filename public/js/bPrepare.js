@@ -140,7 +140,21 @@ $("#btn_encrypt").click(function(){
 	})
 })
 
-M.textareaAutoResize($('#priKey'));
+$("#btn_submit").click(function(){
+	$.ajax({
+		type: "POST",
+		url: "/ballot/submit",
+		data:{			
+			electionID: $("#electionID").val(),
+			voterID: $("#voterID").val(),
+			answers: $("#encrypted_ans").text(),
+			voterSign: $("#signature").text()
+		},	
+		success: function(res){
+			console.log(res);
+		}
+	})
+})
 
 $("#encrypted_ans").click(function(){
 	if($("#encrypted_ans.truncate")[0]){
@@ -150,16 +164,4 @@ $("#encrypted_ans").click(function(){
 	}
 })
 
-// $.ajax({
-// 	type: "POST",
-// 	url: "/ballot/submit",
-// 	data:{			
-// 		electionID: $("#election_id").val(),
-// 		voterID: $("#voter_id").val(),
-// 		answers: JSON.stringify(answers),
-// 		voterSign: arrayBufferToBase64(sign)
-// 	},	
-// 	success: function(res){
-// 		console.log(res);
-// 	}
-// })
+M.textareaAutoResize($('#priKey'));

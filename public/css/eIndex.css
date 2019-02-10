@@ -1,0 +1,11 @@
+#vote_btn_col a, #vote_end_col a{
+	width: 100%;
+}
+
+#election_details_card p{
+	margin-top: 0px;
+}
+
+.collapse_list .collapsible-body{
+	padding: unset;
+}

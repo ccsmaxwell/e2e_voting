@@ -25,6 +25,7 @@ $("#btn_submit").click(function(){
 			data: data,	
 			success: function(res){
 				if(res.success){
+					M.toast({html: 'Change voter key success', classes: 'rounded'})
 					console.log(res);
 				}else{
 					console.log(res);

@@ -37,7 +37,7 @@ $("#btn_freeze_submit").click(function(){
 						data: data,	
 						success: function(res){
 							if(res.success){
-								console.log(res);
+								$(location).attr('href', '/election/' + $("#electionID").val());
 							}else{
 								console.log(res);
 							}
