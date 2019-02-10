@@ -58,7 +58,7 @@ module.exports = {
 				let voterPublicKey = voterRec.result[0].public_key;
 				let verify = crypto.createVerify('SHA256');
 				verify.update(JSON.stringify(verifyData));
-				
+
 				if(!verify.verify(voterPublicKey, voterSign, "base64")){
 					throw chalk.black.bgCyan("[Ballot]") + " Voter key verification FAIL";
 				}
