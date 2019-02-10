@@ -114,8 +114,8 @@ $("#btn_encrypt").click(function(){
 				}
 			}
 
-			if(answers[i].overall_proof[question_value]){
-				answers[i].overall_proof[question_value] = proofToBase64(genRealProof(p,g,y,e_sum,e_sim_sum,question_r));
+			if(answers[i].overall_proof[question_value-min_choice]){
+				answers[i].overall_proof[question_value-min_choice] = proofToBase64(genRealProof(p,g,y,e_sum,e_sim_sum,question_r));
 			}
 		}))
 	})

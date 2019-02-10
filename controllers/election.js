@@ -71,8 +71,8 @@ module.exports = {
 
 		Promise.all([vProm, tProm]).then(function(){
 			res.json({
-				voterCount: voterRes.total,
-				trusteeCount: trusteeRes.total,
+				voterCount: voterRes ? voterRes.total : 0,
+				trusteeCount: trusteeRes ? trusteeRes.total : 0,
 			})
 		})
 	},
@@ -346,7 +346,7 @@ module.exports = {
 				console.log(chalk.black.bgMagenta("[Election]"), "Sent email.");
 				res.json({success: true});
 			})
-		}, true);
+		}, false);
 	},
 
 	delTrustee: function(req, res, next){
@@ -506,6 +506,12 @@ module.exports = {
 		}, true);
 	},
 
+	getIndex: function(req, res, next){
+		block.cachedDetails(req.params.electionID, ["name", "description", "start", "end", "questions", "servers"], false, function(eDetails){
+			res.render('eIndex', {electionID: req.params.electionID, eDetails: eDetails});
+		})
+	},
+
 	keyChangeActivate: function(eID, type, pushData){
 		if(!keyChangeQueue[eID]){
 			keyChangeQueue[eID] = {
@@ -562,12 +568,6 @@ module.exports = {
 		}else{
 			VnC(null);
 		}
-	},
-
-	getIndex: function(req, res, next){
-		block.cachedDetails(req.params.electionID, ["name", "description", "start", "end", "questions", "servers"], false, function(eDetails){
-			res.render('eIndex', {electionID: req.params.electionID, eDetails: eDetails});
-		})
 	},
 
 	getResult: function(req, res, next){

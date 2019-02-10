@@ -22,42 +22,57 @@ module.exports = {
 		})
 	},
 
+	ballotSubmit: function(req, res, next){
+		var data = req.body;
+		console.log(chalk.black.bgCyanBright("[Ballot]"), chalk.whiteBright("Ballot submit from voter: "), chalk.grey(data.voterID));
+
+		var ballotData = {
+			electionID: data.electionID,
+			voterID: data.voterID,
+			answers: JSON.parse(data.answers),
+			voterSign: data.voterSign,
+			ballotID: uuidv4(),
+			receiveTime: new Date()
+		}
+		var verifyData = {
+			electionID: ballotData.electionID,
+			voterID: ballotData.voterID,
+			answers: ballotData.answers,
+		}
+		module.exports.ballotVerification(verifyData, ballotData.voterSign, function(){
+			block.cachedDetails(ballotData.electionID, ["servers"], false, function(eDetails){
+				console.log(chalk.black.bgCyan("[Ballot]"), "--> Broadcast ballot to other nodes");
+				connection.broadcast("POST", "/ballot/broadcastBallot", {
+					ballotData: JSON.stringify(ballotData)
+				}, false, eDetails.servers.map((s) => s.serverID), null, null, null);
+			})
+
+			// module.exports.saveAndSignBallot(ballotData);
+			res.json({success: true});
+		});
+	},
+
 	ballotVerification: function(verifyData, voterSign, successCallBack){
-		Block.aggregate([
-			{$match: {
-				"electionID": verifyData.electionID,
-				"data.voters.id": verifyData.voterID
-			}},
-			{$unwind: "$data"},
-			{$unwind: "$data.voters"},
-			{$match: {"data.voters.id": verifyData.voterID}},
-			{$project: {"data.voters": 1}}
-		]).then(function(voterBlock){
-			let voterPublicKey = voterBlock[0].data.voters.public_key;
-			let verify = crypto.createVerify('SHA256');
-			verify.update(JSON.stringify(verifyData));
-			if(verify.verify(voterPublicKey, voterSign, "base64")){
-				console.log(chalk.black.bgCyan("[Ballot]"), "Voter key verification success");
-			}else{
-				throw chalk.black.bgCyan("[Ballot]") + " Voter key verification FAIL";
-			}
+		var voterProm = new Promise(function(resolve, reject){
+			block.latestVoters(verifyData.electionID, verifyData.voterID, null, null, function(voterRec){
+				let voterPublicKey = voterRec.result[0].public_key;
+				let verify = crypto.createVerify('SHA256');
+				verify.update(JSON.stringify(verifyData));
+				
+				if(!verify.verify(voterPublicKey, voterSign, "base64")){
+					throw chalk.black.bgCyan("[Ballot]") + " Voter key verification FAIL";
+				}
+				resolve();
+			})
+		})
 
-			Block.aggregate([
-				{$match: {
-					"electionID": verifyData.electionID,
-					$or: [
-						{"data.key": { $exists: true }},
-						{"data.questions": { $exists: true }}
-					]
-				}},
-				{$unwind: "$data"},
-				{$project: {"data.key": 1, "data.questions": 1}}
-			]).then(function(dataBlock){
-				let p = bigInt(encoding.base64ToHex(dataBlock[0].data.key.p),16);
-				let g = bigInt(encoding.base64ToHex(dataBlock[0].data.key.g),16);
-				let y = bigInt(encoding.base64ToHex(dataBlock[0].data.key.y),16);
+		var questProm = new Promise(function(resolve, reject){
+			block.cachedDetails(verifyData.electionID, ["key", "questions"], false, function(eDetails){
+				let p = bigInt(encoding.base64ToHex(eDetails.key.p),16);
+				let g = bigInt(encoding.base64ToHex(eDetails.key.g),16);
+				let y = bigInt(encoding.base64ToHex(eDetails.key.y),16);
 
-				dataBlock[0].data.questions.forEach(function(q,i){
+				eDetails.questions.forEach(function(q,i){
 					let question_c1 = bigInt(1);
 					let question_c2 = bigInt(1);
 
@@ -88,15 +103,14 @@ module.exports = {
 					if(!zkProof.ballotProofVerify(msg,p,g,y,q.min_choice,q.max_choice,question_c1,question_c2,verifyData.answers[i].overall_proof)){
 						throw chalk.black.bgCyan("[Ballot]") + " Question overall proof verification FAIL (q:"+i+")";
 					}
-
-					console.log(chalk.black.bgCyan("[Ballot]"), "Question "+i+" verification success");
 				})
-
-				successCallBack();
-			}).catch(function(err){
-				console.log(err);
+				resolve();
 			})
-			
+		})
+
+		Promise.all([voterProm, questProm]).then(function(){
+			console.log(chalk.black.bgCyan("[Ballot]"), "Ballot verification success");
+			successCallBack();
 		}).catch(function(err){
 			console.log(err);
 		})
@@ -163,34 +177,6 @@ module.exports = {
 		}).catch(function(err){
 			console.log(err);
 		});	
-	},
-
-	voterSubmit: function(req, res, next){
-		var ballotData = req.body;
-		ballotData.answers = JSON.parse(ballotData.answers);
-		ballotData.ballotID = uuidv4();
-		ballotData.receiveTime = new Date();
-		console.log(chalk.black.bgCyanBright("[Ballot]"), chalk.whiteBright("Ballot submit: "), chalk.grey(ballotData.voterID), chalk.grey(ballotData.electionID));
-
-		var verifyData = {
-			electionID: ballotData.electionID,
-			voterID: ballotData.voterID,
-			answers: ballotData.answers,
-		}
-		module.exports.ballotVerification(verifyData, ballotData.voterSign, function(){
-			console.log(chalk.black.bgCyan("[Ballot]"), "--> Broadcast ballot to other nodes");
-			connection.broadcast("POST", "/ballot/broadcastBallot", {
-				electionID: ballotData.electionID,
-				voterID: ballotData.voterID,
-				answers: JSON.stringify(ballotData.answers),
-				voterSign: ballotData.voterSign,
-				ballotID: ballotData.ballotID,
-				receiveTime: ballotData.receiveTime
-			}, false, null, null, null, null);
-
-			module.exports.saveAndSignBallot(ballotData);
-			res.json({success: true});
-		});
 	},
 
 	ballotReceive: function(req, res, next){
