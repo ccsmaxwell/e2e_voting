@@ -11,14 +11,15 @@ var BallotSchema = new Schema({
 	answers: [],
 	voterSign: String,
 	// global (by server)
-	ballotID: String,
 	receiveTime: Date,
 	// local
 	sign: [{
-		trusteeID: String,
-		signHash: String
+		serverID: String,
+		ballotSign: String
 	}],
 	inBlock: Boolean
 }, { timestamps: {} });
+
+BallotSchema.index({ electionID: 1, voterSign: 1}, { unique: true });
 
 module.exports = mongoose.model('Ballot', BallotSchema);

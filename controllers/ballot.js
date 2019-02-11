@@ -5,7 +5,6 @@ var chalk = require('chalk');
 var bigInt = require("big-integer");
 
 var Ballot = require('../models/ballot');
-var Block = require('../models/block');
 
 var encoding = require('./lib/encoding');
 var zkProof = require('./lib/zkProof');
@@ -13,6 +12,8 @@ var connection = require('./lib/connection');
 var block = require('./lib/block');
 
 var ballotCache = new NodeCache();
+
+const {serverID, serverPriKey} = _config;
 
 module.exports = {
 
@@ -31,7 +32,6 @@ module.exports = {
 			voterID: data.voterID,
 			answers: JSON.parse(data.answers),
 			voterSign: data.voterSign,
-			ballotID: uuidv4(),
 			receiveTime: new Date()
 		}
 		var verifyData = {
@@ -42,13 +42,51 @@ module.exports = {
 		module.exports.ballotVerification(verifyData, ballotData.voterSign, function(){
 			block.cachedDetails(ballotData.electionID, ["servers"], false, function(eDetails){
 				console.log(chalk.black.bgCyan("[Ballot]"), "--> Broadcast ballot to other nodes");
-				connection.broadcast("POST", "/ballot/broadcastBallot", {
+				connection.broadcast("POST", "/ballot/broadcast", {
 					ballotData: JSON.stringify(ballotData)
 				}, false, eDetails.servers.map((s) => s.serverID), null, null, null);
 			})
 
-			// module.exports.saveAndSignBallot(ballotData);
+			module.exports.saveAndSignBallot(ballotData);
 			res.json({success: true});
+		});
+	},
+
+	ballotReceive: function(req, res, next){
+		var ballotData = JSON.parse(req.body.ballotData);
+		console.log(chalk.black.bgCyanBright("[Ballot]"), chalk.whiteBright("<-- Receive from broadcast: "), chalk.grey(ballotData.voterID), chalk.grey(ballotData.electionID));
+
+		var verifyData = {
+			electionID: ballotData.electionID,
+			voterID: ballotData.voterID,
+			answers: ballotData.answers,
+		}
+		module.exports.ballotVerification(verifyData, ballotData.voterSign, function(){
+			module.exports.saveAndSignBallot(ballotData);
+		})
+
+		res.json({success: true});
+	},
+
+	signReceive: function(req, res, next){
+		var data = req.body;
+		console.log(chalk.black.bgCyan("[Ballot]"), "<-- Receive sign: ", chalk.grey(JSON.stringify(data)));
+
+		var signData = JSON.parse(data.sign);
+		module.exports.saveSign(data.electionID, data.voterSign, [signData], function(result){
+			res.json({success: true});
+
+			if(result){
+				console.log(chalk.black.bgCyan("[Ballot]"), "Saved sign from: ", chalk.grey(signData.serverID));
+				return;
+			}
+			let allSign = ballotCache.get(data.voterSign);
+			if(!allSign){
+				allSign = []
+			}
+			allSign.push(signData);
+			ballotCache.set(data.voterSign, allSign, 600);
+			console.log(chalk.black.bgCyan("[Ballot]"), "Saved sign in cache.")
 		});
 	},
 
@@ -122,109 +160,48 @@ module.exports = {
 		newBallot.voterID = ballotData.voterID;
 		newBallot.answers = ballotData.answers;
 		newBallot.voterSign = ballotData.voterSign;
-		newBallot.ballotID = ballotData.ballotID;
 		newBallot.receiveTime = ballotData.receiveTime;
 		newBallot.save().then(function(row){
 			console.log(chalk.black.bgCyan("[Ballot]"), "Saved ballot");
 
-			let cacheSign = ballotCache.get(newBallot.ballotID);
+			let cacheSign = ballotCache.get(newBallot.voterSign);
 			if(cacheSign){
-				ballotCache.del(newBallot.ballotID);
-				let pushSign = []
-				cacheSign.forEach(function(s){
-					pushSign.push({
-						trusteeID: s.trusteeID,
-						signHash: s.signHash
-					})
-				})
-
-				Ballot.findOneAndUpdate({
-					electionID: ballotData.electionID,
-					ballotID: ballotData.ballotID
-				},{
-					$push: {sign: {
-						$each: pushSign
-					}}
-				}).then(function(result){
-					console.log(chalk.black.bgCyan("[Ballot]"), "Saved cache sign.");
-				}).catch(function(err){
-					console.log(err);
-				})
+				ballotCache.del(newBallot.voterSign);
+				module.exports.saveSign(ballotData.electionID, ballotData.voterSign, cacheSign, () => console.log(chalk.black.bgCyan("[Ballot]"), "Saved cache sign."));
 			}
 
-			var signHash = crypto.createHash('sha256').update(JSON.stringify(ballotData)).digest('base64');
-			Ballot.findOneAndUpdate({
-				electionID: ballotData.electionID,
-				ballotID: ballotData.ballotID
-			},{
-				$push: {sign: {
-					trusteeID: _config.port,
-					signHash: signHash
-				}}
-			}).then(function(result){
-				console.log(chalk.black.bgCyan("[Ballot]"), "Signed ballot: ", chalk.grey(ballotData.ballotID));
-			}).catch(function(err){
-				console.log(err);
-			})
+			let sign = {
+				serverID: serverID,
+				ballotSign: crypto.createSign('SHA256').update(JSON.stringify(ballotData)).sign(serverPriKey, 'base64')
+			}
+			module.exports.saveSign(ballotData.electionID, ballotData.voterSign, [sign], () => console.log(chalk.black.bgCyan("[Ballot]"), "Saved self sign."));
 
-			console.log(chalk.black.bgCyan("[Ballot]"), "--> Broadcast sign to other nodes");
-			connection.broadcast("POST", "/ballot/broadcastSign", {
-				electionID: ballotData.electionID,
-				ballotID: ballotData.ballotID,
-				trusteeID: _config.port,
-				signHash: signHash
-			}, false, null, null, null, null);
+			block.cachedDetails(ballotData.electionID, ["servers"], false, function(eDetails){
+				console.log(chalk.black.bgCyan("[Ballot]"), "--> Broadcast sign to other nodes");
+				connection.broadcast("POST", "/ballot/broadcast/sign", {
+					electionID: ballotData.electionID,
+					voterSign: ballotData.voterSign,
+					sign: JSON.stringify(sign)
+				}, false, eDetails.servers.map((s) => s.serverID), null, null, null);
+			})
 		}).catch(function(err){
 			console.log(err);
 		});	
 	},
 
-	ballotReceive: function(req, res, next){
-		var ballotData = req.body;
-		ballotData.answers = JSON.parse(ballotData.answers);
-		console.log(chalk.black.bgCyanBright("[Ballot]"), chalk.whiteBright("<-- Receive from broadcast: "), chalk.grey(ballotData.voterID), chalk.grey(ballotData.electionID));
-
-		var verifyData = {
-			electionID: ballotData.electionID,
-			voterID: ballotData.voterID,
-			answers: ballotData.answers,
-		}
-		module.exports.ballotVerification(verifyData, ballotData.voterSign, function(){
-			module.exports.saveAndSignBallot(ballotData);
-		})
-
-		res.json({success: true});
-	},
-
-	signReceive: function(req, res, next){
-		var signData = req.body;
-		console.log(chalk.black.bgCyan("[Ballot]"), "<-- Receive sign: ", chalk.grey(signData.trusteeID), chalk.grey(signData.ballotID));
-
+	saveSign: function(eID, voterSign, signArr, successCallBack){
 		Ballot.findOneAndUpdate({
-			electionID: signData.electionID,
-			ballotID: signData.ballotID
+			electionID: eID,
+			voterSign: voterSign
 		},{
 			$push: {sign: {
-				trusteeID: signData.trusteeID,
-				signHash: signData.signHash
+				$each: signArr
 			}}
 		}).then(function(result){
-			if(result){
-				console.log(chalk.black.bgCyan("[Ballot]"), "Saved sign from: ", chalk.grey(signData.trusteeID));
-			}else{
-				let allSign = ballotCache.get(signData.ballotID);
-				if(!allSign){
-					allSign = []
-				}
-				allSign.push(signData);
-				ballotCache.set(signData.ballotID, allSign, 600);
-				console.log(chalk.black.bgCyan("[Ballot]"), "Saved sign in cache.")
+			if(successCallBack){
+				successCallBack(result);
 			}
-
-			res.json({success: true});
-		}).catch(function(err){
-			console.log(err);
-		})		
+		})
 	}
 
 }

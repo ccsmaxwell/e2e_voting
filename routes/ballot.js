@@ -6,7 +6,7 @@ var Ballot = require('../controllers/ballot');
 router.get('/prepare/:electionID', Ballot.getEmptyBallot);
 router.post('/submit', Ballot.ballotSubmit);
 
-router.post('/broadcastBallot', Ballot.ballotReceive);
-router.post('/broadcastSign', Ballot.signReceive);
+router.post('/broadcast', Ballot.ballotReceive);
+router.post('/broadcast/sign', Ballot.signReceive);
 
 module.exports = router;
