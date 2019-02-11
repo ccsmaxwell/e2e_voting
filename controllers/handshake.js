@@ -3,11 +3,10 @@ var chalk = require('chalk');
 var crypto = require('crypto');
 var stringify = require('fast-json-stable-stringify');
 
-var Node_server = require('../models/node_server');
-
 var blockChainController = require('./blockchain');
 
 var connection = require('./lib/connection');
+var server = require('./lib/server');
 
 const {pingInterval, serverID, serverPubKey, instanceID} = _config;
 
@@ -16,7 +15,7 @@ module.exports = {
 	init: function(){	
 		var myAddr = connection.getSelfAddr();
 
-		module.exports.updateNode(myAddr.IP, myAddr.port, serverID, serverPubKey, function(){
+		server.updateNode(myAddr.IP, myAddr.port, serverID, serverPubKey, function(){
 			module.exports.pingAll(true);
 
 			prompt.start();
@@ -34,7 +33,7 @@ module.exports = {
 						let promArr = []
 						current_nodes.forEach(function(e){
 							promArr.push(new Promise(function(resolve, reject){
-								module.exports.updateNode(e.IP, e.port, e.serverID, e.serverKey, resolve);
+								server.updateNode(e.IP, e.port, e.serverID, e.serverKey, resolve);
 							}));
 						});
 
@@ -72,11 +71,11 @@ module.exports = {
 			return console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Server sign verification fail."));
 		}
 
-		Node_server.find({}).then(function(allNodes){
-			module.exports.updateNode(data.IP, data.Port, data.serverID, data.serverKey, function(){
+		server.findAll(null, null, function(allNodes){
+			server.updateNode(data.IP, data.Port, data.serverID, data.serverKey, function(){
 				res.json(allNodes);
 			});
-		}).catch((err) => console.log(err))
+		})
 	},
 
 	pingRequest: function(req, res, next){
@@ -85,7 +84,7 @@ module.exports = {
 			return res.json({sameNode: true});
 		}
 
-		module.exports.findByServerID(data.serverID, function(result){
+		server.findByServerID(data.serverID, function(result){
 			if(!data.serverKey && !result[0].serverKey){
 				return res.json({sameNode: false, needKey: true});
 			}
@@ -103,14 +102,14 @@ module.exports = {
 				return console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Ping: server sign verification fail."));
 			}
 
-			module.exports.updateNode(data.IP, data.Port, data.serverID, data.serverKey, null);
+			server.updateNode(data.IP, data.Port, data.serverID, data.serverKey, null);
 			res.json({sameNode: false, needKey: false});
 		})
 	},
 
 	pingAll: function(withKey){
 		var myAddr = connection.getSelfAddr();
-		module.exports.updateNode(myAddr.IP, myAddr.port, serverID, serverPubKey, null);
+		server.updateNode(myAddr.IP, myAddr.port, serverID, serverPubKey, null);
 
 		var form = {
 			IP: myAddr.IP,
@@ -125,7 +124,7 @@ module.exports = {
 			data = JSON.parse(data);
 
 			if(data.sameNode){
-				return module.exports.deleteNode(eIP, ePort, null);
+				return server.deleteNode(eIP, ePort, null);
 			}
 			if(data.needKey){
 				console.log(chalk.black.bgGreenBright("[Handshake]"), `Key request from: ${eIP}:${ePort}`);
@@ -138,48 +137,10 @@ module.exports = {
 				console.log(err);
 			}
 
-			module.exports.deleteNode(eIP, ePort, function(){
+			server.deleteNode(eIP, ePort, function(){
 				console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Ping fail & deleted: "), chalk.grey(eIP+":"+ePort));
 			})
 		}, null);
-	},
-
-	updateNode: function(ip, port, serverID, serverKey, successCallback){
-		var edit = {}
-		if(serverID){
-			edit["serverID"] = serverID;
-		}
-		if(serverKey){
-			edit["serverKey"] = serverKey;
-		}
-
-		Node_server.findOneAndUpdate({
-			IP: ip,
-			port: port
-		}, edit, {
-			upsert: true
-		}).then(function(result){
-			if(successCallback){
-				successCallback();
-			}
-		}).catch((err) => console.log(err))
-	},
-
-	deleteNode: function(ip, port, successCallback){
-		Node_server.deleteOne({
-			IP: ip,
-			port: port
-		}).then(function(result){
-			if(successCallback){
-				successCallback();
-			}
-		}).catch((err) => console.log(err))
-	},
-
-	findByServerID: function(serverID, successCallback){
-		Node_server.find({
-			serverID: serverID
-		}).then(successCallback).catch((err) => console.log(err))
 	},
 
 	verifyRsaSign: function(data, key, sign){

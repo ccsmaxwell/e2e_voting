@@ -3,7 +3,7 @@ var ip = require('ip');
 var crypto = require('crypto');
 var stringify = require('fast-json-stable-stringify');
 
-var Node_server = require('../../models/node_server');
+var server = require('./server');
 
 const {serverID, serverPriKey} = _config;
 
@@ -17,7 +17,7 @@ module.exports = {
 		var myAddr = module.exports.getSelfAddr();
 		var match = destID ? {serverID: {$in: destID}} : {};
 
-		Node_server.find(match).then(function(all_node_server){
+		server.findAll(match, null, function(all_node_server){
 			all_node_server.forEach(function(e){
 				if (e.IP != myAddr.IP || e.port != myAddr.port){
 					request({
@@ -42,8 +42,6 @@ module.exports = {
 			if(callback){
 				callback();
 			}
-		}).catch(function(err){
-			console.log(err);
 		})
 	},
 

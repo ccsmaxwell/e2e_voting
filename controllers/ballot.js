@@ -10,6 +10,7 @@ var encoding = require('./lib/encoding');
 var zkProof = require('./lib/zkProof');
 var connection = require('./lib/connection');
 var block = require('./lib/block');
+var server = require('./lib/server');
 
 var ballotCache = new NodeCache();
 
@@ -39,7 +40,7 @@ module.exports = {
 			voterID: ballotData.voterID,
 			answers: ballotData.answers,
 		}
-		module.exports.ballotVerification(verifyData, ballotData.voterSign, function(){
+		module.exports.verifyBallot(verifyData, ballotData.voterSign, function(){
 			block.cachedDetails(ballotData.electionID, ["servers"], false, function(eDetails){
 				console.log(chalk.black.bgCyan("[Ballot]"), "--> Broadcast ballot to other nodes");
 				connection.broadcast("POST", "/ballot/broadcast", {
@@ -61,7 +62,7 @@ module.exports = {
 			voterID: ballotData.voterID,
 			answers: ballotData.answers,
 		}
-		module.exports.ballotVerification(verifyData, ballotData.voterSign, function(){
+		module.exports.verifyBallot(verifyData, ballotData.voterSign, function(){
 			module.exports.saveAndSignBallot(ballotData);
 		})
 
@@ -90,7 +91,7 @@ module.exports = {
 		});
 	},
 
-	ballotVerification: function(verifyData, voterSign, successCallBack){
+	verifyBallot: function(verifyData, voterSign, successCallBack){
 		var voterProm = new Promise(function(resolve, reject){
 			block.latestVoters(verifyData.electionID, verifyData.voterID, null, null, function(voterRec){
 				let voterPublicKey = voterRec.result[0].public_key;
@@ -187,6 +188,44 @@ module.exports = {
 		}).catch(function(err){
 			console.log(err);
 		});	
+	},
+
+	verifySign: function(eID, voterSign, signArr, successCallBack){
+		Ballot.find({
+			electionID: eID,
+			voterSign: voterSign
+		}).then(function(result){
+			if(result){
+				let resArr = [];
+				let promArr = []
+				let verifyData = {
+					electionID: eID,
+					voterID: result.voterID,
+					answers: result.answers,
+					voterSign: voterSign,
+					receiveTime: result.receiveTime
+				}
+				
+				signArr.forEach(function(s){
+					promArr.push(new Promise(function(resolve, reject){
+						server.findByServerID(s.serverID, function(result){
+							if(crypto.createVerify('SHA256').update(JSON.stringify(verifyData)).verify(publicKey, s.ballotSign, "base64")){
+								resArr.push(s);
+							}else{
+								console.log(chalk.black.bgCyan("[Ballot]"), "Sign verification fail.", chalk.grey(s.serverID));
+							}
+							resolve();
+						})						
+					}))
+				})
+
+				Promise.all(promArr).then(function(){
+					successCallBack(resArr);
+				})
+			}else{
+				successCallBack(null);
+			}
+		})
 	},
 
 	saveSign: function(eID, voterSign, signArr, successCallBack){
