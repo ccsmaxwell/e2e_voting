@@ -84,8 +84,8 @@ module.exports = {
 			return res.json({sameNode: true});
 		}
 
-		server.findByServerID(data.serverID, function(result){
-			if(!data.serverKey && !result[0].serverKey){
+		server.keyByServerID(data.serverID, false, function(serverKey){
+			if(!data.serverKey && !serverKey){
 				return res.json({sameNode: false, needKey: true});
 			}
 
@@ -98,7 +98,7 @@ module.exports = {
 			if(data.serverKey){
 				verifyData["serverKey"] = data.serverKey
 			}
-			if(!module.exports.verifyRsaSign(stringify(verifyData), data.serverKey || result[0].serverKey, data.serverSign)){
+			if(!module.exports.verifyRsaSign(stringify(verifyData), data.serverKey || serverKey, data.serverSign)){
 				return console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Ping: server sign verification fail."));
 			}
 

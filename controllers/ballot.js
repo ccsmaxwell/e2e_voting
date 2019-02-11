@@ -74,21 +74,23 @@ module.exports = {
 		console.log(chalk.black.bgCyan("[Ballot]"), "<-- Receive sign: ", chalk.grey(JSON.stringify(data)));
 
 		var signData = JSON.parse(data.sign);
-		module.exports.saveSign(data.electionID, data.voterSign, [signData], function(result){
-			res.json({success: true});
-
-			if(result){
-				console.log(chalk.black.bgCyan("[Ballot]"), "Saved sign from: ", chalk.grey(signData.serverID));
-				return;
+		module.exports.verifySign(data.electionID, data.voterSign, [signData], function(verifiedArr){
+			if(verifiedArr){
+				module.exports.saveSign(data.electionID, data.voterSign, [signData], function(result){
+					console.log(chalk.black.bgCyan("[Ballot]"), "Saved sign from: ", chalk.grey(signData.serverID));
+					res.json({success: true});
+				});
+			}else{
+				let allSign = ballotCache.get(data.voterSign);
+				if(!allSign){
+					allSign = []
+				}
+				allSign.push(signData);
+				ballotCache.set(data.voterSign, allSign, 600);
+				console.log(chalk.black.bgCyan("[Ballot]"), "Saved sign in cache.")
+				res.json({success: true});
 			}
-			let allSign = ballotCache.get(data.voterSign);
-			if(!allSign){
-				allSign = []
-			}
-			allSign.push(signData);
-			ballotCache.set(data.voterSign, allSign, 600);
-			console.log(chalk.black.bgCyan("[Ballot]"), "Saved sign in cache.")
-		});
+		})
 	},
 
 	verifyBallot: function(verifyData, voterSign, successCallBack){
@@ -168,7 +170,9 @@ module.exports = {
 			let cacheSign = ballotCache.get(newBallot.voterSign);
 			if(cacheSign){
 				ballotCache.del(newBallot.voterSign);
-				module.exports.saveSign(ballotData.electionID, ballotData.voterSign, cacheSign, () => console.log(chalk.black.bgCyan("[Ballot]"), "Saved cache sign."));
+				module.exports.verifySign(ballotData.electionID, ballotData.voterSign, cacheSign, function(verifiedArr){
+					module.exports.saveSign(ballotData.electionID, ballotData.voterSign, verifiedArr, () => console.log(chalk.black.bgCyan("[Ballot]"), "Saved cache sign."));
+				})
 			}
 
 			let sign = {
@@ -205,11 +209,11 @@ module.exports = {
 					voterSign: voterSign,
 					receiveTime: result.receiveTime
 				}
-				
+
 				signArr.forEach(function(s){
 					promArr.push(new Promise(function(resolve, reject){
-						server.findByServerID(s.serverID, function(result){
-							if(crypto.createVerify('SHA256').update(JSON.stringify(verifyData)).verify(publicKey, s.ballotSign, "base64")){
+						server.keyByServerID(s.serverID, false, function(serverKey){
+							if(crypto.createVerify('SHA256').update(JSON.stringify(verifyData)).verify(serverKey, s.ballotSign, "base64")){
 								resArr.push(s);
 							}else{
 								console.log(chalk.black.bgCyan("[Ballot]"), "Sign verification fail.", chalk.grey(s.serverID));

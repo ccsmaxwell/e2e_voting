@@ -1,5 +1,7 @@
 var Node_server = require('../../models/node_server');
 
+var serverDetails = {};
+
 module.exports = {
 
 	updateNode: function(ip, port, serverID, serverKey, successCallback){
@@ -34,8 +36,19 @@ module.exports = {
 		}).catch((err) => console.log(err))
 	},
 
-	findByServerID: function(serverID, successCallback){
-		module.exports.findAll({serverID: serverID}, null, successCallback);
+	keyByServerID: function(serverID, forceUpdate, successCallback){
+		if(!serverDetails[serverID]){
+			serverDetails[serverID] = {serverKey: null}
+		}
+
+		if(forceUpdate || !serverDetails[serverID].serverKey){
+			module.exports.findAll({serverID: serverID}, null, function(result){
+				serverDetails[serverID].serverKey = result[0].serverKey;
+				successCallback(serverDetails[serverID].serverKey);
+			});
+		}else{
+			successCallback(serverDetails[serverID].serverKey);
+		}
 	},
 
 	findAll: function(filter, sort, successCallback){
