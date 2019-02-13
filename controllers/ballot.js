@@ -195,40 +195,51 @@ module.exports = {
 	},
 
 	verifySign: function(eID, voterSign, signArr, successCallBack){
-		Ballot.find({
+		var bRes, eRes;
+		var bProm = Ballot.find({
 			electionID: eID,
 			voterSign: voterSign
-		}).then(function(result){
-			if(result){
-				let resArr = [];
-				let promArr = []
-				let verifyData = {
-					electionID: eID,
-					voterID: result.voterID,
-					answers: result.answers,
-					voterSign: voterSign,
-					receiveTime: result.receiveTime
-				}
+		}).then((result) =>	bRes = result);
 
-				signArr.forEach(function(s){
-					promArr.push(new Promise(function(resolve, reject){
-						server.keyByServerID(s.serverID, false, function(serverKey){
-							if(crypto.createVerify('SHA256').update(JSON.stringify(verifyData)).verify(serverKey, s.ballotSign, "base64")){
-								resArr.push(s);
-							}else{
-								console.log(chalk.black.bgCyan("[Ballot]"), "Sign verification fail.", chalk.grey(s.serverID));
-							}
-							resolve();
-						})						
-					}))
-				})
+		var eProm = new Promise(function(resolve, reject){
+			block.cachedDetails(eID, ["servers"], false, function(result){
+				eRes = result;
+				resolve();
+			});
+		})
 
-				Promise.all(promArr).then(function(){
-					successCallBack(resArr);
-				})
-			}else{
-				successCallBack(null);
+		Promise.all([bProm, eProm]).then(function(){
+			if(!bRes){
+				return successCallBack(null);
 			}
+			let resArr = [], promArr = [];
+			let verifyData = {
+				electionID: eID,
+				voterID: result.voterID,
+				answers: result.answers,
+				voterSign: voterSign,
+				receiveTime: result.receiveTime
+			}
+
+			signArr.forEach(function(s){
+				if(eRes.servers.filter(servers => (servers.serverID == s.serverID)).length = 0){
+					return console.log(chalk.black.bgCyan("[Ballot]"), "Sign verification fail: server ID not exist in this election. ", chalk.grey(s.serverID));
+				}
+				promArr.push(new Promise(function(resolve, reject){
+					server.keyByServerID(s.serverID, false, function(serverKey){
+						if(crypto.createVerify('SHA256').update(JSON.stringify(verifyData)).verify(serverKey, s.ballotSign, "base64")){
+							resArr.push(s);
+						}else{
+							console.log(chalk.black.bgCyan("[Ballot]"), "Sign verification fail.", chalk.grey(s.serverID));
+						}
+						resolve();
+					})						
+				}))
+			})
+
+			Promise.all(promArr).then(function(){
+				successCallBack(resArr);
+			})
 		})
 	},
 
