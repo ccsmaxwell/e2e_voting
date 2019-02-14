@@ -83,9 +83,9 @@ module.exports = {
 			}else{
 				let allSign = ballotCache.get(data.voterSign);
 				if(!allSign){
-					allSign = []
+					allSign = {}
 				}
-				allSign.push(signData);
+				allSign[signData.serverID] = signData;
 				ballotCache.set(data.voterSign, allSign, 600);
 				console.log(chalk.black.bgCyan("[Ballot]"), "Saved sign in cache.")
 				res.json({success: true});
@@ -170,7 +170,7 @@ module.exports = {
 			let cacheSign = ballotCache.get(newBallot.voterSign);
 			if(cacheSign){
 				ballotCache.del(newBallot.voterSign);
-				module.exports.verifySign(ballotData.electionID, ballotData.voterSign, cacheSign, function(verifiedArr){
+				module.exports.verifySign(ballotData.electionID, ballotData.voterSign, Object.values(cacheSign), function(verifiedArr){
 					module.exports.saveSign(ballotData.electionID, ballotData.voterSign, verifiedArr, () => console.log(chalk.black.bgCyan("[Ballot]"), "Saved cache sign."));
 				})
 			}
@@ -199,7 +199,7 @@ module.exports = {
 		var bProm = Ballot.find({
 			electionID: eID,
 			voterSign: voterSign
-		}).then((result) =>	bRes = result);
+		}).then((result) => bRes = result);
 
 		var eProm = new Promise(function(resolve, reject){
 			block.cachedDetails(eID, ["servers"], false, function(result){
@@ -209,21 +209,24 @@ module.exports = {
 		})
 
 		Promise.all([bProm, eProm]).then(function(){
-			if(!bRes){
+			if(!bRes || bRes.length == 0){
 				return successCallBack(null);
 			}
 			let resArr = [], promArr = [];
 			let verifyData = {
 				electionID: eID,
-				voterID: result.voterID,
-				answers: result.answers,
+				voterID: bRes[0].voterID,
+				answers: bRes[0].answers,
 				voterSign: voterSign,
-				receiveTime: result.receiveTime
+				receiveTime: bRes[0].receiveTime
 			}
 
 			signArr.forEach(function(s){
 				if(eRes.servers.filter(servers => (servers.serverID == s.serverID)).length = 0){
 					return console.log(chalk.black.bgCyan("[Ballot]"), "Sign verification fail: server ID not exist in this election. ", chalk.grey(s.serverID));
+				}
+				if(bRes[0].sign.filter(sign => (sign.serverID == s.serverID)).length > 0){
+					return console.log(chalk.black.bgCyan("[Ballot]"), "Sign verification fail: server ID already exist in this ballot. ", chalk.grey(s.serverID));
 				}
 				promArr.push(new Promise(function(resolve, reject){
 					server.keyByServerID(s.serverID, false, function(serverKey){
@@ -233,7 +236,7 @@ module.exports = {
 							console.log(chalk.black.bgCyan("[Ballot]"), "Sign verification fail.", chalk.grey(s.serverID));
 						}
 						resolve();
-					})						
+					})
 				}))
 			})
 

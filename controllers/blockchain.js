@@ -426,11 +426,13 @@ module.exports = {
 		console.log(chalk.bgBlue("[Block]"), chalk.whiteBright("Sync block after election freeze"));
 
 		var recursiveAdd = function(blockArr){
-			if(allBlocks.length){
-				module.exports.blockReceiveProcess(allBlocks[0], recursiveAdd(allBlocks.splice(1)));
+			if(blockArr.length){
+				module.exports.blockReceiveProcess(blockArr[0], recursiveAdd(blockArr.splice(1)));
 			}
 		}
 		recursiveAdd(allBlocks);
+
+		res.json({success: true});
 	}
 
 }

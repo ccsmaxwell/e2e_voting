@@ -190,7 +190,7 @@ module.exports = {
 		var match = {
 			electionID: eID
 		}
-		if(from>=0 && to>=from){
+		if(from!=null && to!=null && from>=0 && to>=from){
 			match["blockSeq"] = {
 				"$gte": from,
 				"$lte": to
