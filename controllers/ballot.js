@@ -222,7 +222,7 @@ module.exports = {
 			}
 
 			signArr.forEach(function(s){
-				if(eRes.servers.filter(servers => (servers.serverID == s.serverID)).length = 0){
+				if(eRes.servers.filter(servers => (servers.serverID == s.serverID)).length == 0){
 					return console.log(chalk.black.bgCyan("[Ballot]"), "Sign verification fail: server ID not exist in this election. ", chalk.grey(s.serverID));
 				}
 				if(bRes[0].sign.filter(sign => (sign.serverID == s.serverID)).length > 0){

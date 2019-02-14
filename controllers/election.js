@@ -28,8 +28,8 @@ module.exports = {
 		var blockData = {
 			name: data.name,
 			description: data.description,
-			start: data.start,
-			end: data.end,
+			start: new Date(data.start),
+			end: new Date(data.end),
 			key: JSON.parse(data.key),
 			admin: JSON.parse(data.admin),
 			servers: JSON.parse(data.servers)
@@ -99,8 +99,8 @@ module.exports = {
 		var blockData = {
 			name: data.name,
 			description: data.description,
-			start: data.start,
-			end: data.end,
+			start: new Date(data.start),
+			end: new Date(data.end),
 		}
 
 		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){

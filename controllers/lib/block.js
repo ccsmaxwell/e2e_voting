@@ -4,7 +4,7 @@ var chalk = require('chalk');
 
 var Block = require('../../models/block');
 
-var blockChainController = require('../blockchain');
+// var blockChainController = require('../blockchain');
 
 var electionDetails = {};
 
@@ -27,7 +27,7 @@ module.exports = {
 		newBlock_.hash = newBlock.hash;
 
 		newBlock.save().then(function(result){
-			blockChainController.signBlock(newBlock_, broadcastBlockSign);
+			// blockChainController.signBlock(newBlock_, broadcastBlockSign);
 
 			if(successCallback){
 				successCallback();
@@ -200,6 +200,38 @@ module.exports = {
 		Block.find(match).sort({
 			"blockSeq": 1
 		}).then(successCallback).catch((err) => console.log(err))
+	},
+
+	allElection: function(frozened, ended, successCallback){
+		var group = {
+			_id: "$electionID",
+		};
+		var project = {
+			"_id": "$_id",
+		}
+		var match2 = {};
+
+		if(frozened == true){
+			group["frozenAt"] = {$push:"$data.frozenAt"}
+			project["frozenAt"] = {$arrayElemAt: ["$frozenAt", 0]}
+			match2["frozenAt"] = {$ne: null}
+		}
+		if(ended == false){
+			group["end"] = {$push:"$data.end"}
+			project["end"] = {$arrayElemAt: ["$end", 0]}
+			match2["end"] = {$gt: new Date()}
+		}
+
+		Block.aggregate([
+			{$match: {
+				"blockType": "Election Details"
+			}},
+			{$sort: {blockSeq: -1}},
+			{$unwind: "$data"},
+			{$group: group},
+			{$project: project},
+			{$match: match2}
+		]).then(successCallback).catch((err) => console.log(err))
 	}
 
 }

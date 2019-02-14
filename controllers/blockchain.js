@@ -1,18 +1,17 @@
-var request = require('request');
 var uuidv4 = require('uuid/v4');
 var crypto = require('crypto');
 var NodeCache = require("node-cache");
 var chalk = require('chalk');
+var stringify = require('fast-json-stable-stringify');
 
-var Node_server = require('../models/node_server');
 var Ballot = require('../models/ballot');
 var Block = require('../models/block');
 
 var connection = require('./lib/connection');
-// var block = require('./lib/block');
+var block = require('./lib/block');
+var server = require('./lib/server');
 
-const timerInterval = _config.blockTimerInterval;
-const timerBuffer = _config.blockTimerBuffer;
+const {blockTimerInterval, blockTimerBuffer, serverID} = _config;
 
 var blockCache = new NodeCache();
 var ballotCache = new NodeCache();
@@ -21,125 +20,145 @@ var bftStatus = {};
 module.exports = {
 
 	init: function(){
-		Block.find({
-			"frozenAt": {$ne: null}
-		}).then(function(allElection){
+		block.allElection(true, false, function(allElection){
 			allElection.forEach(function(e){
-				module.exports.initTimer(e.data[0].frozenAt, e.electionID)
+				module.exports.initTimer(e._id, e.frozenAt)
 			})
-		}).catch(function(err){
-			console.log(err)
 		})
 	},
 
-	initTimer: function(electionFrozen, electionID){
-		bftStatus[electionID] = {
+	initTimer: function(eID, frozenAt){
+		bftStatus[eID] = {
 			counter: null,
 			seq: {}
 		};
 
-		var diffTime = (new Date()) - (new Date(electionFrozen));
-		var nextRun = timerInterval - (diffTime % timerInterval);
-		bftStatus[electionID].counter = ~~(diffTime / timerInterval);
+		var diffTime = (new Date()) - (new Date(frozenAt));
+		var nextRun = blockTimerInterval - (diffTime % blockTimerInterval);
+		bftStatus[eID].counter = ~~(diffTime / blockTimerInterval);
 
 		setTimeout(function(){
-			bftStatus[electionID].counter++;
-			if(nextRun>timerBuffer){
-				module.exports.nodeSelection(electionID);
+			bftStatus[eID].counter++;
+			if(nextRun>blockTimerBuffer){
+				module.exports.nodeSelection(eID);
 			}
 			setInterval(function(){
-				bftStatus[electionID].counter++;
-				module.exports.nodeSelection(electionID);
-			}, timerInterval);
+				bftStatus[eID].counter++;
+				module.exports.nodeSelection(eID);
+			}, blockTimerInterval);
 		}, nextRun);
 	},
 
-	nodeSelection: function(electionID){
-		var selectionSeq = bftStatus[electionID].counter;
-		if (bftStatus[electionID].seq[selectionSeq-1]){
-			delete bftStatus[electionID].seq[selectionSeq-1];
+	nodeSelection: function(eID){
+		var selectionSeq = bftStatus[eID].counter;
+		if (bftStatus[eID].seq[selectionSeq-1]){
+			delete bftStatus[eID].seq[selectionSeq-1];
 		}
 
-		Ballot.find({
-			electionID: electionID,
-			inBlock: {$ne: true},
-			receiveTime: {$lte: (new Date()) - timerBuffer}
-		},null,{
-			sort: {"receiveTime" : 1}
-		}).then(function(allBallot){
-			if(allBallot.length > 0){
-				ballotCache.set(selectionSeq, allBallot, timerInterval/1000*2);
+		block.cachedDetails(eID, ["servers"], false, function(eDetails){
+			Ballot.aggregate([
+				{$match: {
+					electionID: eID,
+					inBlock: {$ne: true},
+					receiveTime: {$lte: new Date(Date.now() - blockTimerBuffer)}
+				}},
+				{$addFields: {"distinctSign": {$size: {$setDifference: ["$sign.serverID", []] }} }},
+				{$match: {
+					distinctSign: {$gte: eDetails.servers.length/2},
+				}},
+				{$sort: {"receiveTime" : 1}}
+			]).then(function(allBallot){
+				if(allBallot.length == 0) return;
 
-				Node_server.find({}).sort({
-					IP: 1,
-					port: 1
-				}).then(function(all_node_server){
-					if(all_node_server.length>1){
-						let lastHash =  new Buffer(allBallot[allBallot.length-1].ballotID, "ascii").reduce(function(acc, curr){return acc + curr}, 0);
-						let selectedNode = all_node_server[lastHash%(all_node_server.length)];
-						let selectedAddr = selectedNode.IP+":"+selectedNode.port;
+				ballotCache.set(selectionSeq, allBallot, blockTimerInterval/1000*2);
 
-						module.exports.bftUpdate(electionID, selectionSeq, selectedAddr, all_node_server.length);
-
-						console.log(chalk.whiteBright.bgBlueBright("[Block]"), "--> Broadcast BFT node selection, selected:", selectedAddr);
-						connection.broadcast("POST", "/blockchain/broadcastSelection", {
-							electionID: electionID,
-							selectionSeq: selectionSeq,
-							selectedAddr: selectedAddr,
-							trusteeID: _config.port,
-						}, false, null, null, null, null);
-					}else{
-						module.exports.generateBlock(electionID, selectionSeq);
+				let serverArr = eDetails.servers.map((s) => s.serverID);
+				server.findAll({serverID: {$in: serverArr}}, {IP: 1, port: 1}, function(allServer){
+					if(allServer.length <= 1){
+						return module.exports.generateBlock(eID, selectionSeq);
 					}
-				}).catch(function(err){
-					console.log(err);
+
+					let lastHash =  new Buffer(allBallot[allBallot.length-1].voterSign, "ascii").reduce(function(acc, curr){return acc + curr}, 0);
+					let selectedNode = allServer[lastHash%(allServer.length)];
+					let selectedAddr = selectedNode.IP+":"+selectedNode.port;
+
+					module.exports.bftUpdate(eID, selectionSeq, selectedAddr, serverID, allServer.map((s) => s.serverID));
+
+					console.log(chalk.whiteBright.bgBlueBright("[Block]"), "--> Broadcast BFT node selection, selected:", selectedAddr);
+					connection.broadcast("POST", "/blockchain/broadcastSelection", {
+						electionID: eID,
+						selectionSeq: selectionSeq,
+						selectedAddr: selectedAddr
+					}, true, serverArr, null, null, null);
 				})
-			}
-		}).catch(function(err){
-			console.log(err);
+			}).catch((err) => console.log(err))
 		})
 	},
 
 	bftReceive: function(req, res, next){
 		var data = req.body;
-		console.log(chalk.bgBlue("[Block]"), "<-- Receive BFT node selection from", data.trusteeID);
+		console.log(chalk.bgBlue("[Block]"), "<-- Receive BFT node selection from", data.serverID);
 
-		module.exports.bftUpdate(data.electionID, data.selectionSeq, data.selectedAddr, null);
+		try{
+			var verifyData = {
+				electionID: data.electionID,
+				selectionSeq: parseInt(data.selectionSeq),
+				selectedAddr: data.selectedAddr,
+				serverID: data.serverID
+			}
+			block.cachedDetails(data.electionID, ["servers"], false, function(eDetails){
+				if(eDetails.servers.filter(s => (s.serverID == data.serverID)).length == 0){
+					return console.log(chalk.bgBlue("[Block]"), "BFT sign verification fail, ID not exist, from", data.serverID);
+				}
 
-		res.json({success: true});
+				server.keyByServerID(data.serverID, false, function(serverKey){
+					if(!crypto.createVerify('SHA256').update(stringify(verifyData)).verify(serverKey, data.serverSign, "base64")){
+						return console.log(chalk.bgBlue("[Block]"), "BFT sign verification fail from", data.serverID);
+					}
+
+					module.exports.bftUpdate(data.electionID, data.selectionSeq, data.selectedAddr, data.serverID, null);
+					res.json({success: true});
+				})
+			})
+		}catch(err){
+			console.log(err)
+		}
 	},
 
-	bftUpdate: function(electionID, selectionSeq, selectedAddr, noOfNode){
-		if(bftStatus[electionID] && (selectionSeq == bftStatus[electionID].counter || selectionSeq == bftStatus[electionID].counter+1)){
-			if(!bftStatus[electionID].seq[selectionSeq]){
-				bftStatus[electionID].seq[selectionSeq] = {
-					noOfNode: null,
-					addr: {},
-					sum: 0,
-					result: null
-				}
-			}
-			let seqObj = bftStatus[electionID].seq[selectionSeq];
+	bftUpdate: function(electionID, selectionSeq, selectedAddr, serverID, nodeList){
+		if(!bftStatus[electionID] || (selectionSeq != bftStatus[electionID].counter && selectionSeq != bftStatus[electionID].counter+1)) return;
 
-			seqObj.noOfNode = noOfNode ? noOfNode : seqObj.noOfNode;
-
-			seqObj.addr[selectedAddr] = seqObj.addr[selectedAddr] ? seqObj.addr[selectedAddr]+1 : 1;
-			seqObj.sum++;
-
-			let myAddr = connection.getSelfAddr();
-			let myAddrStr = myAddr.IP+":"+myAddr.port;
-			let maxValueAddr = Object.keys(seqObj.addr).reduce((a,b) =>
-				((seqObj.addr[a]>seqObj.addr[b]) || (seqObj.addr[a]=seqObj.addr[b] && a>b)) ? a : b
-			);
-			console.log(maxValueAddr);
-			if(!seqObj.result && seqObj.noOfNode && (seqObj.addr[maxValueAddr] > noOfNode/2 || seqObj.sum == seqObj.noOfNode)){
-				console.log("GG");
-				seqObj.result = maxValueAddr;
-				if(maxValueAddr == myAddrStr){
-					module.exports.generateBlock(electionID, selectionSeq);
-				}
+		if(!bftStatus[electionID].seq[selectionSeq]){
+			bftStatus[electionID].seq[selectionSeq] = {
+				nodeList: null,
+				receivedList: {},
+				addr: {},
+				sum: 0,
+				result: null
 			}
 		}
+		let seqObj = bftStatus[electionID].seq[selectionSeq];
+
+		seqObj.nodeList = nodeList ? nodeList : seqObj.nodeList;
+
+		if(seqObj.receivedList[serverID]) return;
+		seqObj.receivedList[serverID] = true;
+
+		seqObj.addr[selectedAddr] = seqObj.addr[selectedAddr] ? seqObj.addr[selectedAddr]+1 : 1;
+		seqObj.sum++;
+
+		let myAddr = connection.getSelfAddr();
+		let myAddrStr = myAddr.IP+":"+myAddr.port;
+		let maxValueAddr = Object.keys(seqObj.addr).reduce((a,b) =>
+			((seqObj.addr[a]>seqObj.addr[b]) || (seqObj.addr[a]=seqObj.addr[b] && a>b)) ? a : b
+		);
+
+		if(seqObj.result || !seqObj.nodeList || (seqObj.addr[maxValueAddr] <= seqObj.nodeList.length/2 && seqObj.sum != seqObj.nodeList.length)) return;
+
+		seqObj.result = maxValueAddr;
+		if(maxValueAddr == myAddrStr){
+			module.exports.generateBlock(electionID, selectionSeq);
+		}		
 	},
 
 	generateBlock: function(electionID, selectionSeq){
