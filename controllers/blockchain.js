@@ -73,24 +73,21 @@ module.exports = {
 				ballotCache.set(selectionSeq, allBallot, blockTimerInterval/1000*2);
 
 				let serverArr = eDetails.servers.map((s) => s.serverID);
-				server.findAll({serverID: {$in: serverArr}}, {IP: 1, port: 1}, function(allServer){
-					if(allServer.length <= 1){
-						return module.exports.generateBlock(eID, selectionSeq);
-					}
+				if(serverArr.length <= 1){
+					return module.exports.generateBlock(eID, selectionSeq);
+				}
 
-					let lastHash =  new Buffer(allBallot[allBallot.length-1].voterSign, "ascii").reduce(function(acc, curr){return acc + curr}, 0);
-					let selectedNode = allServer[lastHash%(allServer.length)];
-					let selectedAddr = selectedNode.IP+":"+selectedNode.port;
+				let lastHash =  new Buffer(allBallot[allBallot.length-1].voterSign, "ascii").reduce(function(acc, curr){return acc + curr}, 0);
+				let selectedNode = serverArr[lastHash%(serverArr.length)];
 
-					module.exports.bftUpdate(eID, selectionSeq, selectedAddr, serverID, allServer.map((s) => s.serverID));
+				module.exports.bftUpdate(eID, selectionSeq, selectedNode, serverID, serverArr);
 
-					console.log(chalk.whiteBright.bgBlueBright("[Block]"), "--> Broadcast BFT node selection, selected:", selectedAddr);
-					connection.broadcast("POST", "/blockchain/broadcastSelection", {
-						electionID: eID,
-						selectionSeq: selectionSeq,
-						selectedAddr: selectedAddr
-					}, true, serverArr, null, null, null);
-				})
+				console.log(chalk.whiteBright.bgBlueBright("[Block]"), "--> Broadcast BFT node selection, selected:", selectedNode);
+				connection.broadcast("POST", "/blockchain/broadcastSelection", {
+					electionID: eID,
+					selectionSeq: selectionSeq,
+					selectedNode: selectedNode
+				}, true, serverArr, null, null, null);
 			}).catch((err) => console.log(err))
 		})
 	},
@@ -103,7 +100,7 @@ module.exports = {
 			let verifyData = {
 				electionID: data.electionID,
 				selectionSeq: parseInt(data.selectionSeq),
-				selectedAddr: data.selectedAddr,
+				selectedNode: data.selectedNode,
 				serverID: data.serverID
 			}
 			block.cachedDetails(data.electionID, ["servers"], false, function(eDetails){
@@ -116,7 +113,7 @@ module.exports = {
 						return console.log(chalk.bgBlue("[Block]"), "BFT sign verification fail from", data.serverID);
 					}
 
-					module.exports.bftUpdate(data.electionID, data.selectionSeq, data.selectedAddr, data.serverID, null);
+					module.exports.bftUpdate(data.electionID, data.selectionSeq, data.selectedNode, data.serverID, null);
 					res.json({success: true});
 				})
 			})
@@ -125,39 +122,41 @@ module.exports = {
 		}
 	},
 
-	bftUpdate: function(electionID, selectionSeq, selectedAddr, serverID, nodeList){
+	bftUpdate: function(electionID, selectionSeq, selectedNode, sID, nodeList){
 		if(!bftStatus[electionID] || (selectionSeq != bftStatus[electionID].counter && selectionSeq != bftStatus[electionID].counter+1)) return;
 
 		if(!bftStatus[electionID].seq[selectionSeq]){
 			bftStatus[electionID].seq[selectionSeq] = {
 				nodeList: null,
 				receivedList: {},
-				addr: {},
+				count: {},
 				sum: 0,
 				result: null
 			}
 		}
-		let seqObj = bftStatus[electionID].seq[selectionSeq];
+		var seqObj = bftStatus[electionID].seq[selectionSeq];
 
 		seqObj.nodeList = nodeList ? nodeList : seqObj.nodeList;
 
-		if(seqObj.receivedList[serverID]) return;
-		seqObj.receivedList[serverID] = true;
+		if(seqObj.receivedList[sID]) return;
+		seqObj.receivedList[sID] = true;
 
-		seqObj.addr[selectedAddr] = seqObj.addr[selectedAddr] ? seqObj.addr[selectedAddr]+1 : 1;
+		seqObj.count[selectedNode] = seqObj.count[selectedNode] ? seqObj.count[selectedNode]+1 : 1;
 		seqObj.sum++;
 
-		let myAddr = connection.getSelfAddr();
-		let myAddrStr = myAddr.IP+":"+myAddr.port;
-		let maxValueAddr = Object.keys(seqObj.addr).reduce((a,b) =>
-			((seqObj.addr[a]>seqObj.addr[b]) || (seqObj.addr[a]=seqObj.addr[b] && a>b)) ? a : b
+		var maxValurNode = Object.keys(seqObj.count).reduce((a,b) =>
+			((seqObj.count[a]>seqObj.count[b]) || (seqObj.count[a]=seqObj.count[b] && a>b)) ? a : b
 		);
+		if(seqObj.result || !seqObj.nodeList || (seqObj.count[maxValurNode] <= seqObj.nodeList.length/2 && seqObj.sum != seqObj.nodeList.length)) return;
 
-		if(seqObj.result || !seqObj.nodeList || (seqObj.addr[maxValueAddr] <= seqObj.nodeList.length/2 && seqObj.sum != seqObj.nodeList.length)) return;
-
-		seqObj.result = maxValueAddr;
-		if(maxValueAddr == myAddrStr){
-			module.exports.generateBlock(electionID, selectionSeq);
+		seqObj.result = maxValurNode;
+		if(maxValurNode == serverID){
+			server.findAll({serverID: serverID}, {IP: 1, port: 1}, function(allServer){
+				let myAddr = connection.getSelfAddr();
+				if(myAddr.IP+":"+myAddr.port == allServer[0].IP+":"+allServer[0].port){
+					module.exports.generateBlock(electionID, selectionSeq);
+				}
+			})
 		}		
 	},
 
