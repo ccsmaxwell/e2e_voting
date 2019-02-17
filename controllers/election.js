@@ -513,7 +513,11 @@ module.exports = {
 	},
 
 	getVoterList: function(req, res, next){
-		block.getVoterBallot(req.params.electionID, true, null, null, function(bRes){
+		var page = parseInt(req.query.page);
+		var limit = parseInt(req.query.limit);
+		var skip = (page-1)*limit;
+
+		block.getVoterBallot(req.params.electionID, true, skip, limit, function(bRes){
 			res.json(bRes)
 		})
 	},

@@ -17,25 +17,26 @@ function updateList(page){
 				console.log(res);
 			}else{
 				res.result.forEach(function(v){
-					var template = [
-						'<li class="collection-item voterLi">',
+					let voteAt = v.ballot[0] ? (new Date(v.ballot[0].receiveTime)).toLocaleString('en-GB') : "";
+					let voteSign = v.ballot[0] ? v.ballot[0].voterSign : "";
+					let template = [
+						'<li class="collection-item avatar voterLi">',
 							'<div>',
-								$('<span>').text(v._id).prop('outerHTML'),
-								'<a class="secondary-content">',
-									'<i class="material-icons red-text">delete</i>',
-								'</a>',
+								$('<span class="title">').text("ID: " + v._id).prop('outerHTML'),
+								$('<p>').text("Vote at: " + voteAt).prop('outerHTML'),
+								$('<p class="voterLiSign shortSign wordBreakAll truncate">').text("Signature: " + voteSign).prop('outerHTML'),
 							'</div>',
 						'</li>',
 					].join("\n");
 
 					let el = $(template);
-					el.find('i').click(function(){
-						$("#del_voter_id").val(v._id);
-						M.updateTextFields();
-
-						$('#del_modal').modal('open');
+					el.find('.voterLiSign').click(function(){
+						if($(this).hasClass('truncate')){
+							$(this).removeClass('shortSign truncate');
+						}else{
+							$(this).addClass('shortSign truncate');
+						}
 					})
-
 					$('#voter_list').append(el);
 				})
 
