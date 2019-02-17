@@ -4,13 +4,15 @@ var chalk = require('chalk');
 
 var Block = require('../../models/block');
 
-// var blockChainController = require('../blockchain');
+var connection = require('./connection');
 
 var electionDetails = {};
 
+const {serverID, serverPriKey} = _config;
+
 module.exports = {
 
-	createBlock: function(eID, blockSeq, blockType, data, previousHash, res, broadcastBlockSign, successCallback, sendSuccessRes){
+	createBlock: function(eID, blockSeq, blockType, data, previousHash, res, broadcastBlock, broadcastSign, successCallback, sendSuccessRes){
 		let newBlock_ = {};
 		newBlock_.blockUUID = uuidv4();
 		newBlock_.electionID = eID;
@@ -27,10 +29,15 @@ module.exports = {
 		newBlock_.hash = newBlock.hash;
 
 		newBlock.save().then(function(result){
-			// blockChainController.signBlock(newBlock_, broadcastBlockSign);
+			if(broadcastBlock){
+				connection.broadcast("POST", "/blockchain/broadcastBlock", {
+					block: JSON.stringify(newBlock_)
+				}, false, null, null, null, null);
+			}
+			module.exports.signBlock(newBlock_, broadcastSign);
 
 			if(successCallback){
-				successCallback();
+				successCallback(result);
 			}
 			if(sendSuccessRes){
 				res.json({success: true, electionID: newBlock_.electionID});
@@ -41,6 +48,40 @@ module.exports = {
 				res.json({success: false, msg: "Cannot save new block."});
 			}
 		});
+	},
+
+	signBlock: function(block, broadcast){
+		var sign = {
+			serverID: serverID,
+			blockHashSign: crypto.createSign('SHA256').update(block.hash).sign(serverPriKey, 'base64')
+		}
+		module.exports.saveSign(block.electionID, block.blockUUID, [sign], () => console.log(chalk.bgBlue("[Block]"), "Signed block:", chalk.grey(block.blockUUID)));
+
+		if(broadcast){
+			module.exports.cachedDetails(block.electionID, ["servers"], false, function(eDetails){
+				console.log(chalk.bgBlue("[Block]"), "--> Broadcast sign to other nodes");
+				connection.broadcast("POST", "/blockchain/broadcastSign", {
+					electionID: block.electionID,
+					blockUUID: block.blockUUID,
+					sign: JSON.stringify(sign)
+				}, false, eDetails.servers.map((s) => s.serverID), null, null, null);
+			})
+		}
+	},
+
+	saveSign: function(eID, blockUUID, signArr, successCallBack){
+		Block.findOneAndUpdate({
+			electionID: eID,
+			blockUUID: blockUUID
+		},{
+			$push: {sign: {
+				$each: signArr
+			}}
+		}).then(function(result){
+			if(successCallBack){
+				successCallBack(result);
+			}
+		})
 	},
 
 	latestDetails: function(eID, fields, successCallback){
@@ -268,6 +309,26 @@ module.exports = {
 		Block.find(match).sort({
 			"blockSeq": 1
 		}).then(successCallback).catch((err) => console.log(err))
+	},
+
+	lastBlock: function(eID, checkValid, successCallback){
+		module.exports.cachedDetails(eID, ["servers"], false, function(eDetails){
+			var aggr = [{$match: {
+				"electionID": eID,
+			}}]
+			if(checkValid){
+				aggr.push(
+					{$addFields: {"distinctSign": {$size: {$setDifference: ["$sign.serverID", []] }} }},
+					{$match: {distinctSign: {$gte: eDetails.servers.length/2}} }
+				)
+			}
+			aggr.push(
+				{$sort: {"blockSeq": -1}},
+				{$limit: 1}
+			)
+
+			Block.aggregate(aggr).then(successCallback).catch((err) => console.log(err))
+		})
 	},
 
 	allElection: function(frozened, ended, successCallback){

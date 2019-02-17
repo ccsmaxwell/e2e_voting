@@ -35,7 +35,7 @@ module.exports = {
 			servers: JSON.parse(data.servers)
 		}
 
-		module.exports.verifyAndCreate(null, blockData, data.adminSign, res, false, function(){
+		module.exports.verifyAndCreate(null, blockData, data.adminSign, res, false, false, function(){
 			console.log(chalk.black.bgMagenta("[Election]"), "Created new election chain");
 		}, true);
 	},
@@ -103,7 +103,7 @@ module.exports = {
 			end: new Date(data.end),
 		}
 
-		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, false, function(){
 			console.log(chalk.black.bgMagenta("[Election]"), "Edited election details");
 		}, true);
 	},
@@ -125,7 +125,7 @@ module.exports = {
 			questions: JSON.parse(data.questions)
 		}
 
-		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, false, function(){
 			console.log(chalk.black.bgMagenta("[Election]"), "Edit question success");
 		}, true);
 	},
@@ -147,7 +147,7 @@ module.exports = {
 			servers: JSON.parse(data.servers)
 		}
 
-		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, false, function(){
 			console.log(chalk.black.bgMagenta("[Election]"), "Edit server success");
 		}, true);
 	},
@@ -202,7 +202,7 @@ module.exports = {
 			voters: cacheData.signData
 		}
 
-		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, false, function(){
 			console.log(chalk.black.bgMagenta("[Election]"), "Save new voters success");
 
 			let promArr = [], failArr = [];
@@ -240,7 +240,7 @@ module.exports = {
 			voters: JSON.parse(data.voters)
 		}
 
-		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, false, function(){
 			console.log(chalk.black.bgMagenta("[Election]"), "Delete voter success (marked public_key as empty).");
 		}, true);
 	},
@@ -323,7 +323,7 @@ module.exports = {
 			trustees: cacheData.signData
 		}
 
-		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, false, function(){
 			console.log(chalk.black.bgMagenta("[Election]"), "Save new trustees success");
 
 			let promArr = [], failArr = [];
@@ -357,7 +357,7 @@ module.exports = {
 			trustees: JSON.parse(data.trustees)
 		}
 
-		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, false, function(){
 			console.log(chalk.black.bgMagenta("[Election]"), "Delete trustees success (marked public_key as empty).");
 		}, true);
 	},
@@ -477,7 +477,7 @@ module.exports = {
 		var blockData = reqCache.get(data.tempID).signData;
 		reqCache.del(data.tempID);
 
-		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, function(){
+		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, false, function(){
 			console.log(chalk.black.bgMagenta("[Election]"), "Election freeze.");
 
 			let allBlock, serverRes;
@@ -546,7 +546,7 @@ module.exports = {
 				}
 
 				block.latestDetails(eID, [], function(result){
-					block.createBlock(eID, result[0].blockSeq + 1, "Election Details", [blockData], result[0].hash, null, false, function(){
+					block.createBlock(eID, result[0].blockSeq + 1, "Election Details", [blockData], result[0].hash, null, false, false, function(){
 						console.log(chalk.black.bgMagenta("[Election]"), "Saved new block for key change.");
 					}, false);
 				});
@@ -554,7 +554,7 @@ module.exports = {
 		}
 	},
 
-	verifyAndCreate: function(eID, blockData, adminSign, res, broadcastBlockSign, successCallback, sendSuccessRes){
+	verifyAndCreate: function(eID, blockData, adminSign, res, broadcastBlock, broadcastSign, successCallback, sendSuccessRes){
 		var VnC = function(result){
 			let adminPubKey = result ? result[0].admin.pubKey : blockData.admin.pubKey;
 			let verify = crypto.createVerify('SHA256');
@@ -566,7 +566,7 @@ module.exports = {
 				let electionID = eID ? eID : uuidv4();
 				let blockSeq = result ? result[0].blockSeq + 1 : 0;
 				let previousHash = result ? result[0].hash : null
-				block.createBlock(electionID, blockSeq, "Election Details", [blockData], previousHash, res, broadcastBlockSign, successCallback, sendSuccessRes);
+				block.createBlock(electionID, blockSeq, "Election Details", [blockData], previousHash, res, broadcastBlock, broadcastSign, successCallback, sendSuccessRes);
 			}else{
 				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
 				res.json({success: false, msg: "Cannot verify Admin key."});

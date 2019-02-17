@@ -177,97 +177,26 @@ module.exports = {
 		});
 
 		block.cachedDetails(eID, ["servers"], false, function(eDetails){
-			// block.createBlock
+			block.lastBlock(eID, true, function(lastBlock){
+				block.createBlock(eID, lastBlock[0].blockSeq+1, "Ballot", blockData, lastBlock[0].hash, null, true, true, function(newBlock){
+					console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("New block: "), chalk.grey(newBlock));
+
+					let allBallotID = [];
+					allBallot.forEach(function(e){
+						allBallotID.push(e.ballotID);
+					})
+					Ballot.updateMany({
+						ballotID: {$in: allBallotID}
+					},{
+						inBlock: true
+					}).then(function(result){
+						console.log("Updated ballot 'inBlock'.");
+					}).catch(function(err){
+						console.log(err);
+					})
+				}, false)
+			})
 		})
-
-		Block.find({
-			electionID: eID
-		}).sort({
-			blockSeq: -1
-		}).limit(1).then(function(lastBlock){
-			var newBlock_ = {
-				blockUUID: uuidv4(),
-				electionID: eID,
-				blockSeq: lastBlock[0].blockSeq+1,
-				previousHash: lastBlock[0].hash,
-				blockType: "Ballot",
-				data: []
-			};
-			allBallot.forEach(function(e){
-				newBlock_.data.push({
-					electionID: e.electionID,
-					voterID: e.voterID,
-					answers: e.answers,
-					voterSign: e.voterSign,
-					ballotID: e.ballotID,
-					receiveTime: e.receiveTime,
-					sign: e.sign
-				})
-			});
-
-			var newBlock = new Block();
-			Object.keys(newBlock_).forEach(function(key){
-				newBlock[key] = newBlock_[key];
-			});
-			newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
-			newBlock_.hash = newBlock.hash;
-
-			console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("Generate new block: "), chalk.grey(newBlock));
-
-			newBlock.save().then(function(result){
-				console.log(chalk.bgBlue("[Block]"), "--> Broadcast block to other nodes");
-				connection.broadcast("POST", "/blockchain/broadcastBlock", {
-					block: JSON.stringify(newBlock_)
-				}, false, null, null, null, null);
-
-				module.exports.signBlock(newBlock_);
-
-				let allBallotID = [];
-				allBallot.forEach(function(e){
-					allBallotID.push(e.ballotID);
-				})
-				Ballot.updateMany({
-					ballotID: {$in: allBallotID}
-				},{
-					inBlock: true
-				}).then(function(result){
-					console.log("Updated ballot 'inBlock'.");
-				}).catch(function(err){
-					console.log(err);
-				})
-			}).catch(function(err){
-				console.log(err);	
-			});
-		}).catch(function(err){
-			console.log(err);
-		})
-	},
-
-	signBlock: function(block, broadcast=true){
-		var BlockHashSign = crypto.createHash('sha256').update(block.hash).digest('base64');
-		Block.findOneAndUpdate({
-			electionID: block.electionID,
-			blockUUID: block.blockUUID,
-		},{
-			$push: {sign: {
-				serverID: _config.serverID,
-				BlockHashSign: BlockHashSign
-			}}
-		}).then(function(result){
-			console.log(chalk.bgBlue("[Block]"), "Signed block:", chalk.grey(block.blockUUID));
-		}).catch(function(err){
-			console.log(err);
-		})
-
-		if(broadcast){
-			console.log(chalk.bgBlue("[Block]"), "--> Broadcast sign to other nodes");
-			connection.broadcast("POST", "/blockchain/broadcastSign", {
-				electionID: block.electionID,
-				blockUUID: block.blockUUID,
-				trusteeID: _config.serverID,
-				BlockHashSign: BlockHashSign
-			}, false, null, null, null, null);
-		}
 	},
 
 	blockReceive: function(req, res, next){
@@ -275,16 +204,16 @@ module.exports = {
 		res.json({success: true});
 	},
 
-	blockReceiveProcess: function(block, afterSaveCallback){
-		console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("<-- Receive block:"), chalk.grey(block));
+	blockReceiveProcess: function(blockReceive, afterSaveCallback){
+		console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("<-- Receive block:"), chalk.grey(blockReceive));
 
 		var newBlock_ = {
-			blockUUID: block.blockUUID,
-			electionID: block.electionID,
-			blockSeq: block.blockSeq,
-			previousHash: block.previousHash,
-			blockType: block.blockType,
-			data: block.data
+			blockUUID: blockReceive.blockUUID,
+			electionID: blockReceive.electionID,
+			blockSeq: blockReceive.blockSeq,
+			previousHash: blockReceive.previousHash,
+			blockType: blockReceive.blockType,
+			data: blockReceive.data
 		};
 
 		var newBlock = new Block();
@@ -307,8 +236,8 @@ module.exports = {
 				})
 				
 				Block.findOneAndUpdate({
-					electionID: block.electionID,
-					blockUUID: block.blockUUID,
+					electionID: blockReceive.electionID,
+					blockUUID: blockReceive.blockUUID,
 				},{
 					$push: {sign: {
 						$each: pushSign
@@ -320,7 +249,7 @@ module.exports = {
 				})				
 			}
 
-			module.exports.signBlock(newBlock_);
+			block.signBlock(newBlock_, true);
 
 			if(newBlock_.blockType == "Election Details"){
 				// module.exports.initTimer(newBlock_.data[0].frozenAt, newBlock_.electionID);
@@ -349,28 +278,29 @@ module.exports = {
 	},
 
 	signReceive: function(req, res, next){
-		var signData = req.body;
-		console.log(chalk.bgBlue("[Block]"), "<-- Receive sign: ", chalk.grey(signData.trusteeID + ", " + signData.blockUUID));
+		var data = req.body;
+		var sign = JSON.parse(data.sign);
+		console.log(chalk.bgBlue("[Block]"), "<-- Receive sign: ", chalk.grey(sign.serverID));
 
 		Block.findOneAndUpdate({
-			electionID: signData.electionID,
-			blockUUID: signData.blockUUID,
+			electionID: data.electionID,
+			blockUUID: data.blockUUID,
 		},{
 			$push: {sign: {
-				trusteeID: signData.trusteeID,
-				signHash: signData.signHash
+				serverID: sign.serverID,
+				blockHashSign: sign.blockHashSign
 			}}
 		})
 		.then(function(result){
 			if(result){
-				console.log(chalk.bgBlue("[Block]"), "Saved sign from: " + chalk.grey(signData.trusteeID));
+				console.log(chalk.bgBlue("[Block]"), "Saved sign from: " + chalk.grey(sign.serverID));
 			}else{
-				let allSign = blockCache.get(signData.blockUUID);
+				let allSign = blockCache.get(data.blockUUID);
 				if(!allSign){
 					allSign = []
 				}
-				allSign.push(signData);
-				blockCache.set(signData.blockUUID, allSign, 600);
+				allSign.push(sign);
+				blockCache.set(data.blockUUID, allSign, 600);
 				console.log(chalk.bgBlue("[Block]"), "Saved sign in cache.")
 			}
 

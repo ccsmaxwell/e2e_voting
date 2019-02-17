@@ -16,7 +16,7 @@ var BlockSchema = new Schema({
 	// local
 	sign: [{
 		serverID: String,
-		BlockHashSign: String
+		blockHashSign: String
 	}]
 }, { timestamps: {} });
 
