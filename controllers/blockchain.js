@@ -100,7 +100,7 @@ module.exports = {
 		console.log(chalk.bgBlue("[Block]"), "<-- Receive BFT node selection from", data.serverID);
 
 		try{
-			var verifyData = {
+			let verifyData = {
 				electionID: data.electionID,
 				selectionSeq: parseInt(data.selectionSeq),
 				selectedAddr: data.selectedAddr,
@@ -161,17 +161,33 @@ module.exports = {
 		}		
 	},
 
-	generateBlock: function(electionID, selectionSeq){
+	generateBlock: function(eID, selectionSeq){
+		var blockData = []
 		var allBallot = ballotCache.get(selectionSeq);
+		allBallot.forEach(function(e){
+			blockData.push({
+				electionID: e.electionID,
+				voterID: e.voterID,
+				answers: e.answers,
+				voterSign: e.voterSign,
+				ballotID: e.ballotID,
+				receiveTime: e.receiveTime,
+				sign: e.sign
+			})
+		});
+
+		block.cachedDetails(eID, ["servers"], false, function(eDetails){
+			// block.createBlock
+		})
 
 		Block.find({
-			electionID: electionID
+			electionID: eID
 		}).sort({
 			blockSeq: -1
 		}).limit(1).then(function(lastBlock){
 			var newBlock_ = {
 				blockUUID: uuidv4(),
-				electionID: electionID,
+				electionID: eID,
 				blockSeq: lastBlock[0].blockSeq+1,
 				previousHash: lastBlock[0].hash,
 				blockType: "Ballot",

@@ -512,6 +512,12 @@ module.exports = {
 		})
 	},
 
+	getVoterList: function(req, res, next){
+		block.getVoterBallot(req.params.electionID, true, null, null, function(bRes){
+			res.json(bRes)
+		})
+	},
+
 	keyChangeActivate: function(eID, type, pushData){
 		if(!keyChangeQueue[eID]){
 			keyChangeQueue[eID] = {

@@ -107,7 +107,6 @@ module.exports = {
 			}})
 		}
 
-		var slice = skip!=null ? { $slice:["$result", skip, limit] } : "$result";
 		aggr.push(
 			{$group: {
 				_id: "$data.voters.id",
@@ -126,13 +125,83 @@ module.exports = {
 			}},
 			{ $project :{
 				total: 1,
-				result: slice
+				result: skip!=null ? { $slice:["$result", skip, limit] } : "$result"
 			}}
 		)
 
 		Block.aggregate(aggr).then(function(result){
 			successCallback(result[0]);
 		}).catch((err) => console.log(err))
+	},
+
+	getVoterBallot: function(eID, validBlock, skip, limit, successCallback){
+		module.exports.cachedDetails(eID, ["servers"], false, function(eDetails){
+			var bAggr = [{$match: {
+				"electionID": eID,
+				"blockType": "Ballot"
+			}}]
+			if(validBlock){
+				bAggr.push(
+					{$addFields: {"distinctSign": {$size: {$setDifference: ["$sign.serverID", []] }} }},
+					{$match: {distinctSign: {$gte: eDetails.servers.length/2}} }
+				)
+			}
+			bAggr.push(
+				{$unwind: "$data"},
+				{$sort: {"data.receiveTime": -1}},
+				{$group: {
+					_id: "$data.voterID",
+					ballot: {$first: "$data"}
+				}}
+			)
+
+			var vAggr = [
+				{$match: {
+					"electionID": eID,
+					"blockType": "Election Details"
+				}},
+				{$sort: {blockSeq: -1}},
+				{$unwind: "$data"},
+				{$unwind: "$data.voters"},
+				{$group: {
+					_id: "$data.voters.id",
+					"public_key": {$push:"$data.voters.public_key"}
+				}},
+				{$project: {
+					"public_key": {$arrayElemAt: ["$public_key", 0]}
+				}},
+				{$match: {
+					"public_key": {"$ne": ""},
+				}}
+			]
+
+			Block.aggregate([
+				{$facet:{
+					voterList: vAggr,
+					ballotList: bAggr
+				}},
+				{$unwind: "$voterList"},
+				{$project:{
+					"_id": "$voterList._id",
+					"ballot": { $filter: {
+						input: "$ballotList.ballot", 
+						as: "b",
+						cond: {$eq: ["$voterList._id", "$$b.voterID"]}
+					}}
+				}},
+				{ $group :{
+					_id: null,
+					total: { $sum:1 },
+					result: { $push:"$$ROOT" }
+				}},
+				{ $project :{
+					total: 1,
+					result: skip!=null ? { $slice:["$result", skip, limit] } : "$result"
+				}}
+			]).then(function(result){
+				successCallback(result[0]);
+			}).catch((err) => console.log(err))
+		})
 	},
 
 	latestTrustees: function(eID, trusteeID, skip, limit, successCallback){
@@ -152,7 +221,6 @@ module.exports = {
 			}})
 		}
 
-		var slice = skip!=null ? { $slice:["$result", skip, limit] } : "$result";
 		aggr.push(
 			{$group: {
 				_id: "$data.trustees.trusteeID",
@@ -177,7 +245,7 @@ module.exports = {
 			}},
 			{ $project :{
 				total: 1,
-				result: slice
+				result: skip!=null ? { $slice:["$result", skip, limit] } : "$result"
 			}}
 		)
 

@@ -39,6 +39,9 @@ router.post('/manage/:electionID/freeze-confirm', Election.freezeConfirm);
 
 router.get('/:electionID', Election.getIndex);
 
+router.get('/:electionID/voters', (req, res, next) => res.render('eVoter'));
+router.get('/:electionID/voters/list', Election.getVoterList);
+
 router.post('/getResult', Election.getResult);
 router.get('/getAllElection', Election.getAllElection);
 
