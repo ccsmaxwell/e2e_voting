@@ -3,18 +3,20 @@ var crypto = require('crypto');
 var chalk = require('chalk');
 
 var Block = require('../../models/block');
+var Ballot = require('../../models/ballot');
 
 var connection = require('./connection');
 
 var electionDetails = {};
+var ballotBlockUpdate = {};
 
 const {serverID, serverPriKey} = _config;
 
 module.exports = {
 
-	createBlock: function(eID, blockSeq, blockType, data, previousHash, res, broadcastBlock, broadcastSign, successCallback, sendSuccessRes){
+	createBlock: function(eID, blockID, blockSeq, blockType, data, previousHash, res, broadcastBlock, broadcastSign, successCallback, sendSuccessRes){
 		let newBlock_ = {};
-		newBlock_.blockUUID = uuidv4();
+		newBlock_.blockUUID = blockID ? blockID : uuidv4();
 		newBlock_.electionID = eID;
 		newBlock_.blockSeq = blockSeq;
 		newBlock_.blockType = blockType;
@@ -22,26 +24,29 @@ module.exports = {
 		newBlock_.previousHash = previousHash;
 
 		var newBlock = new Block();
-		Object.keys(newBlock_).forEach(function(key){
-			newBlock[key] = newBlock_[key];
-		});
+		Object.keys(newBlock_).forEach((key) =>	newBlock[key] = newBlock_[key]);
 		newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock_)).digest('base64');
 		newBlock_.hash = newBlock.hash;
 
 		newBlock.save().then(function(result){
+			if(blockType == "Ballot"){
+				if(!ballotBlockUpdate[eID]) ballotBlockUpdate[eID] = [];
+				ballotBlockUpdate[eID].push(blockID);
+			}
+
 			if(broadcastBlock){
-				connection.broadcast("POST", "/blockchain/broadcastBlock", {
-					block: JSON.stringify(newBlock_)
-				}, false, null, null, null, null);
+				console.log(chalk.bgBlue("[Block]"), "--> Broadcast block to other nodes");
+				module.exports.cachedDetails(eID, ["servers"], false, function(eDetails){
+					connection.broadcast("POST", "/blockchain/broadcast/block", {
+						block: JSON.stringify(newBlock_),
+						serverSign: crypto.createSign('SHA256').update(newBlock_.hash).sign(serverPriKey, 'base64')
+					}, false,  eDetails.servers.map((s) => s.serverID), null, null, null);
+				})
 			}
 			module.exports.signBlock(newBlock_, broadcastSign);
 
-			if(successCallback){
-				successCallback(result);
-			}
-			if(sendSuccessRes){
-				res.json({success: true, electionID: newBlock_.electionID});
-			}
+			if(successCallback) successCallback(result);
+			if(sendSuccessRes) res.json({success: true, electionID: newBlock_.electionID});
 		}).catch(function(err){
 			console.log(err);
 			if(res){
@@ -60,7 +65,7 @@ module.exports = {
 		if(broadcast){
 			module.exports.cachedDetails(block.electionID, ["servers"], false, function(eDetails){
 				console.log(chalk.bgBlue("[Block]"), "--> Broadcast sign to other nodes");
-				connection.broadcast("POST", "/blockchain/broadcastSign", {
+				connection.broadcast("POST", "/blockchain/broadcast/sign", {
 					electionID: block.electionID,
 					blockUUID: block.blockUUID,
 					sign: JSON.stringify(sign)
@@ -77,10 +82,23 @@ module.exports = {
 			$push: {sign: {
 				$each: signArr
 			}}
-		}).then(function(result){
-			if(successCallBack){
-				successCallBack(result);
-			}
+		}, {new: true}).then(function(result){
+			if(successCallBack) successCallBack(result);
+
+			if(!ballotBlockUpdate[eID].includes(blockUUID)) return;
+			module.exports.cachedDetails(eID, ["servers"], false, function(eDetails){
+				if(result.sign.length > eDetails.servers.length/2){
+					ballotBlockUpdate[eID] = ballotBlockUpdate[eID].filter(i => i != blockUUID)
+
+					let allBallot = [];
+					result.data.forEach((e) => allBallot.push(e.voterSign));
+					Ballot.updateMany({
+						voterSign: {$in: allBallotID}
+					},{
+						inBlock: true
+					}).then(() => console.log("Updated ballot 'inBlock'.")).catch((err) => console.log(err));
+				}
+			})
 		})
 	},
 
@@ -189,7 +207,8 @@ module.exports = {
 			}
 			bAggr.push(
 				{$unwind: "$data"},
-				{$sort: {"data.receiveTime": -1}},
+				{$addFields: {"ballotReceiveTime": {$convert: {input: "$data.receiveTime", to:"date"}} }},
+				{$sort: {"ballotReceiveTime": -1}},
 				{$group: {
 					_id: "$data.voterID",
 					ballot: {$first: "$data"}
@@ -361,6 +380,12 @@ module.exports = {
 			{$project: project},
 			{$match: match2}
 		]).then(successCallback).catch((err) => console.log(err))
+	},
+
+	findAll: function(filter, sort, successCallback){
+		var f = filter ? filter : {};
+		var s = sort ? sort : {};
+		Block.find(f).sort(s).then(successCallback);
 	}
 
 }

@@ -151,7 +151,11 @@ $("#btn_submit").click(function(){
 			voterSign: $("#signature").text()
 		},	
 		success: function(res){
-			console.log(res);
+			if(res.success){
+				$(location).attr('href', '/election/' + $("#electionID").val() + '/voters');
+			}else{
+				console.log(res);
+			}
 		}
 	})
 })

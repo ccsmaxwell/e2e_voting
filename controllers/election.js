@@ -546,7 +546,7 @@ module.exports = {
 				}
 
 				block.latestDetails(eID, [], function(result){
-					block.createBlock(eID, result[0].blockSeq + 1, "Election Details", [blockData], result[0].hash, null, false, false, function(){
+					block.createBlock(eID, null, result[0].blockSeq + 1, "Election Details", [blockData], result[0].hash, null, false, false, function(){
 						console.log(chalk.black.bgMagenta("[Election]"), "Saved new block for key change.");
 					}, false);
 				});
@@ -566,7 +566,7 @@ module.exports = {
 				let electionID = eID ? eID : uuidv4();
 				let blockSeq = result ? result[0].blockSeq + 1 : 0;
 				let previousHash = result ? result[0].hash : null
-				block.createBlock(electionID, blockSeq, "Election Details", [blockData], previousHash, res, broadcastBlock, broadcastSign, successCallback, sendSuccessRes);
+				block.createBlock(electionID, null, blockSeq, "Election Details", [blockData], previousHash, res, broadcastBlock, broadcastSign, successCallback, sendSuccessRes);
 			}else{
 				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
 				res.json({success: false, msg: "Cannot verify Admin key."});

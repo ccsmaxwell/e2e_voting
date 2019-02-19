@@ -83,7 +83,7 @@ module.exports = {
 				module.exports.bftUpdate(eID, selectionSeq, selectedNode, serverID, serverArr);
 
 				console.log(chalk.whiteBright.bgBlueBright("[Block]"), "--> Broadcast BFT node selection, selected:", selectedNode);
-				connection.broadcast("POST", "/blockchain/broadcastSelection", {
+				connection.broadcast("POST", "/blockchain/broadcast/bftSelection", {
 					electionID: eID,
 					selectionSeq: selectionSeq,
 					selectedNode: selectedNode
@@ -117,9 +117,7 @@ module.exports = {
 					res.json({success: true});
 				})
 			})
-		}catch(err){
-			console.log(err)
-		}
+		}catch(err) console.log(err)
 	},
 
 	bftUpdate: function(electionID, selectionSeq, selectedNode, sID, nodeList){
@@ -131,7 +129,9 @@ module.exports = {
 				receivedList: {},
 				count: {},
 				sum: 0,
-				result: null
+				result: null,
+				generated: false,
+				tempBlock: []
 			}
 		}
 		var seqObj = bftStatus[electionID].seq[selectionSeq];
@@ -144,20 +144,25 @@ module.exports = {
 		seqObj.count[selectedNode] = seqObj.count[selectedNode] ? seqObj.count[selectedNode]+1 : 1;
 		seqObj.sum++;
 
-		var maxValurNode = Object.keys(seqObj.count).reduce((a,b) =>
+		var maxValueNode = Object.keys(seqObj.count).reduce((a,b) =>
 			((seqObj.count[a]>seqObj.count[b]) || (seqObj.count[a]=seqObj.count[b] && a>b)) ? a : b
 		);
-		if(seqObj.result || !seqObj.nodeList || (seqObj.count[maxValurNode] <= seqObj.nodeList.length/2 && seqObj.sum != seqObj.nodeList.length)) return;
+		if(seqObj.result || !seqObj.nodeList || (seqObj.count[maxValueNode] <= seqObj.nodeList.length/2 && seqObj.sum != seqObj.nodeList.length)) return;
 
-		seqObj.result = maxValurNode;
-		if(maxValurNode == serverID){
+		seqObj.result = maxValueNode;
+		if(maxValueNode == serverID){
 			server.findAll({serverID: serverID}, {IP: 1, port: 1}, function(allServer){
 				let myAddr = connection.getSelfAddr();
 				if(myAddr.IP+":"+myAddr.port == allServer[0].IP+":"+allServer[0].port){
+					seqObj.generated = true;
 					module.exports.generateBlock(electionID, selectionSeq);
+				}else{
+					seqObj.tempBlock.forEach((b) => module.exports.blockProcess(b.block, b.serverSign, selectionSeq))
 				}
 			})
-		}		
+		}else{
+			seqObj.tempBlock.forEach((b) => module.exports.blockProcess(b.block, b.serverSign, selectionSeq))
+		}
 	},
 
 	generateBlock: function(eID, selectionSeq){
@@ -177,35 +182,155 @@ module.exports = {
 
 		block.cachedDetails(eID, ["servers"], false, function(eDetails){
 			block.lastBlock(eID, true, function(lastBlock){
-				block.createBlock(eID, lastBlock[0].blockSeq+1, "Ballot", blockData, lastBlock[0].hash, null, true, true, function(newBlock){
+				block.createBlock(eID, null, lastBlock[0].blockSeq+1, "Ballot", blockData, lastBlock[0].hash, null, true, true, function(newBlock){
 					console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("New block: "), chalk.grey(newBlock));
-
-					let allBallotID = [];
-					allBallot.forEach(function(e){
-						allBallotID.push(e.ballotID);
-					})
-					Ballot.updateMany({
-						ballotID: {$in: allBallotID}
-					},{
-						inBlock: true
-					}).then(function(result){
-						console.log("Updated ballot 'inBlock'.");
-					}).catch(function(err){
-						console.log(err);
-					})
 				}, false)
 			})
 		})
 	},
 
 	blockReceive: function(req, res, next){
-		module.exports.blockReceiveProcess(JSON.parse(req.body.block));
+		var data = req.body;
+		var newBlock = JSON.parse(data.block);
+		console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("<-- Receive block:"), chalk.grey(newBlock));
+
+		if(newBlock.blockType == "Ballot"){
+			let seqObj = bftStatus[newBlock.electionID].seq[bftStatus[newBlock.electionID].counter]
+			if(!seqObj.result){
+				seqObj.tempBlock.push({
+					block: newBlock,
+					serverSign: data.serverSign
+				})
+			}else{
+				module.exports.blockProcess(newBlock, data.serverSign, bftStatus[newBlock.electionID].counter)
+			}
+		}else{
+
+		}
 		res.json({success: true});
 	},
 
-	blockReceiveProcess: function(blockReceive, afterSaveCallback){
-		console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("<-- Receive block:"), chalk.grey(blockReceive));
+	blockProcess: function(newBlock, serverSign, bftCounter){
+		let seqObj = bftCounter ? bftStatus[newBlock.electionID].seq[bftCounter] : null;
+		module.exports.blockVerify(newBlock, seqObj?seqObj.result:null, serverSign, function(){
+			if(seqObj && seqObj.generated){
+				return console.log(chalk.bgBlue("[Block]"), "Block already generated, skip.");
+			}else if(seqObj){
+				seqObj.generated = true;
+			}
+			block.createBlock(newBlock.electionID, newBlock.blockUUID, newBlock.blockSeq, newBlock.blockType, newBlock.data, newBlock.previousHash, null, false, true, function(result){
+				let cacheSign = blockCache.get(newBlock.blockUUID);
+				if(cacheSign){
+					blockCache.del(newBlock.blockUUID);
+					module.exports.signVerify(newBlock.electionID, newBlock.blockUUID, Object.values(cacheSign), function(verifiedArr){
+						block.saveSign(newBlock.electionID, newBlock.blockUUID, verifiedArr, () => console.log(chalk.bgBlue("[Block]"), "Saved cache sign."));
+					})
+				}
+			}, false)
+		})
+	},
 
+	blockVerify: function(blockReceive, fromServerID, serverSign, successCallback){
+		var newBlock = {
+			blockUUID: blockReceive.blockUUID,
+			electionID: blockReceive.electionID,
+			blockSeq: blockReceive.blockSeq,
+			previousHash: blockReceive.previousHash,
+			blockType: blockReceive.blockType,
+			data: blockReceive.data
+		}
+		var hash = crypto.createHash('sha256').update(JSON.stringify(newBlock)).digest('base64');
+		if(hash != newBlock.hash) return console.log(chalk.bgBlue("[Block]"), "Block hash not equal");
+
+		var eProm = new Promise(function(resolve, reject){
+			block.lastBlock(newBlock.electionID, true, function(lastBlock){
+				if(lastBlock[0].blockSeq+1 != newBlock.blockSeq || lastBlock[0].hash != newBlock.previousHash){
+					throw chalk.bgBlue("[Block]") + " Block seq/prevHash not equal"
+				}
+				resolve();
+			})
+		})
+		var sProm = new Promise(function(resolve, reject){
+			if(!fromServerID) return resolve();
+			server.keyByServerID(fromServerID, false, function(serverKey){
+				if(!crypto.createVerify('SHA256').update(hash).verify(serverKey, serverSign, "base64")){
+					throw chalk.bgBlue("[Block]") + " Block sender sign not valid"
+				}
+				resolve();
+			})
+		})
+
+		Promise.all([eProm, sProm]).then(function(){
+			console.log(chalk.bgBlue("[Block]"), "Block verification success");
+			successCallback()
+		}).catch((err) => console.log(err))
+	},
+
+	signReceive: function(req, res, next){
+		var data = req.body;
+		var signData = JSON.parse(data.sign);
+		console.log(chalk.bgBlue("[Block]"), "<-- Receive sign: ", chalk.grey(signData.serverID));
+
+		module.exports.signVerify(data.electionID, data.blockUUID, [signData], function(verifiedArr){
+			if(verifiedArr){
+				block.saveSign(data.electionID, data.voterSign, [signData], function(result){
+					console.log(chalk.bgBlue("[Block]"), "Saved sign from: ", chalk.grey(signData.serverID));
+					res.json({success: true});
+				});
+			}else{
+				let allSign = blockCache.get(data.blockUUID);
+				if(!allSign) allSign = {};
+				allSign[signData.serverID] = signData;
+				blockCache.set(data.blockUUID, allSign, 600);
+				console.log(chalk.bgBlue("[Block]"), "Saved sign in cache.")
+				res.json({success: true});
+			}
+		})
+	},
+
+	signVerify: function(eID, blockUUID, signArr, successCallBack){
+		var bRes, eRes;
+		var bProm = new Promise(function(resolve, reject){
+			block.findAll({electionID: eID,	blockUUID: blockUUID}, null, function(result){
+				bRes = result
+				resolve();
+			});
+		})
+		var eProm = new Promise(function(resolve, reject){
+			block.cachedDetails(eID, ["servers"], false, function(result){
+				eRes = result;
+				resolve();
+			});
+		})
+
+		Promise.all([bProm, eProm]).then(function(){
+			if(!bRes || bRes.length == 0) return successCallBack(null);
+
+			let resArr = [], promArr = [];
+			signArr.forEach(function(s){
+				if(eRes.servers.filter(servers => (servers.serverID == s.serverID)).length == 0){
+					return console.log(chalk.bgBlue("[Block]"), "Sign verification fail: server ID not exist in this election. ", chalk.grey(s.serverID));
+				}
+				if(bRes[0].sign.filter(sign => (sign.serverID == s.serverID)).length > 0){
+					return console.log(chalk.bgBlue("[Block]"), "Sign verification fail: server ID already exist in this ballot. ", chalk.grey(s.serverID));
+				}
+				promArr.push(new Promise(function(resolve, reject){
+					server.keyByServerID(s.serverID, false, function(serverKey){
+						if(crypto.createVerify('SHA256').update(bRes[0].hash).verify(serverKey, s.blockHashSign, "base64")){
+							resArr.push(s);
+						}else{
+							console.log(chalk.bgBlue("[Block]"), "Sign verification fail.", chalk.grey(s.serverID));
+						}
+						resolve();
+					})
+				}))
+			})
+
+			Promise.all(promArr).then(() => successCallBack(resArr));
+		})
+	},
+
+	blockReceiveProcess: function(blockReceive, afterSaveCallback){
 		var newBlock_ = {
 			blockUUID: blockReceive.blockUUID,
 			electionID: blockReceive.electionID,
@@ -223,90 +348,14 @@ module.exports = {
 		newBlock_.hash = newBlock.hash;
 
 		newBlock.save().then(function(result){
-			let cacheSign = blockCache.get(newBlock_.blockUUID);
-			if(cacheSign){
-				blockCache.del(newBlock_.blockUUID);
-				let pushSign = []
-				cacheSign.forEach(function(s){
-					pushSign.push({
-						trusteeID: s.trusteeID,
-						signHash: s.signHash
-					})
-				})
-				
-				Block.findOneAndUpdate({
-					electionID: blockReceive.electionID,
-					blockUUID: blockReceive.blockUUID,
-				},{
-					$push: {sign: {
-						$each: pushSign
-					}}
-				}).then(function(result){
-					console.log(chalk.bgBlue("[Block]"), "Saved cache sign");
-				}).catch(function(err){
-					console.log(err);
-				})				
-			}
-
 			block.signBlock(newBlock_, true);
-
 			if(newBlock_.blockType == "Election Details"){
 				// module.exports.initTimer(newBlock_.data[0].frozenAt, newBlock_.electionID);
-			}else if(newBlock_.blockType == "Ballot"){
-				var allBallotID = [];
-				newBlock_.data.forEach(function(e){
-					allBallotID.push(e.ballotID);
-				})
-				Ballot.updateMany({
-					ballotID: {$in: allBallotID}
-				},{
-					inBlock: true
-				}).then(function(result){
-					console.log("Updated ballot 'inBlock'.");
-				}).catch(function(err){
-					console.log(err);
-				})
 			}
-
 			if(afterSaveCallback){
 				afterSaveCallback();
 			}
-		}).catch(function(err){
-			console.log(err);
-		})
-	},
-
-	signReceive: function(req, res, next){
-		var data = req.body;
-		var sign = JSON.parse(data.sign);
-		console.log(chalk.bgBlue("[Block]"), "<-- Receive sign: ", chalk.grey(sign.serverID));
-
-		Block.findOneAndUpdate({
-			electionID: data.electionID,
-			blockUUID: data.blockUUID,
-		},{
-			$push: {sign: {
-				serverID: sign.serverID,
-				blockHashSign: sign.blockHashSign
-			}}
-		})
-		.then(function(result){
-			if(result){
-				console.log(chalk.bgBlue("[Block]"), "Saved sign from: " + chalk.grey(sign.serverID));
-			}else{
-				let allSign = blockCache.get(data.blockUUID);
-				if(!allSign){
-					allSign = []
-				}
-				allSign.push(sign);
-				blockCache.set(data.blockUUID, allSign, 600);
-				console.log(chalk.bgBlue("[Block]"), "Saved sign in cache.")
-			}
-
-			res.json({success: true});
-		}).catch(function(err){
-			console.log(err);
-		})	
+		}).catch((err) => console.log(err))
 	},
 
 	syncAllChain: function(fromAddr){
