@@ -64,7 +64,7 @@ module.exports = {
 				}},
 				{$addFields: {"distinctSign": {$size: {$setDifference: ["$sign.serverID", []] }} }},
 				{$match: {
-					distinctSign: {$gte: eDetails.servers.length/2},
+					distinctSign: {$gt: eDetails.servers.length/2},
 				}},
 				{$sort: {"receiveTime" : 1}}
 			]).then(function(allBallot){
@@ -117,7 +117,9 @@ module.exports = {
 					res.json({success: true});
 				})
 			})
-		}catch(err) console.log(err)
+		}catch(err){
+			console.log(err)
+		}
 	},
 
 	bftUpdate: function(electionID, selectionSeq, selectedNode, sID, nodeList){
@@ -235,12 +237,12 @@ module.exports = {
 			blockUUID: blockReceive.blockUUID,
 			electionID: blockReceive.electionID,
 			blockSeq: blockReceive.blockSeq,
-			previousHash: blockReceive.previousHash,
 			blockType: blockReceive.blockType,
-			data: blockReceive.data
+			data: blockReceive.data,
+			previousHash: blockReceive.previousHash
 		}
 		var hash = crypto.createHash('sha256').update(JSON.stringify(newBlock)).digest('base64');
-		if(hash != newBlock.hash) return console.log(chalk.bgBlue("[Block]"), "Block hash not equal");
+		if(hash != blockReceive.hash) return console.log(chalk.bgBlue("[Block]"), "Block hash not equal");
 
 		var eProm = new Promise(function(resolve, reject){
 			block.lastBlock(newBlock.electionID, true, function(lastBlock){
@@ -273,7 +275,7 @@ module.exports = {
 
 		module.exports.signVerify(data.electionID, data.blockUUID, [signData], function(verifiedArr){
 			if(verifiedArr){
-				block.saveSign(data.electionID, data.voterSign, [signData], function(result){
+				block.saveSign(data.electionID, data.blockUUID, [signData], function(result){
 					console.log(chalk.bgBlue("[Block]"), "Saved sign from: ", chalk.grey(signData.serverID));
 					res.json({success: true});
 				});

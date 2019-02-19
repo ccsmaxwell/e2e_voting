@@ -31,7 +31,7 @@ module.exports = {
 		newBlock.save().then(function(result){
 			if(blockType == "Ballot"){
 				if(!ballotBlockUpdate[eID]) ballotBlockUpdate[eID] = [];
-				ballotBlockUpdate[eID].push(blockID);
+				ballotBlockUpdate[eID].push(newBlock_.blockUUID);
 			}
 
 			if(broadcastBlock){
@@ -93,7 +93,7 @@ module.exports = {
 					let allBallot = [];
 					result.data.forEach((e) => allBallot.push(e.voterSign));
 					Ballot.updateMany({
-						voterSign: {$in: allBallotID}
+						voterSign: {$in: allBallot}
 					},{
 						inBlock: true
 					}).then(() => console.log("Updated ballot 'inBlock'.")).catch((err) => console.log(err));
@@ -202,7 +202,7 @@ module.exports = {
 			if(validBlock){
 				bAggr.push(
 					{$addFields: {"distinctSign": {$size: {$setDifference: ["$sign.serverID", []] }} }},
-					{$match: {distinctSign: {$gte: eDetails.servers.length/2}} }
+					{$match: {distinctSign: {$gt: eDetails.servers.length/2}} }
 				)
 			}
 			bAggr.push(
@@ -338,7 +338,7 @@ module.exports = {
 			if(checkValid){
 				aggr.push(
 					{$addFields: {"distinctSign": {$size: {$setDifference: ["$sign.serverID", []] }} }},
-					{$match: {distinctSign: {$gte: eDetails.servers.length/2}} }
+					{$match: {distinctSign: {$gt: eDetails.servers.length/2}} }
 				)
 			}
 			aggr.push(
