@@ -535,6 +535,65 @@ module.exports = {
 		}, true);
 	},
 
+	tallyReq: function(req, res, next){
+		var serverList = JSON.parse(req.body.serverList);
+		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Tally request:"), chalk.grey(JSON.stringify(serverList)));
+
+		if(serverList.length==0) return res.json({success: false, msg: "Need at least 1 server to tally."});
+
+		var voterRes, eleRes;
+		var vProm = new Promise(function(resolve, reject){
+			block.latestVoters(req.params.electionID, null, 0, 1, function(result){
+				voterRes = result
+				resolve();
+			})
+		})
+		var eProm = new Promise(function(resolve, reject){
+			block.cachedDetails(req.params.electionID, ['servers'], false, function(result){
+				electRes = result
+				resolve();
+			})
+		})
+
+		Promise.all([vProm, eProm]).then(function(){
+			let allServers = electRes.servers.map((s) => s.serverID)
+			if(!serverList.every(s => allServers.includes(s))) return res.json({success: false, msg: "All tallying server must in the election setting."});
+			if(serverList.length > voterRes.total) return res.json({success: false, msg: "Number of server more than the number of voters."});
+
+			let signData = {
+				tallyInfo: [],
+				tallyAt: new Date()
+			};
+			let size = Math.floor(voterRes.total / serverList.length);
+			serverList.forEach(function(s, i){
+				signData.tallyInfo.push({
+					serverID: s,
+					start: size*i,
+					end: i==serverList.length-1 ? voterRes.total-1 : size*(i+1)-1
+				})
+			})
+			let tempID = uuidv4();
+			reqCache.set(tempID, {
+				signData: signData
+			}, 600);
+
+			res.json({success: true, tempID: tempID, signData: signData});
+		})
+	},
+
+	tallyConfirm: function(req, res, next){
+		var data = req.body;
+		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Start tally receive admin sign:"), chalk.grey(JSON.stringify(data)));
+
+		var cacheData = reqCache.get(data.tempID);
+		reqCache.del(data.tempID);
+		var blockData = cacheData.signData
+
+		module.exports.verifyAndCreateTallyBlock(req.params.electionID, blockData, data.adminSign, res, function(){
+			console.log(chalk.black.bgMagenta("[Election]"), "Tallying election.");
+		}, true);
+	},
+
 	keyChangeActivate: function(eID, type, pushData){
 		if(!keyChangeQueue[eID]){
 			keyChangeQueue[eID] = {

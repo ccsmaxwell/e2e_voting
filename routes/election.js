@@ -43,8 +43,8 @@ router.get('/:electionID/voters', (req, res, next) => res.render('eVoter'));
 router.get('/:electionID/voters/list', Election.getVoterList);
 
 router.post('/tally/:electionID/end-election', Election.endElection);
-// router.post('/tally/:electionID/start-tally-request', Election.getVoterList);
-// router.post('/tally/:electionID/start-tally-confirm', Election.getVoterList);
+router.post('/tally/:electionID/start-tally-request', Election.tallyReq);
+router.post('/tally/:electionID/start-tally-confirm', Election.tallyConfirm);
 // router.post('/tally/:electionID/decrypt', Election.getVoterList);
 
 // router.get('/tally/:electionID/trustee-decrypt', Election.getVoterList);

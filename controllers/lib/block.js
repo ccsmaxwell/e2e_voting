@@ -177,6 +177,7 @@ module.exports = {
 			{$match: {
 				"public_key": {"$ne": ""},
 			}},
+			{$sort: {_id: 1}},
 			{ $group :{
 				_id: null,
 				total: { $sum:1 },
@@ -249,6 +250,7 @@ module.exports = {
 						cond: {$eq: ["$voterList._id", "$$b.voterID"]}
 					}}
 				}},
+				{$sort: {_id: 1}},
 				{ $group :{
 					_id: null,
 					total: { $sum:1 },
