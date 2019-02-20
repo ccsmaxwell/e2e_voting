@@ -206,8 +206,8 @@ module.exports = {
 			}else{
 				module.exports.blockProcess(newBlock, data.serverSign, bftStatus[newBlock.electionID].counter)
 			}
-		}else{
-
+		}else if(newBlock.blockType == "Election Tally"){
+			module.exports.blockProcess(newBlock, data.serverSign, null)
 		}
 		res.json({success: true});
 	},

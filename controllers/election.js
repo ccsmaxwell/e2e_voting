@@ -522,6 +522,19 @@ module.exports = {
 		})
 	},
 
+	endElection: function(req, res, next){
+		var data = req.body;
+		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("End election:"), chalk.grey(JSON.stringify(data)));
+
+		var blockData = {
+			endAt: new Date(data.endAt)
+		}
+
+		module.exports.verifyAndCreateTallyBlock(req.params.electionID, blockData, data.adminSign, res, function(){
+			console.log(chalk.black.bgMagenta("[Election]"), "Ended election.");
+		}, true);
+	},
+
 	keyChangeActivate: function(eID, type, pushData){
 		if(!keyChangeQueue[eID]){
 			keyChangeQueue[eID] = {
@@ -578,6 +591,21 @@ module.exports = {
 		}else{
 			VnC(null);
 		}
+	},
+
+	verifyAndCreateTallyBlock: function(eID, blockData, adminSign, res, successCallback, sendSuccessRes){
+		block.cachedDetails(eID, ["admin"], false, function(eDetails){
+			block.lastBlock(eID, true, function(lastBlock){
+				if(!crypto.createVerify('SHA256').update(JSON.stringify(blockData)).verify(eDetails.admin.pubKey, adminSign, "base64")){
+					console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
+					res.json({success: false, msg: "Cannot verify Admin key."});
+				}
+				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification success");
+				blockData["adminSign"] = adminSign;
+
+				block.createBlock(eID, null, lastBlock[0].blockSeq+1, "Election Tally", [blockData], lastBlock[0].hash, res, true, true, successCallback, sendSuccessRes);
+			})
+		})
 	},
 
 	getResult: function(req, res, next){

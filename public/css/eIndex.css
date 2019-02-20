@@ -1,4 +1,4 @@
-#vote_btn_col a, #vote_end_col a{
+.fullWidthBtn a{
 	width: 100%;
 }
 
@@ -8,4 +8,8 @@
 
 .collapse_list .collapsible-body{
 	padding: unset;
+}
+
+.modal h4{
+	margin-top: 1.52rem;
 }

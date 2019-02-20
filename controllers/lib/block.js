@@ -85,7 +85,7 @@ module.exports = {
 		}, {new: true}).then(function(result){
 			if(successCallBack) successCallBack(result);
 
-			if(!ballotBlockUpdate[eID].includes(blockUUID)) return;
+			if(!ballotBlockUpdate[eID] || !ballotBlockUpdate[eID].includes(blockUUID)) return;
 			module.exports.cachedDetails(eID, ["servers"], false, function(eDetails){
 				if(result.sign.length > eDetails.servers.length/2){
 					ballotBlockUpdate[eID] = ballotBlockUpdate[eID].filter(i => i != blockUUID)
