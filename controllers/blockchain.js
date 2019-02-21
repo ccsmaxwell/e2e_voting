@@ -183,12 +183,10 @@ module.exports = {
 			})
 		});
 
-		blockQuery.cachedDetails(eID, ["servers"], false, function(eDetails){
-			blockQuery.lastBlock(eID, true, function(lastBlock){
-				blockUpdate.createBlock(eID, null, lastBlock[0].blockSeq+1, "Ballot", blockData, lastBlock[0].hash, null, true, true, function(newBlock){
-					console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("New block: "), chalk.grey(newBlock));
-				}, false)
-			})
+		blockQuery.lastBlock(eID, true, function(lastBlock){
+			blockUpdate.createBlock(eID, null, lastBlock[0].blockSeq+1, "Ballot", blockData, lastBlock[0].hash, null, true, true, function(newBlock){
+				console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("New block: "), chalk.grey(newBlock));
+			}, false)
 		})
 	},
 

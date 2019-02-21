@@ -1,12 +1,14 @@
 var uuidv4 = require('uuid/v4');
 var crypto = require('crypto');
 var chalk = require('chalk');
+var bigInt = require("big-integer");
 
 var Block = require('../../models/block');
 var Ballot = require('../../models/ballot');
 
 var connection = require('./connection');
 var blockQuery = require('./blockQuery');
+var encoding = require('./encoding');
 
 var blockCallbackList = {};
 
@@ -85,27 +87,86 @@ module.exports = {
 		}, {new: true}).then(function(result){
 			if(successCallBack) successCallBack(result);
 
-			if(!blockCallbackList[eID] || !blockCallbackList[eID].includes(blockUUID)) return;
-			if(result.blockType == "Ballot"){
-				module.exports.ballotBLockExec(eID, blockUUID, result);
-			}else if(result.blockType=="Election Tally" && result.tallyInfo){
+			blockQuery.cachedDetails(eID, ["servers"], false, function(eDetails){
+				if(result.sign.length <= eDetails.servers.length/2) return;
+				if(!blockCallbackList[eID] || !blockCallbackList[eID].includes(blockUUID)) return;
+				blockCallbackList[eID] = blockCallbackList[eID].filter(i => i != blockUUID)
 
-			}
+				if(result.blockType == "Ballot"){
+					module.exports.ballotBLockExec(eID, blockUUID, result);
+				}else if(result.blockType=="Election Tally" && result.data[0].tallyInfo){
+					module.exports.tallyBlockExec(eID, blockUUID, result);
+				}
+			})
 		})
 	},
 
 	ballotBLockExec: function(eID, blockUUID, block){
-		blockQuery.cachedDetails(eID, ["servers"], false, function(eDetails){
-			if(block.sign.length <= eDetails.servers.length/2) return;
-			blockCallbackList[eID] = blockCallbackList[eID].filter(i => i != blockUUID)
+		let allBallot = [];
+		block.data.forEach((e) => allBallot.push(e.voterSign));
+		Ballot.updateMany({
+			voterSign: {$in: allBallot}
+		},{
+			inBlock: true
+		}).then(() => console.log("Updated ballot 'inBlock'.")).catch((err) => console.log(err));
+	},
 
-			let allBallot = [];
-			block.data.forEach((e) => allBallot.push(e.voterSign));
-			Ballot.updateMany({
-				voterSign: {$in: allBallot}
-			},{
-				inBlock: true
-			}).then(() => console.log("Updated ballot 'inBlock'.")).catch((err) => console.log(err));
+	tallyBlockExec: function(eID, blockUUID, block){
+		block.data[0].tallyInfo.forEach(function(t){
+			if(t.serverID != serverID) return;
+
+			var bRes, eRes;
+			var bProm = new Promise(function(resolve, reject){
+				blockQuery.getVoterBallot(eID, true, t.start, t.end-t.start+1, function(result){
+					bRes = result
+					resolve();
+				})
+			})
+			var eProm = new Promise(function(resolve, reject){
+				blockQuery.cachedDetails(eID, ['questions', 'key'], false, function(result){
+					eRes = result
+					resolve();
+				})
+			})
+
+			Promise.all([bProm, eProm]).then(function(){
+				let aggrAns = [];
+				let p = bigInt(encoding.base64ToHex(eRes.key.p),16);
+				eRes.questions.forEach(function(q){
+					aggrAns.push([]);
+					q.answers.forEach(function(a){
+						aggrAns[aggrAns.length-1].push({c1:bigInt(1), c2:bigInt(1)});
+					})
+				})
+
+				bRes.result.forEach(function(voter){
+					if(!voter.ballot || !voter.ballot[0]) return;
+
+					for(let i=0; i<aggrAns.length; i++){
+						for(let j=0; j<aggrAns[i].length; j++){
+							aggrAns[i][j].c1 = aggrAns[i][j].c1.multiply(bigInt(encoding.base64ToHex(voter.ballot[0].answers[i].choices[j].c1),16)).mod(p);
+							aggrAns[i][j].c2 = aggrAns[i][j].c2.multiply(bigInt(encoding.base64ToHex(voter.ballot[0].answers[i].choices[j].c2),16)).mod(p);
+						}
+					}
+				})
+
+				aggrAns.forEach(function(q){
+					q.forEach(function(a){
+						a.c1 = encoding.hexToBase64(a.c1.toString(16));
+						a.c2 = encoding.hexToBase64(a.c2.toString(16));
+					})
+				})
+				console.log("Aggregated ballots.");
+
+				let blockData = {
+					partialTally: aggrAns
+				}
+				blockQuery.lastBlock(eID, false, function(lastBlock){
+					module.exports.createBlock(eID, null, lastBlock[0].blockSeq+1, "Election Tally", blockData, lastBlock[0].hash, null, true, true, function(newBlock){
+						console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("New block: "), chalk.grey(newBlock));
+					}, false)
+				})
+			}).catch((err) => console.log(err))
 		})
 	}
 
