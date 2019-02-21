@@ -112,17 +112,18 @@ module.exports = {
 	},
 
 	tallyBlockExec: function(eID, blockUUID, block){
-		block.data[0].tallyInfo.forEach(function(t){
+		block.data[0].tallyInfo.forEach(function(t, ti){
 			if(t.serverID != serverID) return;
 
-			var bRes, eRes;
-			var bProm = new Promise(function(resolve, reject){
+			let startTime = process.hrtime();
+			let bRes, eRes;
+			let bProm = new Promise(function(resolve, reject){
 				blockQuery.getVoterBallot(eID, true, t.start, t.end-t.start+1, function(result){
 					bRes = result
 					resolve();
 				})
 			})
-			var eProm = new Promise(function(resolve, reject){
+			let eProm = new Promise(function(resolve, reject){
 				blockQuery.cachedDetails(eID, ['questions', 'key'], false, function(result){
 					eRes = result
 					resolve();
@@ -156,16 +157,21 @@ module.exports = {
 						a.c2 = encoding.hexToBase64(a.c2.toString(16));
 					})
 				})
-				console.log("Aggregated ballots.");
 
-				let blockData = {
-					partialTally: aggrAns
-				}
-				blockQuery.lastBlock(eID, false, function(lastBlock){
-					module.exports.createBlock(eID, null, lastBlock[0].blockSeq+1, "Election Tally", blockData, lastBlock[0].hash, null, true, true, function(newBlock){
-						console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("New block: "), chalk.grey(newBlock));
-					}, false)
-				})
+				let execTime = process.hrtime(startTime);
+				console.log("Aggregated ballots. Time:", execTime);
+				setTimeout(function(){
+					let blockData = {
+						partialTally: aggrAns
+					}
+					blockQuery.lastBlock(eID, false, function(lastBlock){
+						module.exports.createBlock(eID, null, lastBlock[0].blockSeq+1, "Election Tally", blockData, lastBlock[0].hash, null, true, true, function(newBlock){
+							console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("New block: "), chalk.grey(newBlock));
+						}, false)
+					})
+				}, ((execTime[0]*1000+execTime[1]/1000000)+1000)*ti );
+
+
 			}).catch((err) => console.log(err))
 		})
 	}
