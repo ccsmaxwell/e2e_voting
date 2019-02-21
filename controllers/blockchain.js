@@ -8,8 +8,9 @@ var Ballot = require('../models/ballot');
 var Block = require('../models/block');
 
 var connection = require('./lib/connection');
-var block = require('./lib/block');
 var server = require('./lib/server');
+var blockQuery = require('./lib/blockQuery');
+var blockUpdate = require('./lib/blockUpdate');
 
 const {blockTimerInterval, blockTimerBuffer, serverID} = _config;
 
@@ -20,7 +21,7 @@ var bftStatus = {};
 module.exports = {
 
 	init: function(){
-		block.allElection(true, false, function(allElection){
+		blockQuery.allElection(true, false, function(allElection){
 			allElection.forEach(function(e){
 				module.exports.initTimer(e._id, e.frozenAt)
 			})
@@ -55,7 +56,7 @@ module.exports = {
 			delete bftStatus[eID].seq[selectionSeq-1];
 		}
 
-		block.cachedDetails(eID, ["servers"], false, function(eDetails){
+		blockQuery.cachedDetails(eID, ["servers"], false, function(eDetails){
 			Ballot.aggregate([
 				{$match: {
 					electionID: eID,
@@ -103,7 +104,7 @@ module.exports = {
 				selectedNode: data.selectedNode,
 				serverID: data.serverID
 			}
-			block.cachedDetails(data.electionID, ["servers"], false, function(eDetails){
+			blockQuery.cachedDetails(data.electionID, ["servers"], false, function(eDetails){
 				if(eDetails.servers.filter(s => (s.serverID == data.serverID)).length == 0){
 					return console.log(chalk.bgBlue("[Block]"), "BFT sign verification fail, ID not exist, from", data.serverID);
 				}
@@ -182,9 +183,9 @@ module.exports = {
 			})
 		});
 
-		block.cachedDetails(eID, ["servers"], false, function(eDetails){
-			block.lastBlock(eID, true, function(lastBlock){
-				block.createBlock(eID, null, lastBlock[0].blockSeq+1, "Ballot", blockData, lastBlock[0].hash, null, true, true, function(newBlock){
+		blockQuery.cachedDetails(eID, ["servers"], false, function(eDetails){
+			blockQuery.lastBlock(eID, true, function(lastBlock){
+				blockUpdate.createBlock(eID, null, lastBlock[0].blockSeq+1, "Ballot", blockData, lastBlock[0].hash, null, true, true, function(newBlock){
 					console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("New block: "), chalk.grey(newBlock));
 				}, false)
 			})
@@ -220,12 +221,12 @@ module.exports = {
 			}else if(seqObj){
 				seqObj.generated = true;
 			}
-			block.createBlock(newBlock.electionID, newBlock.blockUUID, newBlock.blockSeq, newBlock.blockType, newBlock.data, newBlock.previousHash, null, false, true, function(result){
+			blockUpdate.createBlock(newBlock.electionID, newBlock.blockUUID, newBlock.blockSeq, newBlock.blockType, newBlock.data, newBlock.previousHash, null, false, true, function(result){
 				let cacheSign = blockCache.get(newBlock.blockUUID);
 				if(cacheSign){
 					blockCache.del(newBlock.blockUUID);
 					module.exports.signVerify(newBlock.electionID, newBlock.blockUUID, Object.values(cacheSign), function(verifiedArr){
-						block.saveSign(newBlock.electionID, newBlock.blockUUID, verifiedArr, () => console.log(chalk.bgBlue("[Block]"), "Saved cache sign."));
+						blockUpdate.saveSign(newBlock.electionID, newBlock.blockUUID, verifiedArr, () => console.log(chalk.bgBlue("[Block]"), "Saved cache sign."));
 					})
 				}
 			}, false)
@@ -245,7 +246,7 @@ module.exports = {
 		if(hash != blockReceive.hash) return console.log(chalk.bgBlue("[Block]"), "Block hash not equal");
 
 		var eProm = new Promise(function(resolve, reject){
-			block.lastBlock(newBlock.electionID, true, function(lastBlock){
+			blockQuery.lastBlock(newBlock.electionID, true, function(lastBlock){
 				if(lastBlock[0].blockSeq+1 != newBlock.blockSeq || lastBlock[0].hash != newBlock.previousHash){
 					throw chalk.bgBlue("[Block]") + " Block seq/prevHash not equal"
 				}
@@ -275,7 +276,7 @@ module.exports = {
 
 		module.exports.signVerify(data.electionID, data.blockUUID, [signData], function(verifiedArr){
 			if(verifiedArr){
-				block.saveSign(data.electionID, data.blockUUID, [signData], function(result){
+				blockUpdate.saveSign(data.electionID, data.blockUUID, [signData], function(result){
 					console.log(chalk.bgBlue("[Block]"), "Saved sign from: ", chalk.grey(signData.serverID));
 					res.json({success: true});
 				});
@@ -293,13 +294,13 @@ module.exports = {
 	signVerify: function(eID, blockUUID, signArr, successCallBack){
 		var bRes, eRes;
 		var bProm = new Promise(function(resolve, reject){
-			block.findAll({electionID: eID,	blockUUID: blockUUID}, null, function(result){
+			blockQuery.findAll({electionID: eID,	blockUUID: blockUUID}, null, function(result){
 				bRes = result
 				resolve();
 			});
 		})
 		var eProm = new Promise(function(resolve, reject){
-			block.cachedDetails(eID, ["servers"], false, function(result){
+			blockQuery.cachedDetails(eID, ["servers"], false, function(result){
 				eRes = result;
 				resolve();
 			});
@@ -350,7 +351,7 @@ module.exports = {
 		newBlock_.hash = newBlock.hash;
 
 		newBlock.save().then(function(result){
-			block.signBlock(newBlock_, true);
+			blockUpdate.signBlock(newBlock_, true);
 			if(newBlock_.blockType == "Election Details"){
 				// module.exports.initTimer(newBlock_.data[0].frozenAt, newBlock_.electionID);
 			}

@@ -12,7 +12,8 @@ var blockChainController = require('./blockchain');
 var encoding = require('./lib/encoding');
 var connection = require('./lib/connection');
 var email = require('./lib/email');
-var block = require('./lib/block');
+var blockQuery = require('./lib/blockQuery');
+var blockUpdate = require('./lib/blockUpdate');
 
 var reqCache = new NodeCache();
 var keyChangeQueue = {};
@@ -41,7 +42,7 @@ module.exports = {
 	},
 
 	getManage: function(req, res, next){
-		block.latestDetails(req.params.electionID, ["name", "description", "start", "end", "questions", "servers"], function(result){
+		blockQuery.latestDetails(req.params.electionID, ["name", "description", "start", "end", "questions", "servers"], function(result){
 			res.render('eMan', {
 				electionID: req.params.electionID,
 				electionName: result[0].name,
@@ -57,13 +58,13 @@ module.exports = {
 	getManageStat: function(req, res, next){
 		var voterRes, trusteeRes;
 		var vProm = new Promise(function(resolve, reject){
-			block.latestVoters(req.params.electionID, null, 0, 1, function(result){
+			blockQuery.latestVoters(req.params.electionID, null, 0, 1, function(result){
 				voterRes = result;
 				resolve();
 			})
 		})
 		var tProm = new Promise(function(resolve, reject){
-			block.latestTrustees(req.params.electionID, null, 0, 1, function(result){
+			blockQuery.latestTrustees(req.params.electionID, null, 0, 1, function(result){
 				trusteeRes = result;
 				resolve();
 			})
@@ -78,7 +79,7 @@ module.exports = {
 	},
 
 	getManageDetail: function(req, res, next){
-		block.latestDetails(req.params.electionID, ["name", "description", "start", "end", "key", "admin"], function(result){
+		blockQuery.latestDetails(req.params.electionID, ["name", "description", "start", "end", "key", "admin"], function(result){
 			res.render('eCreate', {
 				create: false,
 				electionID: req.params.electionID,
@@ -109,7 +110,7 @@ module.exports = {
 	},
 
 	getManageQuestion: function(req, res, next){
-		block.latestDetails(req.params.electionID, ["questions"], function(result){
+		blockQuery.latestDetails(req.params.electionID, ["questions"], function(result){
 			res.render('eManQuestion', {
 				electionID: req.params.electionID,
 				questions: result[0].questions? result[0].questions : [],
@@ -131,7 +132,7 @@ module.exports = {
 	},
 
 	getManageServer: function(req, res, next){
-		block.latestDetails(req.params.electionID, ["servers"], function(result){
+		blockQuery.latestDetails(req.params.electionID, ["servers"], function(result){
 			res.render('eManServer', {
 				electionID: req.params.electionID,
 				servers: result[0].servers
@@ -157,7 +158,7 @@ module.exports = {
 		var limit = parseInt(req.query.limit);
 		var skip = (page-1)*limit;
 
-		block.latestVoters(req.params.electionID, null, skip, limit, function(result){
+		blockQuery.latestVoters(req.params.electionID, null, skip, limit, function(result){
 			res.json(result);
 		});
 	},
@@ -254,7 +255,7 @@ module.exports = {
 			public_key: data.public_key,
 		}
 
-		block.latestVoters(req.params.electionID, data.id, null, null, function(result){
+		blockQuery.latestVoters(req.params.electionID, data.id, null, null, function(result){
 			let verify = crypto.createVerify('SHA256');
 			verify.update(JSON.stringify(verifyData));
 			if(verify.verify(result.result[0].public_key, data.voterSign, "base64")){
@@ -275,7 +276,7 @@ module.exports = {
 		var limit = parseInt(req.query.limit);
 		var skip = (page-1)*limit;
 
-		block.latestTrustees(req.params.electionID, null, skip, limit, function(result){
+		blockQuery.latestTrustees(req.params.electionID, null, skip, limit, function(result){
 			res.json(result);
 		});
 	},
@@ -285,7 +286,7 @@ module.exports = {
 		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Add trustee request:"), chalk.grey(JSON.stringify(trustees)));
 
 		var signData = [], fullData = [];
-		block.latestDetails(req.params.electionID, ["key"], function(result){
+		blockQuery.latestDetails(req.params.electionID, ["key"], function(result){
 			trustees.forEach(function(t){
 				let dh = crypto.createDiffieHellman(result[0].key.p, 'base64', result[0].key.g, 'base64');
 				let pub = dh.generateKeys('base64');
@@ -363,7 +364,7 @@ module.exports = {
 	},
 
 	getForTrusteeChangeKey: function(req, res, next){
-		block.latestDetails(req.params.electionID, ["key"], function(result){
+		blockQuery.latestDetails(req.params.electionID, ["key"], function(result){
 			res.render('eKeyTrustee', {
 				electionKey: result[0].key
 			});
@@ -381,7 +382,7 @@ module.exports = {
 			f: data.f
 		}
 
-		block.latestDetails(req.params.electionID, ["key"], function(electRes){
+		blockQuery.latestDetails(req.params.electionID, ["key"], function(electRes){
 			let p = bigInt(encoding.base64ToHex(electRes[0].key.p),16);
 			let g = bigInt(encoding.base64ToHex(electRes[0].key.g),16);
 
@@ -398,7 +399,7 @@ module.exports = {
 			}
 			console.log(chalk.black.bgMagenta("[Election]"), "Trustee ZK proof verified.");
 
-			block.latestTrustees(req.params.electionID, data.trusteeID, null, null, function(trustRes){
+			blockQuery.latestTrustees(req.params.electionID, data.trusteeID, null, null, function(trustRes){
 				let prev_y = bigInt(encoding.base64ToHex(trustRes.result[0].y),16);
 
 				let trusteeSign = JSON.parse(data.trusteeSign);
@@ -428,13 +429,13 @@ module.exports = {
 
 		var eleRes, trustRes;
 		var eProm = new Promise(function(resolve, reject){
-			block.latestDetails(req.params.electionID, ['key'], function(result){
+			blockQuery.latestDetails(req.params.electionID, ['key'], function(result){
 				eleRes = result;
 				resolve();
 			})
 		})
 		var tProm = new Promise(function(resolve, reject){
-			block.latestTrustees(req.params.electionID, null, null, null, function(result){
+			blockQuery.latestTrustees(req.params.electionID, null, null, null, function(result){
 				trustRes = result;
 				resolve();
 			})
@@ -482,13 +483,13 @@ module.exports = {
 
 			let allBlock, serverRes;
 			let blockProm = new Promise(function(resolve, reject){
-				block.allBlocks(req.params.electionID, null, null, function(result){
+				blockQuery.allBlocks(req.params.electionID, null, null, function(result){
 					allBlock = result
 					resolve();
 				})
 			})
 			let eleProm = new Promise(function(resolve, reject){
-				block.latestDetails(req.params.electionID, ['servers'], function(result){
+				blockQuery.latestDetails(req.params.electionID, ['servers'], function(result){
 					serverRes = result[0].servers
 					resolve();
 				})
@@ -507,7 +508,7 @@ module.exports = {
 	},
 
 	getIndex: function(req, res, next){
-		block.cachedDetails(req.params.electionID, ["name", "description", "start", "end", "questions", "servers"], false, function(eDetails){
+		blockQuery.cachedDetails(req.params.electionID, ["name", "description", "start", "end", "questions", "servers"], false, function(eDetails){
 			res.render('eIndex', {electionID: req.params.electionID, eDetails: eDetails});
 		})
 	},
@@ -517,7 +518,7 @@ module.exports = {
 		var limit = parseInt(req.query.limit);
 		var skip = (page-1)*limit;
 
-		block.getVoterBallot(req.params.electionID, true, skip, limit, function(bRes){
+		blockQuery.getVoterBallot(req.params.electionID, true, skip, limit, function(bRes){
 			res.json(bRes)
 		})
 	},
@@ -543,13 +544,13 @@ module.exports = {
 
 		var voterRes, eleRes;
 		var vProm = new Promise(function(resolve, reject){
-			block.latestVoters(req.params.electionID, null, 0, 1, function(result){
+			blockQuery.latestVoters(req.params.electionID, null, 0, 1, function(result){
 				voterRes = result
 				resolve();
 			})
 		})
 		var eProm = new Promise(function(resolve, reject){
-			block.cachedDetails(req.params.electionID, ['servers'], false, function(result){
+			blockQuery.cachedDetails(req.params.electionID, ['servers'], false, function(result){
 				electRes = result
 				resolve();
 			})
@@ -617,8 +618,8 @@ module.exports = {
 					keyChangeQueue[eID].trustee = []
 				}
 
-				block.latestDetails(eID, [], function(result){
-					block.createBlock(eID, null, result[0].blockSeq + 1, "Election Details", [blockData], result[0].hash, null, false, false, function(){
+				blockQuery.latestDetails(eID, [], function(result){
+					blockUpdate.createBlock(eID, null, result[0].blockSeq + 1, "Election Details", [blockData], result[0].hash, null, false, false, function(){
 						console.log(chalk.black.bgMagenta("[Election]"), "Saved new block for key change.");
 					}, false);
 				});
@@ -638,7 +639,7 @@ module.exports = {
 				let electionID = eID ? eID : uuidv4();
 				let blockSeq = result ? result[0].blockSeq + 1 : 0;
 				let previousHash = result ? result[0].hash : null
-				block.createBlock(electionID, null, blockSeq, "Election Details", [blockData], previousHash, res, broadcastBlock, broadcastSign, successCallback, sendSuccessRes);
+				blockUpdate.createBlock(electionID, null, blockSeq, "Election Details", [blockData], previousHash, res, broadcastBlock, broadcastSign, successCallback, sendSuccessRes);
 			}else{
 				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
 				res.json({success: false, msg: "Cannot verify Admin key."});
@@ -646,15 +647,15 @@ module.exports = {
 		}
 
 		if(eID){
-			block.latestDetails(eID, ["admin"], VnC);
+			blockQuery.latestDetails(eID, ["admin"], VnC);
 		}else{
 			VnC(null);
 		}
 	},
 
 	verifyAndCreateTallyBlock: function(eID, blockData, adminSign, res, successCallback, sendSuccessRes){
-		block.cachedDetails(eID, ["admin"], false, function(eDetails){
-			block.lastBlock(eID, true, function(lastBlock){
+		blockQuery.cachedDetails(eID, ["admin"], false, function(eDetails){
+			blockQuery.lastBlock(eID, true, function(lastBlock){
 				if(!crypto.createVerify('SHA256').update(JSON.stringify(blockData)).verify(eDetails.admin.pubKey, adminSign, "base64")){
 					console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
 					res.json({success: false, msg: "Cannot verify Admin key."});
@@ -662,7 +663,7 @@ module.exports = {
 				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification success");
 				blockData["adminSign"] = adminSign;
 
-				block.createBlock(eID, null, lastBlock[0].blockSeq+1, "Election Tally", [blockData], lastBlock[0].hash, res, true, true, successCallback, sendSuccessRes);
+				blockUpdate.createBlock(eID, null, lastBlock[0].blockSeq+1, "Election Tally", [blockData], lastBlock[0].hash, res, true, true, successCallback, sendSuccessRes);
 			})
 		})
 	},

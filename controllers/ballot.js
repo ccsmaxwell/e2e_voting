@@ -9,7 +9,7 @@ var Ballot = require('../models/ballot');
 var encoding = require('./lib/encoding');
 var zkProof = require('./lib/zkProof');
 var connection = require('./lib/connection');
-var block = require('./lib/block');
+var blockQuery = require('./lib/blockQuery');
 var server = require('./lib/server');
 
 var ballotCache = new NodeCache();
@@ -19,7 +19,7 @@ const {serverID, serverPriKey} = _config;
 module.exports = {
 
 	getEmptyBallot: function(req, res, next){
-		block.cachedDetails(req.params.electionID, ["name", "description", "start", "end", "key", "questions"], false, function(eDetails){
+		blockQuery.cachedDetails(req.params.electionID, ["name", "description", "start", "end", "key", "questions"], false, function(eDetails){
 			res.render('bPrepare', {electionID: req.params.electionID, eDetails: eDetails});
 		})
 	},
@@ -41,7 +41,7 @@ module.exports = {
 			answers: ballotData.answers,
 		}
 		module.exports.verifyBallot(verifyData, ballotData.voterSign, function(){
-			block.cachedDetails(ballotData.electionID, ["servers"], false, function(eDetails){
+			blockQuery.cachedDetails(ballotData.electionID, ["servers"], false, function(eDetails){
 				console.log(chalk.black.bgCyan("[Ballot]"), "--> Broadcast ballot to other nodes");
 				connection.broadcast("POST", "/ballot/broadcast", {
 					ballotData: JSON.stringify(ballotData)
@@ -95,7 +95,7 @@ module.exports = {
 
 	verifyBallot: function(verifyData, voterSign, successCallBack){
 		var voterProm = new Promise(function(resolve, reject){
-			block.latestVoters(verifyData.electionID, verifyData.voterID, null, null, function(voterRec){
+			blockQuery.latestVoters(verifyData.electionID, verifyData.voterID, null, null, function(voterRec){
 				let voterPublicKey = voterRec.result[0].public_key;
 				let verify = crypto.createVerify('SHA256');
 				verify.update(JSON.stringify(verifyData));
@@ -108,7 +108,7 @@ module.exports = {
 		})
 
 		var questProm = new Promise(function(resolve, reject){
-			block.cachedDetails(verifyData.electionID, ["key", "questions"], false, function(eDetails){
+			blockQuery.cachedDetails(verifyData.electionID, ["key", "questions"], false, function(eDetails){
 				let p = bigInt(encoding.base64ToHex(eDetails.key.p),16);
 				let g = bigInt(encoding.base64ToHex(eDetails.key.g),16);
 				let y = bigInt(encoding.base64ToHex(eDetails.key.y),16);
@@ -181,7 +181,7 @@ module.exports = {
 			}
 			module.exports.saveSign(ballotData.electionID, ballotData.voterSign, [sign], () => console.log(chalk.black.bgCyan("[Ballot]"), "Saved self sign."));
 
-			block.cachedDetails(ballotData.electionID, ["servers"], false, function(eDetails){
+			blockQuery.cachedDetails(ballotData.electionID, ["servers"], false, function(eDetails){
 				console.log(chalk.black.bgCyan("[Ballot]"), "--> Broadcast sign to other nodes");
 				connection.broadcast("POST", "/ballot/broadcast/sign", {
 					electionID: ballotData.electionID,
@@ -202,7 +202,7 @@ module.exports = {
 		}).then((result) => bRes = result);
 
 		var eProm = new Promise(function(resolve, reject){
-			block.cachedDetails(eID, ["servers"], false, function(result){
+			blockQuery.cachedDetails(eID, ["servers"], false, function(result){
 				eRes = result;
 				resolve();
 			});
