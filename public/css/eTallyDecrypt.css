@@ -1,0 +1,7 @@
+#decryption_detail_card p, #decrypted_card p{
+	margin-top: 0px;
+}
+
+#currentTally, #partially_decrypted, #zkProof{
+	cursor: pointer;
+}

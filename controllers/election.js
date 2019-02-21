@@ -629,15 +629,37 @@ module.exports = {
 	},
 
 	getForTrusteeDecrypt: function(req, res, next){
-		blockQuery.allTallyBlocks(eID, {"data.trusteeSign": {$ne: null}}, true, function(result){
-			if(result.length > 0){
-				
+		var eDetails, lastPartialDecrypt;
+		var eProm = new Promise(function(resolve, reject){
+			blockQuery.cachedDetails(req.params.electionID, ['key'], false, function(result){
+				eDetails = result
+				resolve();
+			})
+		})
+		var bProm = new Promise(function(resolve, reject){
+			blockQuery.allTallyBlocks(req.params.electionID, {"data.trusteeSign": {$ne: null}}, true, function(result){
+				lastPartialDecrypt = result.length>0 ? result[result.length-1].data[0].partialDecrypt : null
+				resolve();
+			})
+		})
+
+		Promise.all([eProm, bProm]).then(function(){
+			if(lastPartialDecrypt){
+				return res.render('eTallyDecrypt', {electionID: req.params.electionID, eDetails: eDetails, partialDecrypt: lastPartialDecrypt})
 			}
+			blockQuery.allTallyBlocks(req.params.electionID, {"data.partialTally": {$ne: null}}, true, function(result){
+				let partialDecrypt = [];
+				for(let b of result){
+					partialDecrypt.push(b.data[0].partialTally)
+				}
+				res.render('eTallyDecrypt', {electionID: req.params.electionID, eDetails: eDetails, partialDecrypt: partialDecrypt})
+			})
 		})
 	},
 
 	trusteeSubmitDecrypt: function(req, res, next){
-
+		var data = req.body;
+		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Trustee submit partial decrypt:"), chalk.grey(JSON.stringify(data)));
 	},
 
 	notifyNextDecrypt: function(eID){
@@ -658,7 +680,7 @@ module.exports = {
 		Promise.all([tProm, bProm]).then(function(){
 			for(let t of allTrustee){
 				if(!trusteeDone.includes(t._id)){
-					let subject = "[eVoting] Trustee decrypt request";
+					let subject = "[eVoting] Trustee partial decrypt request";
 					let html = `
 						<p>An election has finished voting, waiting for all trustee(s) to fully decrypt the tally.</p>
 						<p>Trustee ID: ${t._id}</p>

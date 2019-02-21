@@ -156,6 +156,7 @@ module.exports = {
 					q.forEach(function(a){
 						a.c1 = encoding.hexToBase64(a.c1.toString(16));
 						a.c2 = encoding.hexToBase64(a.c2.toString(16));
+						a['c1x'] = encoding.hexToBase64(bigInt(1).toString(16));
 					})
 				})
 

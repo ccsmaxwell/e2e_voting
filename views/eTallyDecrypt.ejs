@@ -1,0 +1,87 @@
+<%- include('./inc/header', { page_title: "eVoting", css: "<link href='/css/eTallyDecrypt.css' rel='stylesheet' type='text/css'/>"}); %>
+
+<main>
+	<div class="container">
+		<div class="row">
+			<div class="col s12">
+				<div class="card">
+					<div class="card-content center-align">
+						<h1>Partial decrypt</h1>
+					</div>
+				</div>			
+			</div>
+		</div>
+
+		<div class="row">
+
+			<div class="col s12">
+				<div class="card cardRowMargin" id="decryption_detail_card">
+					<div class="row">
+						<div class="col s12">
+							<h5>
+								Decryption details
+							</h5>
+						</div>
+						<div class="col s12">
+							<label class="valign-wrapper">Election ID</label>
+							<p class="wordBreakAll"><%= electionID %></p>
+						</div>
+						<div class="col s12">
+							<label class="valign-wrapper">Current tally</label>
+							<p id="currentTally" class="wordBreakAll truncate"><%= JSON.stringify(partialDecrypt) %></p>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col s12">
+				<div class="card cardRowMargin" id="trustee_key_card">
+					<div class="row">
+						<div class="col s12">
+							<h5>Trustee info</h5>
+						</div>
+						<div class="input-field col s12">
+							<input id="trusteeID" type="text">
+							<label for="trusteeID">Trustee ID</label>
+						</div>
+						<div class="input-field col s12">
+							<input id="pubKey" type="text">
+							<label for="pubKey">Trustee public key</label>
+						</div>
+						<div class="input-field col s12">
+							<input id="priKey" type="text">
+							<label for="priKey">Trustee private key (for signing only, wont send to server)</label>
+						</div>
+						<div class="input-field col s12">
+							<input type="hidden" id="electionID" value="<%= electionID %>">
+							<input type="hidden" id="key_p" value="<%= eDetails.key.p %>">
+							<input type="hidden" id="key_g" value="<%= eDetails.key.g %>">
+
+							<button id="btn_decrypt" class="btn waves-effect waves-light right">Partial Decrypt</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col s12">
+				<div class="card cardRowMargin hide" id="decrypted_card">
+					<div class="row">
+						<div class="col s12">
+							<label class="valign-wrapper">Partially Decrypted tally</label>
+							<p class="wordBreakAll truncate" id="partially_decrypted"></p>
+						</div>
+						<div class="col s12">
+							<label class="valign-wrapper">Zero-Knowledge Proof</label>
+							<p class="wordBreakAll truncate" id="zkProof"></p>
+						</div>
+						<div class="input-field col s12">
+							<button id="btn_submit" class="btn waves-effect waves-light right">Submit tally</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</main>
+
+<%- include('./inc/footer', {script: "<script src='http://peterolson.github.com/BigInteger.js/BigInteger.min.js'></script><script src='/js/eTallyDecrypt.js'></script>"}); %>
