@@ -74,6 +74,17 @@
 					</li>
 				</ul>
 			</div>
+
+			<div class="col s12" id="trustee_div">
+				<ul class="collapsible collapse_list">
+					<li>
+						<div class="collapsible-header"><i class="material-icons">assignment_ind</i>Trustees</div>
+						<div class="collapsible-body">
+							<ul class="collection"></ul>
+						</div>
+					</li>
+				</ul>
+			</div>
 		</div>
 
 		<div class="row">
@@ -162,6 +173,34 @@
 		<div class="modal-footer">
 			<a class="modal-close waves-effect waves-green btn-flat">Cancel</a>
 			<a id="btn_tally_submit" class="modal-close waves-effect waves-green btn-flat">Start Tally</a>
+		</div>
+	</div>
+
+	<div id="decrypt_modal" class="modal modal-fixed-footer">
+		<div class="modal-content cyan darken-1">
+			<div class="card">
+				<div class="row">
+					<div class="col s12">
+						<h4 class="center-align">Start decrypt election</h4>
+					</div>
+				</div>
+			</div>
+
+			<div class="card">
+				<div class="row">
+					<div class="col s12">
+						<h5>Election administrator key</h5>
+					</div>
+					<div class="input-field col s12">
+						<textarea id="decrypt_admin_pri" class="materialize-textarea"></textarea>
+						<label for="decrypt_admin_pri">Private key (for signing only, wont send to server)</label>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<a class="modal-close waves-effect waves-green btn-flat">Cancel</a>
+			<a id="btn_decrypt_submit" class="modal-close waves-effect waves-green btn-flat">End</a>
 		</div>
 	</div>
 </main>

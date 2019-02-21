@@ -218,25 +218,9 @@ module.exports = {
 		}).catch((err) => console.log(err))
 	},
 
-	allBlocks: function(eID, from, to, successCallback){
-		var match = {
-			electionID: eID
-		}
-		if(from!=null && to!=null && from>=0 && to>=from){
-			match["blockSeq"] = {
-				"$gte": from,
-				"$lte": to
-			}
-		}
-
-		Block.find(match).sort({
-			"blockSeq": 1
-		}).then(successCallback).catch((err) => console.log(err))
-	},
-
 	lastBlock: function(eID, checkValid, successCallback){
 		module.exports.cachedDetails(eID, ["servers"], false, function(eDetails){
-			var aggr = [{$match: {
+			let aggr = [{$match: {
 				"electionID": eID,
 			}}]
 			if(checkValid){
@@ -252,6 +236,43 @@ module.exports = {
 
 			Block.aggregate(aggr).then(successCallback).catch((err) => console.log(err))
 		})
+	},
+
+	allTallyBlocks: function(eID, matchField, checkValid, successCallback){
+		module.exports.cachedDetails(eID, ["servers"], false, function(eDetails){
+			let match = matchField ? matchField : {};
+			match["electionID"] = eID;
+			match["blockType"] = "Election Tally";
+
+			let aggr = [{$match: match}]
+			if(checkValid){
+				aggr.push(
+					{$addFields: {"distinctSign": {$size: {$setDifference: ["$sign.serverID", []] }} }},
+					{$match: {distinctSign: {$gt: eDetails.servers.length/2}} }
+				)
+			}
+			aggr.push(
+				{$sort: {"blockSeq": 1}},
+			)
+
+			Block.aggregate(aggr).then(successCallback).catch((err) => console.log(err))
+		})
+	},
+
+	allBlocks: function(eID, from, to, successCallback){
+		var match = {
+			electionID: eID
+		}
+		if(from!=null && to!=null && from>=0 && to>=from){
+			match["blockSeq"] = {
+				"$gte": from,
+				"$lte": to
+			}
+		}
+
+		Block.find(match).sort({
+			"blockSeq": 1
+		}).then(successCallback).catch((err) => console.log(err))
 	},
 
 	allElection: function(frozened, ended, successCallback){

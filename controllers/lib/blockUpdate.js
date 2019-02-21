@@ -87,6 +87,7 @@ module.exports = {
 		}, {new: true}).then(function(result){
 			if(successCallBack) successCallBack(result);
 
+			if(result.blockType == "Election Details") return;
 			blockQuery.cachedDetails(eID, ["servers"], false, function(eDetails){
 				if(result.sign.length <= eDetails.servers.length/2) return;
 				if(!blockCallbackList[eID] || !blockCallbackList[eID].includes(blockUUID)) return;
@@ -162,7 +163,8 @@ module.exports = {
 				console.log("Aggregated ballots. Time:", execTime);
 				setTimeout(function(){
 					let blockData = {
-						partialTally: aggrAns
+						partialTally: aggrAns,
+						serverID: serverID
 					}
 					blockQuery.lastBlock(eID, false, function(lastBlock){
 						module.exports.createBlock(eID, null, lastBlock[0].blockSeq+1, "Election Tally", blockData, lastBlock[0].hash, null, true, true, function(newBlock){
@@ -170,8 +172,6 @@ module.exports = {
 						}, false)
 					})
 				}, ((execTime[0]*1000+execTime[1]/1000000)+1000)*ti );
-
-
 			}).catch((err) => console.log(err))
 		})
 	}

@@ -513,6 +513,12 @@ module.exports = {
 		})
 	},
 
+	getIndexInfo: function(req, res, next){
+		blockQuery.latestTrustees(req.params.electionID, null, null, null, function(result){
+			res.json({success: true, trustee: result.result});
+		});
+	},
+
 	getVoterList: function(req, res, next){
 		var page = parseInt(req.query.page);
 		var limit = parseInt(req.query.limit);
@@ -542,7 +548,7 @@ module.exports = {
 
 		if(serverList.length==0) return res.json({success: false, msg: "Need at least 1 server to tally."});
 
-		var voterRes, eleRes;
+		var voterRes, allServers;
 		var vProm = new Promise(function(resolve, reject){
 			blockQuery.latestVoters(req.params.electionID, null, 0, 1, function(result){
 				voterRes = result
@@ -551,13 +557,12 @@ module.exports = {
 		})
 		var eProm = new Promise(function(resolve, reject){
 			blockQuery.cachedDetails(req.params.electionID, ['servers'], false, function(result){
-				electRes = result
+				allServers = result.servers.map((s) => s.serverID)
 				resolve();
 			})
 		})
 
 		Promise.all([vProm, eProm]).then(function(){
-			let allServers = electRes.servers.map((s) => s.serverID)
 			if(!serverList.every(s => allServers.includes(s))) return res.json({success: false, msg: "All tallying server must in the election setting."});
 			if(serverList.length > voterRes.total) return res.json({success: false, msg: "Number of server more than the number of voters."});
 
@@ -593,6 +598,86 @@ module.exports = {
 		module.exports.verifyAndCreateTallyBlock(req.params.electionID, blockData, data.adminSign, res, function(){
 			console.log(chalk.black.bgMagenta("[Election]"), "Tallying election.");
 		}, true);
+	},
+
+	decryptReq: function(req, res, next){
+		var data = req.body;
+		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Start decrypt election request:"), chalk.grey(JSON.stringify(data)));
+
+		var blockData = {
+			decryptAt: new Date(data.decryptAt)
+		}
+
+		blockQuery.allTallyBlocks(req.params.electionID, null, true, function(tBlocks){
+			let allServers=[], serverDone=[];
+			for(let b of tBlocks){
+				if(b.data[0].tallyInfo){
+					allServers = b.data[0].tallyInfo.map((s) => s.serverID)
+				}else if(b.data[0].partialTally){
+					serverDone.push(b.data[0].serverID)
+				}else if(b.data[0].decryptAt){
+					return res.json({success: false, msg: "Already started decrypt process."});
+				}
+			}
+
+			if(allServers.length==0) return res.json({success: false, msg: "No server selected for Tallying yet."});
+			if(allServers.filter(v => serverDone.includes(v)).length != allServers.length) return res.json({success: false, msg: "Some server have not finish Tallying."});
+			module.exports.verifyAndCreateTallyBlock(req.params.electionID, blockData, data.adminSign, res, function(){
+				module.exports.notifyNextDecrypt(req.params.electionID);
+			}, true);
+		})
+	},
+
+	getForTrusteeDecrypt: function(req, res, next){
+		blockQuery.allTallyBlocks(eID, {"data.trusteeSign": {$ne: null}}, true, function(result){
+			if(result.length > 0){
+				
+			}
+		})
+	},
+
+	trusteeSubmitDecrypt: function(req, res, next){
+
+	},
+
+	notifyNextDecrypt: function(eID){
+		var allTrustee, trusteeDone;
+		var tProm = new Promise(function(resolve, reject){
+			blockQuery.latestTrustees(eID, null, null, null, function(result){
+				allTrustee = result.result;
+				resolve();
+			});
+		})
+		var bProm = new Promise(function(resolve, reject){
+			blockQuery.allTallyBlocks(eID, {"data.trusteeSign": {$ne: null}}, true, function(result){
+				trusteeDone = result.map((b) => b.data[0].trusteeID)
+				resolve();
+			})
+		})
+
+		Promise.all([tProm, bProm]).then(function(){
+			for(let t of allTrustee){
+				if(!trusteeDone.includes(t._id)){
+					let subject = "[eVoting] Trustee decrypt request";
+					let html = `
+						<p>An election has finished voting, waiting for all trustee(s) to fully decrypt the tally.</p>
+						<p>Trustee ID: ${t._id}</p>
+						<p>Election ID: ${eID}</p>
+						<p>Please apply your trustee private key to the election tally ASAP, via the following link:</p>
+						<p>${indexURL}election/tally/${eID}/trustee-decrypt</p>`
+
+					email.sendEmail([], [t.email], html, "", subject, []).then(function(data){
+						console.log(chalk.black.bgMagenta("[Election]"), chalk.whiteBright("Email sent to trustee: "), chalk.grey(data));
+					}).catch((err) => console.log(err))
+					return;
+				}
+			}
+			module.exports.computeResult(eID);
+		}).catch((err) => console.log(err))
+	},
+
+	computeResult: function(eID){
+		console.log("Test")
 	},
 
 	keyChangeActivate: function(eID, type, pushData){
