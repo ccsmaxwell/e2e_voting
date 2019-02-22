@@ -709,7 +709,23 @@ module.exports = {
 	},
 
 	getResult: function(req, res, next){
+		var eDetails, eResult;
+		var eProm = new Promise(function(resolve, reject){
+			blockQuery.cachedDetails(req.params.electionID, ['questions', 'name', 'description'], false, function(result){
+				eDetails = result;
+				resolve();
+			})
+		})
+		var rProm = new Promise(function(resolve, reject){
+			blockQuery.allTallyBlocks(req.params.electionID, {"data.result": {$ne: null}}, true, function(result){
+				eResult = result[0].data[0].result
+				resolve();
+			})
+		})
 
+		Promise.all([eProm, rProm]).then(function(){
+			res.render('eTallyResult', {electionID: req.params.electionID, eDetails: eDetails, result: eResult})
+		})
 	},
 
 	notifyNextDecrypt: function(eID){

@@ -1,0 +1,83 @@
+<%- include('./inc/header', { page_title: "eVoting", css: ""}); %>
+
+<main>
+	<div class="container">
+		<div class="row">
+			<div class="col s12">
+				<div class="card">
+					<div class="card-content center-align">
+						<h1>Election result</h1>
+					</div>
+				</div>			
+			</div>
+		</div>
+
+		<div class="row">
+
+			<div class="col s12">
+				<div class="card cardRowMargin" id="election_details_card">
+					<div class="row">
+						<div class="col s12">
+							<h5>Election details</h5>
+						</div>
+						<div class="col s12 m6">
+							<label class="valign-wrapper">Name</label>
+							<p class="wordBreakAll marginTop0"><%= eDetails.name %></p>
+						</div>
+						<div class="col s12 m6">
+							<label class="valign-wrapper">Descriptpon</label>
+							<p class="wordBreakAll marginTop0"><%= eDetails.description %></p>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<% eDetails.questions.forEach(function(q, qi){ %>
+				<div class="col s12">
+					<div class="card cardRowMargin q_card">
+						<div class="row">
+							<div class="col s12">
+								<h5>Q<%= qi+1 %>: <%= q.question %></h5>
+								<label class="valign-wrapper">
+									<% if(q.min_choice == q.max_choice){ %>
+										Voter choose exactly <%= q.min_choice %> answer(s)
+									<% }else{ %>
+										Voter choose between <%= q.min_choice %> to <%= q.max_choice %> answer(s)
+									<% } %>
+								</label>
+							</div>
+							<div class="col s12">
+								<table class="responsive-table">
+									<thead>
+										<tr>
+											<th></th>
+											<% result[qi][0].forEach(function(s, si){ %>
+												<th>Batch <%= si %></th>
+											<% }) %>
+											<th>Total</th>
+										</tr>
+									</thead>
+									<tbody>
+										<% result[qi].forEach(function(a, ai){ %>
+											<tr>
+												<td><%= q.answers[ai] %></td>
+												<% var tempTotal = 0; %>
+												<% result[qi][ai].forEach(function(s, si){ %>
+													<% tempTotal += s; %>
+													<td><%= s %></td>
+												<% }) %>
+												<td><%= tempTotal %></td>
+											</tr>
+										<% }) %>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+			<% }) %>
+		</div>
+	</div>
+</main>
+
+<%- include('./inc/footer', {script: ""}); %>
