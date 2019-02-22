@@ -638,7 +638,7 @@ module.exports = {
 			})
 		})
 		var bProm = new Promise(function(resolve, reject){
-			blockQuery.allTallyBlocks(req.params.electionID, {"data.trusteeSign": {$ne: null}}, true, function(result){
+			blockQuery.allTallyBlocks(req.params.electionID, {"data.partialDecrypt": {$ne: null}}, true, function(result){
 				lastPartialDecrypt = result.length>0 ? result[result.length-1].data[0].partialDecrypt : null
 				resolve();
 			})
@@ -664,7 +664,7 @@ module.exports = {
 		var proof = JSON.parse(data.proof)
 		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Trustee submit partial decrypt:"), chalk.grey(JSON.stringify(data)));
 
-		var electionKey, trusteeInfo;
+		var electionKey, trusteeInfo, lastBlock;
 		var eProm = new Promise(function(resolve, reject){
 			blockQuery.cachedDetails(data.electionID, ['key'], false, function(result){
 				electionKey = result.key
@@ -677,15 +677,39 @@ module.exports = {
 				resolve();
 			})
 		})
+		var bProm = new Promise(function(resolve, reject){
+			blockQuery.lastBlock(data.electionID, true, function(result){
+				lastBlock = result[0];
+				resolve();
+			})
+		})
 
-		Promise.all([eProm, tProm]).then(function(){
+		Promise.all([eProm, tProm, bProm]).then(function(){
 			if(!zkProof.trusteeDecryptVerify(electionKey, trusteeInfo.y, partialDecrypt, proof)){
 				console.log(chalk.black.bgMagenta("[Election]"), chalk.whiteBright("Trustee decrypt proof verification FAIL."));
 				return res.json({success: false, msg: "Verification fail."});
 			}
 
 			console.log(chalk.black.bgMagenta("[Election]"), chalk.whiteBright("Trustee decrypt proof verification success."));
+			let blockData = {
+				trusteeID: data.trusteeID,
+				partialDecrypt: partialDecrypt,
+				proof: proof
+			}
+			blockUpdate.createBlock(data.electionID, null, lastBlock.blockSeq+1, "Election Tally", [blockData], lastBlock.hash, res, true, true, function(){
+				console.log(chalk.black.bgMagenta("[Election]"), chalk.whiteBright("Trustee decrypt proof block created, wait a few seconds for next step."));
+				setTimeout(function(){
+					module.exports.notifyNextDecrypt(data.electionID);
+				}, 3000)
+			}, true);
+		}).catch(function(err){
+			console.log(err);
+			res.json({success: false, msg: "Database fail."});
 		})
+	},
+
+	getResult: function(req, res, next){
+
 	},
 
 	notifyNextDecrypt: function(eID){
@@ -697,7 +721,7 @@ module.exports = {
 			});
 		})
 		var bProm = new Promise(function(resolve, reject){
-			blockQuery.allTallyBlocks(eID, {"data.trusteeSign": {$ne: null}}, true, function(result){
+			blockQuery.allTallyBlocks(eID, {"data.partialDecrypt": {$ne: null}}, true, function(result){
 				trusteeDone = result.map((b) => b.data[0].trusteeID)
 				resolve();
 			})
@@ -725,7 +749,57 @@ module.exports = {
 	},
 
 	computeResult: function(eID){
-		console.log("Test")
+		var eKey, maxVoter, lastBlock;
+		var eProm = new Promise(function(resolve, reject){
+			blockQuery.cachedDetails(eID, ['key'], false, function(result){
+				eKey = encoding.bulkBase64ToBinInt(result.key, ['p', 'g']);
+				resolve();
+			})
+		})
+		var mProm = new Promise(function(resolve, reject){
+			blockQuery.allTallyBlocks(eID, {"data.tallyInfo": {$ne: null}}, true, function(result){
+				let tallyInfo = result[0].data[0].tallyInfo;
+				maxVoter = Math.max(tallyInfo[0].end-tallyInfo[0].start+1, tallyInfo[tallyInfo.length-1].end-tallyInfo[tallyInfo.length-1].start+1);
+				resolve();
+			})
+		})
+		var lProm = new Promise(function(resolve, reject){
+			blockQuery.lastBlock(eID, true, function(result){
+				lastBlock = result[0];
+				resolve();
+			})
+		})
+
+		Promise.all([eProm, mProm, lProm]).then(function(){
+			console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Start compute result"));
+			let disLogTable = {}
+			let gCurr = bigInt(1);
+			for(let i=0; i<=maxVoter; i++){
+				disLogTable[gCurr.toString(16)] = i;
+				gCurr = gCurr.multiply(eKey.g).mod(eKey.p);
+			}
+
+			let eResult = [];
+			lastBlock.data[0].partialDecrypt[0].forEach(function(q, qi){
+				eResult.push([]);
+				q.forEach(function(a, ai){
+					eResult[qi].push([]);
+					lastBlock.data[0].partialDecrypt.forEach(function(s, si){
+						let c1x = bigInt(encoding.base64ToHex(lastBlock.data[0].partialDecrypt[si][qi][ai].c1x),16);
+						let c2 = bigInt(encoding.base64ToHex(lastBlock.data[0].partialDecrypt[si][qi][ai].c2),16);
+						let gm = c1x.modInv(eKey.p).multiply(c2).mod(eKey.p);
+						eResult[qi][ai].push(disLogTable[gm.toString(16)]);
+					})
+				})
+			})
+
+			let blockData = {
+				result: eResult
+			}
+			blockUpdate.createBlock(eID, null, lastBlock.blockSeq+1, "Election Tally", [blockData], lastBlock.hash, null, true, true, function(){
+				console.log(chalk.black.bgMagenta("[Election]"), chalk.whiteBright("Election result compute success."));
+			}, false);
+		}).catch((err) => console.log(err))
 	},
 
 	keyChangeActivate: function(eID, type, pushData){
@@ -798,56 +872,6 @@ module.exports = {
 
 				blockUpdate.createBlock(eID, null, lastBlock[0].blockSeq+1, "Election Tally", [blockData], lastBlock[0].hash, res, true, true, successCallback, sendSuccessRes);
 			})
-		})
-	},
-
-	getResult: function(req, res, next){
-		var data = req.body;
-
-		Block.find({
-			electionID: data.electionID
-		}).then(function(allBlocks){
-			var key = {};
-			var ans_c1c2 = [];
-			var questions = [];
-			var voterCount = 0;
-			var p;
-			allBlocks.forEach(function(block){
-				if(block.blockType == "Election Details"){
-					block.data[0].questions.forEach(function(q){
-						ans_c1c2.push([]);
-						q.answers.forEach(function(a){
-							ans_c1c2[ans_c1c2.length-1].push({c1:bigInt(1), c2:bigInt(1)});
-						})
-					})
-					key = block.data[0].key
-					p = bigInt(encoding.base64ToHex(key.p),16);
-
-					questions = block.data[0].questions;
-					voterCount = block.data[0].voters.length;
-				}else if(block.blockType == "Ballot"){
-					block.data.forEach(function(ballot){
-						for(var i=0; i<ans_c1c2.length; i++){
-							for(var j=0; j<ans_c1c2[i].length; j++){
-								ans_c1c2[i][j].c1 = ans_c1c2[i][j].c1.multiply(bigInt(encoding.base64ToHex(ballot.answers[i].choices[j].c1),16)).mod(p);
-								ans_c1c2[i][j].c2 = ans_c1c2[i][j].c2.multiply(bigInt(encoding.base64ToHex(ballot.answers[i].choices[j].c2),16)).mod(p);
-							}
-						}
-					})
-				}
-			})
-
-			ans_c1c2.forEach(function(q){
-				q.forEach(function(a){
-					a.c1 = encoding.hexToBase64(a.c1.toString(16));
-					a.c2 = encoding.hexToBase64(a.c2.toString(16));
-				})
-			})
-			console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Aggregate ballots: "), chalk.grey(JSON.stringify(ans_c1c2)));
-
-			res.json({questions: questions, voterCount: voterCount, key: key, ans_c1c2: ans_c1c2});
-		}).catch(function(err){
-			console.log(err)
 		})
 	},
 
