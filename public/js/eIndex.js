@@ -13,7 +13,27 @@ $.ajax({
 
 				$("#trustee_div ul.collection").append(template);
 			})
-			console.log(res);
+			
+			let started = (new Date($("#startTime").text())) <= (new Date())
+			let ended = (new Date($("#endTime").text())) <= (new Date());
+			let tallied=false, decrypted=false, result=false;
+			res.tallyBlock.forEach(function(b){
+				if(b.data[0].endAt){
+					ended=true;
+				}else if(b.data[0].tallyAt){
+					tallied=true;
+				}else if(b.data[0].decryptAt){
+					decrypted=true;
+				}else if(b.data[0].result){
+					result=true;
+				}
+			})
+
+			if(!started || ended) $("#vote_btn_col a").addClass('disabled')
+			if(ended) $("#vote_end_col a").addClass('disabled')
+			if(!ended || tallied) $("#start_tally_col a").addClass('disabled')
+			if(!tallied || decrypted) $("#start_decrypt_col a").addClass('disabled')
+			if(!result) $("#result_col a").addClass('disabled')
 		}else{
 			console.log(res);
 		}

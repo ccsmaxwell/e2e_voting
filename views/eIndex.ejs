@@ -35,11 +35,11 @@
 						</div>
 						<div class="col s12 m6">
 							<label class="valign-wrapper">Start</label>
-							<p class="wordBreakAll marginTop0"><%= (new Date(eDetails.start)).toLocaleString() %></p>
+							<p class="wordBreakAll marginTop0" id="startTime"><%= (new Date(eDetails.start)).toLocaleString() %></p>
 						</div>
 						<div class="col s12 m6">
 							<label class="valign-wrapper">End</label>
-							<p class="wordBreakAll marginTop0"><%= (new Date(eDetails.end)).toLocaleString() %></p>
+							<p class="wordBreakAll marginTop0" id="endTime"><%= (new Date(eDetails.end)).toLocaleString() %></p>
 						</div>
 					</div>
 				</div>
@@ -101,7 +101,7 @@
 			</div>
 		</div>
 		<div class="row">
-			<div class="col s12 fullWidthBtn">
+			<div class="col s12 fullWidthBtn" id="result_col">
 				<a class="waves-effect waves-light btn-large" href="./tally/<%= electionID %>/result"><i class="material-icons left">how_to_vote</i>Result</a>
 			</div>
 		</div>

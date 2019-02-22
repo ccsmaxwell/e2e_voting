@@ -515,9 +515,23 @@ module.exports = {
 	},
 
 	getIndexInfo: function(req, res, next){
-		blockQuery.latestTrustees(req.params.electionID, null, null, null, function(result){
-			res.json({success: true, trustee: result.result});
-		});
+		var allTrustee, allTallyBlock;
+		var tProm = new Promise(function(resolve, reject){
+			blockQuery.latestTrustees(req.params.electionID, null, null, null, function(result){
+				allTrustee = result.result
+				resolve();
+			})
+		})
+		var bProm = new Promise(function(resolve, reject){
+			blockQuery.allTallyBlocks(req.params.electionID, null, true, function(tBlocks){
+				allTallyBlock = tBlocks
+				resolve();
+			})
+		})
+
+		Promise.all([tProm, bProm]).then(function(){
+			res.json({success: true, trustee: allTrustee, tallyBlock: allTallyBlock});
+		})
 	},
 
 	getVoterList: function(req, res, next){
