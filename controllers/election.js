@@ -12,6 +12,7 @@ var blockChainController = require('./blockchain');
 var encoding = require('./lib/encoding');
 var connection = require('./lib/connection');
 var email = require('./lib/email');
+var zkProof = require('./lib/zkProof');
 var blockQuery = require('./lib/blockQuery');
 var blockUpdate = require('./lib/blockUpdate');
 
@@ -659,7 +660,32 @@ module.exports = {
 
 	trusteeSubmitDecrypt: function(req, res, next){
 		var data = req.body;
+		var partialDecrypt = JSON.parse(data.partialDecrypt)
+		var proof = JSON.parse(data.proof)
 		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Trustee submit partial decrypt:"), chalk.grey(JSON.stringify(data)));
+
+		var electionKey, trusteeInfo;
+		var eProm = new Promise(function(resolve, reject){
+			blockQuery.cachedDetails(data.electionID, ['key'], false, function(result){
+				electionKey = result.key
+				resolve();
+			})
+		})
+		var tProm = new Promise(function(resolve, reject){
+			blockQuery.latestTrustees(data.electionID, data.trusteeID, null, null, function(result){
+				trusteeInfo = result.result[0]
+				resolve();
+			})
+		})
+
+		Promise.all([eProm, tProm]).then(function(){
+			if(!zkProof.trusteeDecryptVerify(electionKey, trusteeInfo.y, partialDecrypt, proof)){
+				console.log(chalk.black.bgMagenta("[Election]"), chalk.whiteBright("Trustee decrypt proof verification FAIL."));
+				return res.json({success: false, msg: "Verification fail."});
+			}
+
+			console.log(chalk.black.bgMagenta("[Election]"), chalk.whiteBright("Trustee decrypt proof verification success."));
+		})
 	},
 
 	notifyNextDecrypt: function(eID){

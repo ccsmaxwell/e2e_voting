@@ -1,3 +1,5 @@
+var bigInt = require("big-integer");
+
 module.exports = {
 
 	base64ToHex: function(base64){
@@ -10,5 +12,13 @@ module.exports = {
 		}
 		return Buffer.from(hex+"", 'hex').toString('base64');
 	},
+
+	bulkBase64ToBinInt: function(obj, keys){
+		var hex = {};
+		keys.forEach(function(k){
+			hex[k] = bigInt(module.exports.base64ToHex(obj[k]),16);
+		})
+		return hex;
+	}
 
 };

@@ -30,7 +30,7 @@ $("#btn_decrypt").click(function(){
 				let a2 = c1.modPow(s, p);
 				let msg = $("#key_g").val() + hexToBase64(a1.toString(16)) + $("#pubKey").val() + hexToBase64(a2.toString(16)) + hexToBase64(d.toString(16));
 
-				promArr.push(window.crypto.subtle.digest('SHA-256', (new TextEncoder()).encode(msg)).then(function(hashBuffer){
+				promArr.push(window.crypto.subtle.digest('SHA-256', (new TextEncoder()).encode(JSON.stringify(msg))).then(function(hashBuffer){
 					let e = bigInt(base64ToHex(arrayBufferToBase64(hashBuffer)), 16);
 					let f = s.add(e.multiply(trustee_x)).mod(p.minus(1));
 					
