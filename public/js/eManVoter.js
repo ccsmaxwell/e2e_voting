@@ -22,7 +22,7 @@ function updateList(page){
 							'<div>',
 								$('<span>').text(v._id).prop('outerHTML'),
 								'<a class="secondary-content">',
-									'<i class="material-icons red-text">delete</i>',
+									'<i class="material-icons red-text cursorPointer">delete</i>',
 								'</a>',
 							'</div>',
 						'</li>',

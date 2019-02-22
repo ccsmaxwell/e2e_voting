@@ -1,4 +1,4 @@
-<%- include('./inc/header', { page_title: "eVoting", css: "<link href='/css/eKeyTrustee.css' rel='stylesheet' type='text/css'/>"}); %>
+<%- include('./inc/header', { page_title: "eVoting", css: ""}); %>
 
 <main>
 	<div class="container">
@@ -24,11 +24,11 @@
 						</div>
 						<div class="col s12 m6">
 							<label class="valign-wrapper">Prime</label>
-							<p id="eKey_p" class="wordBreakAll"><%= electionKey.p %></p>
+							<p id="eKey_p" class="wordBreakAll marginTop0"><%= electionKey.p %></p>
 						</div>
 						<div class="col s12 m6">
 							<label class="valign-wrapper">Generator</label>
-							<p id="eKey_g" class="wordBreakAll"><%= electionKey.g %></p>
+							<p id="eKey_g" class="wordBreakAll marginTop0"><%= electionKey.g %></p>
 						</div>
 					</div>
 				</div>

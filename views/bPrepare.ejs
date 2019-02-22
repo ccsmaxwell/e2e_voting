@@ -1,4 +1,4 @@
-<%- include('./inc/header', { page_title: "eVoting", css: "<link href='/css/bPrepare.css' rel='stylesheet' type='text/css'/>"}); %>
+<%- include('./inc/header', { page_title: "eVoting", css: ""}); %>
 
 <main>
 	<div class="container">
@@ -22,19 +22,19 @@
 						</div>
 						<div class="col s12 m6">
 							<label class="valign-wrapper">Name</label>
-							<p class="wordBreakAll"><%= eDetails.name %></p>
+							<p class="wordBreakAll marginTop0"><%= eDetails.name %></p>
 						</div>
 						<div class="col s12 m6">
 							<label class="valign-wrapper">Descriptpon</label>
-							<p class="wordBreakAll"><%= eDetails.description %></p>
+							<p class="wordBreakAll marginTop0"><%= eDetails.description %></p>
 						</div>
 						<div class="col s12 m6">
 							<label class="valign-wrapper">Start</label>
-							<p class="wordBreakAll"><%= (new Date(eDetails.start)).toLocaleString() %></p>
+							<p class="wordBreakAll marginTop0"><%= (new Date(eDetails.start)).toLocaleString() %></p>
 						</div>
 						<div class="col s12 m6">
 							<label class="valign-wrapper">End</label>
-							<p class="wordBreakAll"><%= (new Date(eDetails.end)).toLocaleString() %></p>
+							<p class="wordBreakAll marginTop0"><%= (new Date(eDetails.end)).toLocaleString() %></p>
 						</div>
 					</div>
 				</div>
@@ -105,11 +105,11 @@
 						</div>
 						<div class="col s12">
 							<label class="valign-wrapper">Encrypted answers</label>
-							<p class="wordBreakAll truncate" id="encrypted_ans"></p>
+							<p class="wordBreakAll marginTop0 cursorPointer truncate" id="encrypted_ans"></p>
 						</div>
 						<div class="col s12">
 							<label class="valign-wrapper">Signature</label>
-							<p class="wordBreakAll" id="signature"></p>
+							<p class="wordBreakAll marginTop0" id="signature"></p>
 						</div>
 						<div class="input-field col s12">
 							<button id="btn_submit" class="btn waves-effect waves-light right">Submit ballot</button>

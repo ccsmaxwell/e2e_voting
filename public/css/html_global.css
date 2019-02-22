@@ -29,3 +29,11 @@ main {
 .wordBreakAll{
 	word-break: break-all;
 }
+
+.marginTop0{
+	margin-top: 0px;
+}
+
+.cursorPointer{
+	cursor: pointer;
+}

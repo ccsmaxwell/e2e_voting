@@ -1,4 +1,4 @@
-<%- include('./inc/header', { page_title: "eVoting", css: "<link href='/css/eTallyDecrypt.css' rel='stylesheet' type='text/css'/>"}); %>
+<%- include('./inc/header', { page_title: "eVoting", css: ""}); %>
 
 <main>
 	<div class="container">
@@ -24,11 +24,11 @@
 						</div>
 						<div class="col s12">
 							<label class="valign-wrapper">Election ID</label>
-							<p class="wordBreakAll"><%= electionID %></p>
+							<p class="wordBreakAll marginTop0"><%= electionID %></p>
 						</div>
 						<div class="col s12">
 							<label class="valign-wrapper">Current tally</label>
-							<p id="currentTally" class="wordBreakAll truncate"><%= JSON.stringify(partialDecrypt) %></p>
+							<p id="currentTally" class="wordBreakAll marginTop0 cursorPointer truncate"><%= JSON.stringify(partialDecrypt) %></p>
 						</div>
 					</div>
 				</div>
@@ -68,11 +68,11 @@
 					<div class="row">
 						<div class="col s12">
 							<label class="valign-wrapper">Partially Decrypted tally</label>
-							<p class="wordBreakAll truncate" id="partially_decrypted"></p>
+							<p class="wordBreakAll marginTop cursorPointer0 truncate" id="partially_decrypted"></p>
 						</div>
 						<div class="col s12">
 							<label class="valign-wrapper">Zero-Knowledge Proof</label>
-							<p class="wordBreakAll truncate" id="zkProof"></p>
+							<p class="wordBreakAll marginTop0 cursorPointer truncate" id="zkProof"></p>
 						</div>
 						<div class="input-field col s12">
 							<button id="btn_submit" class="btn waves-effect waves-light right">Submit tally</button>

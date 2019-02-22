@@ -25,7 +25,7 @@ function updateList(page){
 								$('<p>').text(v.email).prop('outerHTML'),
 								$('<p>').text(genText).prop('outerHTML'),
 								'<a class="secondary-content">',
-									'<i class="material-icons red-text">delete</i>',
+									'<i class="material-icons red-text cursorPointer">delete</i>',
 								'</a>',
 							'</div>',
 						'</li>',
