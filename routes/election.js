@@ -53,6 +53,4 @@ router.post('/tally/:electionID/trustee-decrypt', Election.trusteeSubmitDecrypt)
 
 router.get('/tally/:electionID/result', Election.getResult);
 
-router.get('/getAllElection', Election.getAllElection);
-
 module.exports = router;

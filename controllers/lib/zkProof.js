@@ -25,11 +25,9 @@ module.exports = {
 				return false;
 			}
 		}
-
 		if(!e_sum.eq(e_all)){
 			return false;
 		}
-
 		return true;
 	},
 

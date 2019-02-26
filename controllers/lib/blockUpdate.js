@@ -113,6 +113,11 @@ module.exports = {
 	},
 
 	tallyBlockExec: function(eID, blockUUID, block){
+		if(_electionTimer[eID]){
+			clearInterval(_electionTimer[eID]);
+			delete _electionTimer[eID];
+		}
+
 		block.data[0].tallyInfo.forEach(function(t, ti){
 			if(t.serverID != serverID) return;
 

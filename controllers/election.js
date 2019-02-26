@@ -5,10 +5,6 @@ var chalk = require('chalk');
 var nodeRSA = require('node-rsa');
 var NodeCache = require("node-cache");
 
-var Block = require('../models/block');
-
-var blockChainController = require('./blockchain');
-
 var encoding = require('./lib/encoding');
 var connection = require('./lib/connection');
 var email = require('./lib/email');
@@ -479,32 +475,19 @@ module.exports = {
 		var blockData = reqCache.get(data.tempID).signData;
 		reqCache.del(data.tempID);
 
-		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, false, function(){
+		module.exports.verifyAndCreate(req.params.electionID, blockData, data.adminSign, res, false, false, function(newBlock){
 			console.log(chalk.black.bgMagenta("[Election]"), "Election freeze.");
 
-			let allBlock, serverRes;
-			let blockProm = new Promise(function(resolve, reject){
-				blockQuery.allBlocks(req.params.electionID, null, null, function(result){
-					allBlock = result
-					resolve();
-				})
-			})
-			let eleProm = new Promise(function(resolve, reject){
-				blockQuery.latestDetails(req.params.electionID, ['servers'], function(result){
-					serverRes = result[0].servers
-					resolve();
-				})
-			})
-
-			Promise.all([blockProm, eleProm]).then(function(){
+			blockQuery.latestDetails(req.params.electionID, ['servers'], function(result){
+				let myAddr = connection.getSelfAddr();
 				let form = {
-					blocks: JSON.stringify(allBlock),
+					fromAddr: myAddr.IP+":"+myAddr.port,
+					electionID: req.params.electionID,
+					maxSeq: newBlock.blockSeq
 				}
-				let servers = serverRes.map((s) => s.serverID)
-				connection.broadcast("POST", "/blockchain/sync/electionFreeze", form, false, servers, null, null, null);
+				let servers = result[0].servers.map((s) => s.serverID)
+				connection.broadcast("POST", "/blockchain/sync/election-freeze", form, false, servers, null, null, null);
 			})
-
-			// blockChainController.initTimer(newBlock_.data[0].frozenAt, newBlock_.electionID);
 		}, true);
 	},
 
@@ -912,21 +895,6 @@ module.exports = {
 
 				blockUpdate.createBlock(eID, null, lastBlock[0].blockSeq+1, "Election Tally", [blockData], lastBlock[0].hash, res, true, true, successCallback, sendSuccessRes);
 			})
-		})
-	},
-
-	getAllElection: function(req, res, next){
-		Block.aggregate([
-			{$sort: {electionID: 1, blockSeq: 1}},
-			{$group: {
-				_id: "$electionID",
-				"maxSeq": {$last:"$blockSeq"},
-				"lastHash": {$last:"$hash"},
-			}}
-		]).then(function(result){
-			res.json(result);
-		}).catch(function(err){
-			console.log(err)
 		})
 	}
 

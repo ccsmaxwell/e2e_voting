@@ -1,4 +1,3 @@
-var uuidv4 = require('uuid/v4');
 var crypto = require('crypto');
 var NodeCache = require("node-cache");
 var chalk = require('chalk');
