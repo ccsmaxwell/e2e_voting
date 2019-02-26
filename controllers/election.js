@@ -678,7 +678,7 @@ module.exports = {
 		var proof = JSON.parse(data.proof)
 		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Trustee submit partial decrypt:"), chalk.grey(JSON.stringify(data)));
 
-		var electionKey, trusteeInfo, lastBlock;
+		var electionKey, trusteeInfo, prevDecrypt=[];
 		var eProm = new Promise(function(resolve, reject){
 			blockQuery.cachedDetails(data.electionID, ['key'], false, function(result){
 				electionKey = result.key
@@ -691,15 +691,23 @@ module.exports = {
 				resolve();
 			})
 		})
-		var bProm = new Promise(function(resolve, reject){
-			blockQuery.lastBlock(data.electionID, true, function(result){
-				lastBlock = result[0];
-				resolve();
+		var cProm = new Promise(function(resolve, reject){
+			blockQuery.allTallyBlocks(req.params.electionID, {"data.partialDecrypt": {$ne: null}}, true, function(result){
+				if(result.length > 0){
+					prevDecrypt = result[result.length-1].data[0].partialDecrypt
+					return resolve();
+				}
+				blockQuery.allTallyBlocks(req.params.electionID, {"data.partialTally": {$ne: null}}, true, function(result){
+					for(let b of result){
+						prevDecrypt.push(b.data[0].partialTally)
+					}
+					resolve();
+				})
 			})
 		})
 
-		Promise.all([eProm, tProm, bProm]).then(function(){
-			if(!zkProof.trusteeDecryptVerify(electionKey, trusteeInfo.y, partialDecrypt, proof)){
+		Promise.all([eProm, tProm, cProm]).then(function(){
+			if(!zkProof.trusteeDecryptVerify(electionKey, trusteeInfo.y, prevDecrypt, partialDecrypt, proof)){
 				console.log(chalk.black.bgMagenta("[Election]"), chalk.whiteBright("Trustee decrypt proof verification FAIL."));
 				return res.json({success: false, msg: "Verification fail."});
 			}
@@ -710,12 +718,14 @@ module.exports = {
 				partialDecrypt: partialDecrypt,
 				proof: proof
 			}
-			blockUpdate.createBlock(data.electionID, null, lastBlock.blockSeq+1, "Election Tally", [blockData], lastBlock.hash, res, true, true, function(){
-				console.log(chalk.black.bgMagenta("[Election]"), chalk.whiteBright("Trustee decrypt proof block created, wait a few seconds for next step."));
-				setTimeout(function(){
-					module.exports.notifyNextDecrypt(data.electionID);
-				}, 3000)
-			}, true);
+			blockQuery.lastBlock(data.electionID, true, function(lastBlock){
+				blockUpdate.createBlock(data.electionID, null, lastBlock[0].blockSeq+1, "Election Tally", [blockData], lastBlock[0].hash, res, true, true, function(){
+					console.log(chalk.black.bgMagenta("[Election]"), chalk.whiteBright("Trustee decrypt proof block created, wait a few seconds for next step."));
+					setTimeout(function(){
+						module.exports.notifyNextDecrypt(data.electionID);
+					}, 3000)
+				}, true);
+			})
 		}).catch(function(err){
 			console.log(err);
 			res.json({success: false, msg: "Database fail."});
@@ -769,7 +779,7 @@ module.exports = {
 						<p>${indexURL}election/tally/${eID}/trustee-decrypt</p>`
 
 					email.sendEmail([], [t.email], html, "", subject, []).then(function(data){
-						console.log(chalk.black.bgMagenta("[Election]"), chalk.whiteBright("Email sent to trustee: "), chalk.grey(data));
+						console.log(chalk.black.bgMagenta("[Election]"), chalk.whiteBright("Email sent to trustee: "), chalk.grey(t._id));
 					}).catch((err) => console.log(err))
 					return;
 				}

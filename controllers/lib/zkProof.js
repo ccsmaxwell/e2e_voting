@@ -33,7 +33,7 @@ module.exports = {
 		return true;
 	},
 
-	trusteeDecryptVerify: function(electionKey, trustee_pubKey, c1_arr, proof){
+	trusteeDecryptVerify: function(electionKey, trustee_pubKey, prevDecrypt, currDecrypt, proof){
 		var p = bigInt(encoding.base64ToHex(electionKey.p),16);
 		var g = bigInt(encoding.base64ToHex(electionKey.g),16);
 		var trustee_y = bigInt(encoding.base64ToHex(trustee_pubKey),16);
@@ -42,7 +42,7 @@ module.exports = {
 		proof.forEach(function(s, si){
 			s.forEach(function(q, qi){
 				q.forEach(function(a, ai){
-					let c1 = bigInt(encoding.base64ToHex(c1_arr[si][qi][ai].c1),16);
+					let c1 = bigInt(encoding.base64ToHex(prevDecrypt[si][qi][ai].c1),16);
 					let proofHex = encoding.bulkBase64ToBinInt(proof[si][qi][ai], ['a1', 'a2', 'f', 'd']);
 
 					let msg = electionKey.g + proof[si][qi][ai].a1 + trustee_pubKey + proof[si][qi][ai].a2 + proof[si][qi][ai].d;
@@ -55,6 +55,14 @@ module.exports = {
 					if(!lhs1.eq(rhs1) || !lhs2.eq(rhs2)){
 						result = false;
 						console.log("Trustee decrypt proof fail: ", si, qi, ai);
+					}
+
+					let prev_c1x = bigInt(encoding.base64ToHex(prevDecrypt[si][qi][ai].c1x),16);
+					let curr_c1x = bigInt(encoding.base64ToHex(currDecrypt[si][qi][ai].c1x),16);
+					let d = bigInt(encoding.base64ToHex(proof[si][qi][ai].d),16);
+					if(!curr_c1x.eq(prev_c1x.multiply(d).mod(p))){
+						result = false;
+						console.log("Trustee decrypt proof fail (c1x,d not match): ", si, qi, ai);
 					}
 				})
 			})

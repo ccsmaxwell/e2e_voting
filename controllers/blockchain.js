@@ -351,6 +351,11 @@ module.exports = {
 		newBlock.save().then(function(result){
 			blockUpdate.signBlock(newBlock_, true);
 			if(newBlock_.blockType == "Election Details"){
+				blockReceive.sign.forEach(function(s){
+					blockUpdate.saveSign(blockReceive.electionID, blockReceive.blockUUID, [s], function(result){
+						console.log(chalk.bgBlue("[Block]"), "Saved sign from: ", chalk.grey(s.serverID));
+					});
+				})
 				// module.exports.initTimer(newBlock_.data[0].frozenAt, newBlock_.electionID);
 			}
 			if(afterSaveCallback){

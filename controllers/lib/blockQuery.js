@@ -291,7 +291,7 @@ module.exports = {
 		}
 		if(ended == false){
 			group["end"] = {$push:"$data.end"}
-			project["end"] = {$arrayElemAt: ["$end", 0]}
+			project["end"] = {$convert: {input: {$arrayElemAt: ["$end", 0]}, to:"date"}}
 			match2["end"] = {$gt: new Date()}
 		}
 
