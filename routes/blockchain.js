@@ -10,6 +10,6 @@ router.post('/broadcast/sign', Blockchain.signReceive);
 router.get('/all-blocks', Blockchain.getAllBlocks);
 
 router.post('/sync/election-freeze', Blockchain.syncAfterFreeze);
-
+router.post('/sync/all-election', Blockchain.getAllElectionForSync);
 
 module.exports = router;

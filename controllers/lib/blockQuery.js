@@ -307,6 +307,43 @@ module.exports = {
 		]).then(successCallback).catch((err) => console.log(err))
 	},
 
+	allElectionForSync: function(serverID, successCallback){
+		Block.aggregate([
+			{$match: {
+				"blockType": "Election Details"
+			}},
+			{$sort: {blockSeq: -1}},
+			{$unwind: "$data"},
+			{$group: {
+				_id: "$electionID",
+				servers: {$push:"$data.servers"},
+				frozenAt: {$push:"$data.frozenAt"}
+			}},
+			{$project: {
+				_id: "$_id",
+				servers: {$arrayElemAt: ["$servers", 0]},
+				frozenAt: {$arrayElemAt: ["$frozenAt", 0]},
+			}},
+			{$match: {
+				frozenAt: {$ne: null},
+				servers: {$in: [serverID ? serverID : /^.*/]}
+			}}
+		]).then(function(result){
+			let allelectionID = result.map((e) => e._id);
+			Block.aggregate([
+				{$match: {
+					electionID: {$in: allelectionID}
+				}},
+				{$sort: {blockSeq: -1}},
+				{$group: {
+					_id: "$electionID",
+					maxSeq: {$first:"$blockSeq"},
+					lastHash: {$first:"$hash"}
+				}}
+			]).then(successCallback).catch((err) => console.log(err))
+		}).catch((err) => console.log(err))
+	},
+
 	findAll: function(filter, sort, successCallback){
 		var f = filter ? filter : {};
 		var s = sort ? sort : {};

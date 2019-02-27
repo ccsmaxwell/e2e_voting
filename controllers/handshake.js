@@ -44,7 +44,7 @@ module.exports = {
 						})
 					}, null);
 
-					// blockChainController.syncAllChain(input.Address);
+					blockChainController.syncAllChainSimple(input.Address);
 				}else{
 					setInterval(() => module.exports.pingAll(false), pingInterval);
 				}
@@ -67,7 +67,7 @@ module.exports = {
 			serverKey: data.serverKey,
 			serverID: data.serverID
 		}
-		if(!module.exports.verifyRsaSign(stringify(verifyData), data.serverKey, data.serverSign)){
+		if(!crypto.createVerify('SHA256').update(stringify(verifyData)).verify(data.serverKey, data.serverSign, "base64")){
 			return console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Server sign verification fail."));
 		}
 
@@ -98,7 +98,7 @@ module.exports = {
 			if(data.serverKey){
 				verifyData["serverKey"] = data.serverKey
 			}
-			if(!module.exports.verifyRsaSign(stringify(verifyData), data.serverKey || serverKey, data.serverSign)){
+			if(!crypto.createVerify('SHA256').update(stringify(verifyData)).verify(data.serverKey || serverKey, data.serverSign, "base64")){
 				return console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Ping: server sign verification fail."));
 			}
 
@@ -141,12 +141,6 @@ module.exports = {
 				console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Ping fail & deleted: "), chalk.grey(eIP+":"+ePort));
 			})
 		}, null);
-	},
-
-	verifyRsaSign: function(data, key, sign){
-		var verify = crypto.createVerify('SHA256');
-		verify.update(data);
-		return verify.verify(key, sign, "base64");
 	}
 
 }

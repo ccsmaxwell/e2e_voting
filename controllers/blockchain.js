@@ -10,7 +10,7 @@ var server = require('./lib/server');
 var blockQuery = require('./lib/blockQuery');
 var blockUpdate = require('./lib/blockUpdate');
 
-var blockCache = new NodeCache();
+var signCache = new NodeCache();
 var ballotCache = new NodeCache();
 var bftStatus = {};
 
@@ -36,16 +36,13 @@ module.exports = {
 			seq: {}
 		};
 
-		var diffTime = (new Date()) - (new Date(frozenAt));
-		var nextRun = blockTimerInterval - (diffTime % blockTimerInterval);
-		bftStatus[eID].counter = ~~(diffTime / blockTimerInterval);
-
+		var nextRun = blockTimerInterval - (((new Date()) - (new Date(frozenAt))) % blockTimerInterval);
 		setTimeout(function(){
-			bftStatus[eID].counter++;
+			bftStatus[eID].counter = ~~(((new Date()) - (new Date(frozenAt))) / blockTimerInterval);
 			if(nextRun > blockTimerBuffer) module.exports.nodeSelection(eID);
 
 			_electionTimer[eID] = setInterval(function(){
-				bftStatus[eID].counter++;
+				bftStatus[eID].counter = ~~(((new Date()) - (new Date(frozenAt))) / blockTimerInterval);
 				module.exports.nodeSelection(eID);
 			}, blockTimerInterval);
 		}, nextRun);
@@ -221,9 +218,9 @@ module.exports = {
 				seqObj.generated = true;
 			}
 			blockUpdate.createBlock(newBlock.electionID, newBlock.blockUUID, newBlock.blockSeq, newBlock.blockType, newBlock.data, newBlock.previousHash, null, false, true, function(result){
-				let cacheSign = blockCache.get(newBlock.blockUUID);
+				let cacheSign = signCache.get(newBlock.blockUUID);
 				if(cacheSign){
-					blockCache.del(newBlock.blockUUID);
+					signCache.del(newBlock.blockUUID);
 					module.exports.signVerify(newBlock.electionID, newBlock.blockUUID, Object.values(cacheSign), function(verifiedArr){
 						blockUpdate.saveSign(newBlock.electionID, newBlock.blockUUID, verifiedArr, () => console.log(chalk.bgBlue("[Block]"), "Saved cache sign."));
 					})
@@ -287,10 +284,10 @@ module.exports = {
 					res.json({success: true});
 				});
 			}else{
-				let allSign = blockCache.get(data.blockUUID);
+				let allSign = signCache.get(data.blockUUID);
 				if(!allSign) allSign = {};
 				allSign[signData.serverID] = signData;
-				blockCache.set(data.blockUUID, allSign, 600);
+				signCache.set(data.blockUUID, allSign, 600);
 				console.log(chalk.bgBlue("[Block]"), "Saved sign in cache.")
 				res.json({success: true});
 			}
@@ -382,71 +379,40 @@ module.exports = {
 		})
 	},
 
-
-	syncAllChain: function(fromAddr){
-		// var remoteList = [];
-		// var localListObj = {};
-		// var promReq = new Promise(function(resolve, reject){
-		// 	connection.sendRequest("GET", fromAddr, "/election/getAllElection", {}, function(data){
-		// 		remoteList = JSON.parse(data);
-		// 		resolve();
-		// 	}, false, function(err){
-		// 		console.log(err);
-		// 		reject();
-		// 	});
-		// })
-		// var promDb = Block.aggregate([
-		// 	{$sort: {electionID: 1, blockSeq: 1}},
-		// 	{$group: {
-		// 		_id: "$electionID",
-		// 		"maxSeq": {$last:"$blockSeq"},
-		// 		"lastHash": {$last:"$hash"},
-		// 	}}
-		// ]).then(function(result){
-		// 	result.forEach(function(e){
-		// 		localListObj[e._id] = {
-		// 			maxSeq: e.maxSeq,
-		// 			lastHash: e.lastHash
-		// 		}
-		// 	})
-		// }).catch(function(err){
-		// 	console.log(err)
-		// })
-
-		// Promise.all([promReq, promDb]).then(function(result){
-		// 	remoteList.forEach(function(e){
-		// 		let fromSeq = -1;
-		// 		if(!localListObj[e._id]){
-		// 			fromSeq = 0;
-		// 		}else if(localListObj[e._id].maxSeq < e.maxSeq){
-		// 			fromSeq = localListObj[e._id].maxSeq + 1;
-		// 		}else if(localListObj[e._id].lastHash != e.lastHash){
-		// 			fromSeq = localListObj[e._id].maxSeq;
-		// 		}
-
-		// 		if(fromSeq >= 0){
-		// 			console.log(chalk.bgBlue("[Block]"), chalk.whiteBright("Found an Election not yet sync:"), chalk.grey(e._id));
-		// 			module.exports.syncOneChain(fromAddr, e._id, fromSeq, e.maxSeq);
-		// 		}
-		// 	})
-		// }).catch(function(err){
-		// 	console.log(err);
-		// })
+	getAllElectionForSync: function(req, res, next){
+		blockQuery.allElectionForSync(req.query.serverID, (result) => res.json(result));
 	},
 
-	getAllElection: function(req, res, next){
-		// Block.aggregate([
-		// 	{$sort: {electionID: 1, blockSeq: 1}},
-		// 	{$group: {
-		// 		_id: "$electionID",
-		// 		"maxSeq": {$last:"$blockSeq"},
-		// 		"lastHash": {$last:"$hash"},
-		// 	}}
-		// ]).then(function(result){
-		// 	res.json(result);
-		// }).catch(function(err){
-		// 	console.log(err)
-		// })
+	syncAllChainSimple: function(fromAddr){
+		var remoteList, localListObj = {};
+		var rProm = new Promise(function(resolve, reject){
+			connection.sendRequest("GET", fromAddr, "/blockchain/sync/all-election", {serverID: serverID}, function(data){
+				remoteList = JSON.parse(data);
+				resolve();
+			}, false, (err) => console.log(err));
+		})
+		var lProm = new Promise(function(resolve, reject){
+			blockQuery.allElectionForSync(null, function(result){
+				result.forEach((e) => localListObj[e._id] = e);
+				resolve();
+			});
+		})
+
+		Promise.all([rProm, lProm]).then(function(){
+			remoteList.forEach(function(e){
+				let fromSeq = -1;
+				if(!localListObj[e._id]){
+					fromSeq = 0;
+				}else if(localListObj[e._id].maxSeq < e.maxSeq){
+					fromSeq = localListObj[e._id].maxSeq + 1;
+				}
+
+				if(fromSeq >= 0){
+					console.log(chalk.bgBlue("[Block]"), chalk.whiteBright("Found an Election not yet sync:"), chalk.grey(e._id));
+					module.exports.syncOneChain(fromAddr, e._id, fromSeq, e.maxSeq);
+				}
+			})
+		}).catch(function(err) => console.log(err));
 	}
 
 }
