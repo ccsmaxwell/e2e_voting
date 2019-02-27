@@ -230,7 +230,7 @@ module.exports = {
 					module.exports.initTimer(newBlock.electionID, result.data[0].frozenAt);
 				}
 
-				if(successCallBack) successCallback(result);
+				if(successCallback) successCallback(result);
 			}, false)
 		})
 	},
@@ -294,7 +294,7 @@ module.exports = {
 		})
 	},
 
-	signVerify: function(eID, blockUUID, signArr, successCallBack){
+	signVerify: function(eID, blockUUID, signArr, successCallback){
 		var bRes, eRes;
 		var bProm = new Promise(function(resolve, reject){
 			blockQuery.findAll({electionID: eID, blockUUID: blockUUID}, null, function(result){
@@ -310,7 +310,7 @@ module.exports = {
 		})
 
 		Promise.all([bProm, eProm]).then(function(){
-			if(!bRes || bRes.length == 0) return successCallBack(null);
+			if(!bRes || bRes.length == 0) return successCallback(null);
 
 			let resArr = [], promArr = [];
 			signArr.forEach(function(s){
@@ -332,7 +332,7 @@ module.exports = {
 				}))
 			})
 
-			Promise.all(promArr).then(() => successCallBack(resArr));
+			Promise.all(promArr).then(() => successCallback(resArr));
 		})
 	},
 
@@ -374,19 +374,17 @@ module.exports = {
 	getAllBlocks: function(req, res, next){
 		var data = req.body;
 
-		block.allBlocks(data.electionID, data.fromSeq, data.toSeq, function(result){
-			res.json(result);
-		})
+		blockQuery.allBlocks(data.electionID, data.fromSeq, data.toSeq, (result) => res.json(result));
 	},
 
 	getAllElectionForSync: function(req, res, next){
-		blockQuery.allElectionForSync(req.query.serverID, (result) => res.json(result));
+		blockQuery.allElectionForSync(req.body.serverID, (result) => res.json(result));
 	},
 
 	syncAllChainSimple: function(fromAddr){
 		var remoteList, localListObj = {};
 		var rProm = new Promise(function(resolve, reject){
-			connection.sendRequest("GET", fromAddr, "/blockchain/sync/all-election", {serverID: serverID}, function(data){
+			connection.sendRequest("GET", fromAddr, "/blockchain/sync/all-election", {}, true, function(data){
 				remoteList = JSON.parse(data);
 				resolve();
 			}, false, (err) => console.log(err));
@@ -412,7 +410,7 @@ module.exports = {
 					module.exports.syncOneChain(fromAddr, e._id, fromSeq, e.maxSeq);
 				}
 			})
-		}).catch(function(err) => console.log(err));
+		}).catch((err) => console.log(err));
 	}
 
 }

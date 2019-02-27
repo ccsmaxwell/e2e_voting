@@ -326,7 +326,7 @@ module.exports = {
 			}},
 			{$match: {
 				frozenAt: {$ne: null},
-				servers: {$in: [serverID ? serverID : /^.*/]}
+				"servers.serverID": {$in: [serverID ? serverID : /^.*/]}
 			}}
 		]).then(function(result){
 			let allelectionID = result.map((e) => e._id);

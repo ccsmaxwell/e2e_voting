@@ -69,9 +69,7 @@ module.exports = {
 
 	signOnFormData: function(formData){
 		formData['serverID'] = serverID;
-		var sign = crypto.createSign('SHA256');
-		sign.write(stringify(formData));
-		formData['serverSign'] = sign.sign(serverPriKey, 'base64');
+		formData['serverSign'] = crypto.createSign('SHA256').update(stringify(formData)).sign(serverPriKey, 'base64');
 	},
 
 	getSelfAddr: function(){
