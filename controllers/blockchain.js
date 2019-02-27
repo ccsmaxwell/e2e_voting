@@ -318,7 +318,7 @@ module.exports = {
 					return console.log(chalk.bgBlue("[Block]"), "Sign verification fail: server ID not exist in this election. ", chalk.grey(s.serverID));
 				}
 				if(bRes[0].sign.filter(sign => (sign.serverID == s.serverID)).length > 0){
-					return console.log(chalk.bgBlue("[Block]"), "Sign verification fail: server ID already exist in this ballot. ", chalk.grey(s.serverID));
+					return console.log(chalk.bgBlue("[Block]"), "Sign verification fail: server ID already exist in this block. ", chalk.grey(s.serverID));
 				}
 				promArr.push(new Promise(function(resolve, reject){
 					server.keyByServerID(s.serverID, false, function(serverKey){

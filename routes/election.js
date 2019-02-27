@@ -6,42 +6,42 @@ var Election = require('../controllers/election');
 router.get('/create', (req, res, next) => res.render('eCreate', {create: true}));
 router.post('/create', Election.create);
 
-router.get('/manage/:electionID', Election.getManage);
-router.get('/manage/:electionID/indexStat', Election.getManageStat);
+router.get('/manage/:electionID', Election.managePageMiddleware, Election.getManage);
+router.get('/manage/:electionID/indexStat', Election.managePageMiddleware, Election.getManageStat);
 
-router.get('/manage/:electionID/details', Election.getManageDetail);
-router.post('/manage/:electionID/details', Election.editDetail);
+router.get('/manage/:electionID/details', Election.managePageMiddleware, Election.getManageDetail);
+router.post('/manage/:electionID/details', Election.managePageMiddleware, Election.editDetail);
 
-router.get('/manage/:electionID/questions', Election.getManageQuestion);
-router.post('/manage/:electionID/questions', Election.editQuestion);
+router.get('/manage/:electionID/questions', Election.managePageMiddleware, Election.getManageQuestion);
+router.post('/manage/:electionID/questions', Election.managePageMiddleware, Election.editQuestion);
 
-router.get('/manage/:electionID/servers', Election.getManageServer);
-router.post('/manage/:electionID/servers', Election.editServer);
+router.get('/manage/:electionID/servers', Election.managePageMiddleware, Election.getManageServer);
+router.post('/manage/:electionID/servers', Election.managePageMiddleware, Election.editServer);
 
-router.get('/manage/:electionID/voters', (req, res, next) => res.render('eManVoter'));
-router.get('/manage/:electionID/voters/list', Election.getManageVoterList);
-router.post('/manage/:electionID/voters/add-request', Election.addVoterReq);
-router.post('/manage/:electionID/voters/add-confirm', Election.addVoterConfirm);
-router.post('/manage/:electionID/voters/del', Election.delVoter);
-router.get('/manage/:electionID/voters/changeKey', (req, res, next) => res.render('eKeyVoter'));
-router.post('/manage/:electionID/voters/changeKey', Election.voterKeyChangeReq);
+router.get('/manage/:electionID/voters', Election.managePageMiddleware, (req, res, next) => res.render('eManVoter'));
+router.get('/manage/:electionID/voters/list', Election.managePageMiddleware, Election.getManageVoterList);
+router.post('/manage/:electionID/voters/add-request', Election.managePageMiddleware, Election.addVoterReq);
+router.post('/manage/:electionID/voters/add-confirm', Election.managePageMiddleware, Election.addVoterConfirm);
+router.post('/manage/:electionID/voters/del', Election.managePageMiddleware, Election.delVoter);
+router.get('/manage/:electionID/voters/changeKey', Election.managePageMiddleware, (req, res, next) => res.render('eKeyVoter'));
+router.post('/manage/:electionID/voters/changeKey', Election.managePageMiddleware, Election.voterKeyChangeReq);
 
-router.get('/manage/:electionID/trustees', (req, res, next) => res.render('eManTrustee'));
-router.get('/manage/:electionID/trustees/list', Election.getManageTrusteeList);
-router.post('/manage/:electionID/trustees/add-request', Election.addTrusteeReq);
-router.post('/manage/:electionID/trustees/add-confirm', Election.addTrusteeConfirm);
-router.post('/manage/:electionID/trustees/del', Election.delTrustee);
-router.get('/manage/:electionID/trustees/changeKey', Election.getForTrusteeChangeKey);
-router.post('/manage/:electionID/trustees/changeKey', Election.trusteeKeyChangeReq);
+router.get('/manage/:electionID/trustees', Election.managePageMiddleware, (req, res, next) => res.render('eManTrustee'));
+router.get('/manage/:electionID/trustees/list', Election.managePageMiddleware, Election.getManageTrusteeList);
+router.post('/manage/:electionID/trustees/add-request', Election.managePageMiddleware, Election.addTrusteeReq);
+router.post('/manage/:electionID/trustees/add-confirm', Election.managePageMiddleware, Election.addTrusteeConfirm);
+router.post('/manage/:electionID/trustees/del', Election.managePageMiddleware, Election.delTrustee);
+router.get('/manage/:electionID/trustees/changeKey', Election.managePageMiddleware, Election.getForTrusteeChangeKey);
+router.post('/manage/:electionID/trustees/changeKey', Election.managePageMiddleware, Election.trusteeKeyChangeReq);
 
-router.post('/manage/:electionID/freeze-request', Election.freezeReq);
-router.post('/manage/:electionID/freeze-confirm', Election.freezeConfirm);
+router.post('/manage/:electionID/freeze-request', Election.managePageMiddleware, Election.freezeReq);
+router.post('/manage/:electionID/freeze-confirm', Election.managePageMiddleware, Election.freezeConfirm);
 
-router.get('/:electionID', Election.getIndex);
-router.get('/:electionID/indexInfo', Election.getIndexInfo);
+router.get('/:electionID', Election.electionPageMiddleware, Election.getIndex);
+router.get('/:electionID/indexInfo', Election.electionPageMiddleware, Election.getIndexInfo);
 
-router.get('/:electionID/voters', (req, res, next) => res.render('eVoter'));
-router.get('/:electionID/voters/list', Election.getVoterList);
+router.get('/:electionID/voters', Election.electionPageMiddleware, (req, res, next) => res.render('eVoter'));
+router.get('/:electionID/voters/list', Election.electionPageMiddleware, Election.getVoterList);
 
 router.post('/tally/:electionID/end-election', Election.endElection);
 router.post('/tally/:electionID/start-tally-request', Election.tallyReq);

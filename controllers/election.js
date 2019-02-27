@@ -19,6 +19,20 @@ const {keyChangeWaitTime, indexURL} = _config;
 
 module.exports = {
 
+	managePageMiddleware: function(req, res, next){
+		blockQuery.latestDetails(req.params.electionID, ["frozenAt"], function(result){
+			if(result.length==0 || result[0].frozenAt) return res.status(404).send('Election not exist / already frozen.');
+			next();
+		})		
+	},
+
+	electionPageMiddleware: function(req, res, next){
+		blockQuery.latestDetails(req.params.electionID, ["frozenAt"], function(result){
+			if(result.length==0 || !result[0].frozenAt) return res.status(404).send('Election not exist / not yet frozen.');
+			next();
+		})		
+	},
+
 	create: function(req, res, next){
 		var data = req.body;
 		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Create election:"), chalk.grey(JSON.stringify(data)));
@@ -873,6 +887,39 @@ module.exports = {
 			}else{
 				console.log(chalk.black.bgMagenta("[Election]"), "Admin key verification FAIL");
 				res.json({success: false, msg: "Cannot verify Admin key."});
+			}
+		}
+
+		for(let k of Object.keys(blockData)){
+			if(k=="name" && blockData[k].trim()=="") return res.json({success: false, msg: "Name can't be empty"});
+			if(k=="description" && blockData[k].trim()=="") return res.json({success: false, msg: "Description can't be empty"});
+			if(k=="start" && blockData.end<=blockData.start) return res.json({success: false, msg: "End time must before start time"});
+			if(k=="key" && (blockData[k].p.trim()==""||blockData[k].g.trim()=="")) return res.json({success: false, msg: "Key (p/g) can't be empty"});
+			if(k=="admin" && blockData[k].pubKey.trim()=="") return res.json({success: false, msg: "Admin public key can't be empty"});
+			if(k=="servers"){
+				for(let s of blockData[k]){
+					if(!s.serverID || s.serverID.trim()=="") return res.json({success: false, msg: "Server ID can't be empty"});
+				}
+			}
+			if(k=="questions"){
+				for(let q of blockData[k]){
+					if(!q.question || q.question.trim()=="") return res.json({success: false, msg: "Question can't be empty"});
+					if(!q.min_choice || !q.max_choice || q.min_choice>q.max_choice) return res.json({success: false, msg: "Min/Max number of choice invalid"});
+					if(q.min_choice>q.answers.length || q.max_choice<0) return res.json({success: false, msg: "Min/Max number of choice not match with number of answers"});
+					for(let a of q.answers){
+						if(a.trim()=="") return res.json({success: false, msg: "Question choice can't be empty"});
+					}
+				}
+			}
+			if(k=="voters"){
+				for(let v of blockData[k]){
+					if(!v.id || v.id.trim()=="") return res.json({success: false, msg: "Voter ID can't be empty"});
+				}
+			}
+			if(k=="trustees"){
+				for(let t of blockData[k]){
+					if(!t.trusteeID || t.trusteeID.trim()=="") return res.json({success: false, msg: "Trustee ID can't be empty"});
+				}
 			}
 		}
 

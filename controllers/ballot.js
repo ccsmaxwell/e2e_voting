@@ -17,6 +17,17 @@ const {serverID, serverPriKey} = _config;
 
 module.exports = {
 
+	verifyMiddleware: function(req, res, next){
+		var eID = req.body.ballotData ? JSON.parse(req.body.ballotData).electionID : (req.body.electionID?req.body.electionID:req.params.electionID);
+		blockQuery.latestDetails(eID, ["frozenAt", "end"], function(result){
+			if(result.length==0 || !result[0].frozenAt || new Date() > new Date(result[0].end)) return res.status(404).send('Election not exist / not yet frozen / already ended.');
+			blockQuery.allTallyBlocks(eID, {"data.endAt": {$ne: null}}, true, function(result){
+				if(result.length>0) return res.status(404).send('Election already ended.');
+				next();
+			})
+		})
+	},
+
 	getEmptyBallot: function(req, res, next){
 		blockQuery.cachedDetails(req.params.electionID, ["name", "description", "start", "end", "key", "questions"], false, function(eDetails){
 			res.render('bPrepare', {electionID: req.params.electionID, eDetails: eDetails});
