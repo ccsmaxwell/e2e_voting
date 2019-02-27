@@ -7,6 +7,7 @@ var Schema = mongoose.Schema;
 var Node_serverSchema = new Schema({
   IP: String,
   port: String,
+  instanceID: String,
   serverID: String,
   serverKey: String
 }, { timestamps: {} });

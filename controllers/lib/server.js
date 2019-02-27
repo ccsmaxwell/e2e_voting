@@ -4,14 +4,11 @@ var serverDetails = {};
 
 module.exports = {
 
-	updateNode: function(ip, port, serverID, serverKey, successCallback){
+	updateNode: function(ip, port, instanceID, serverID, serverKey, successCallback){
 		var edit = {}
-		if(serverID){
-			edit["serverID"] = serverID;
-		}
-		if(serverKey){
-			edit["serverKey"] = serverKey;
-		}
+		if(serverID) edit["serverID"] = serverID;
+		if(serverKey) edit["serverKey"] = serverKey;
+		if(instanceID) edit["instanceID"] = instanceID;
 
 		Node_server.findOneAndUpdate({
 			IP: ip,
@@ -19,27 +16,21 @@ module.exports = {
 		}, edit, {
 			upsert: true
 		}).then(function(result){
-			if(successCallback){
-				successCallback();
-			}
+			if(successCallback) successCallback();
 		}).catch((err) => console.log(err))
 	},
 
 	deleteNode: function(ip, port, successCallback){
-		Node_server.deleteOne({
+		Node_server.deleteMany({
 			IP: ip,
 			port: port
 		}).then(function(result){
-			if(successCallback){
-				successCallback();
-			}
+			if(successCallback) successCallback();
 		}).catch((err) => console.log(err))
 	},
 
 	keyByServerID: function(serverID, forceUpdate, successCallback){
-		if(!serverDetails[serverID]){
-			serverDetails[serverID] = {serverKey: null}
-		}
+		if(!serverDetails[serverID]) serverDetails[serverID] = {serverKey: null};
 
 		if(forceUpdate || !serverDetails[serverID].serverKey){
 			module.exports.findAll({serverID: serverID}, null, function(result){

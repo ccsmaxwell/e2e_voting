@@ -15,7 +15,7 @@ module.exports = {
 	init: function(){	
 		var myAddr = connection.getSelfAddr();
 
-		server.updateNode(myAddr.IP, myAddr.port, serverID, serverPubKey, function(){
+		server.updateNode(myAddr.IP, myAddr.port, instanceID, serverID, serverPubKey, function(){
 			module.exports.pingAll(true);
 
 			prompt.start();
@@ -26,6 +26,7 @@ module.exports = {
 					connection.sendRequest("GET", input.Address, "/handshake/connect", {
 						IP: myAddr.IP,
 						Port: myAddr.port,
+						instanceID: instanceID,
 						serverKey: serverPubKey
 					}, true, function(data){
 						current_nodes = JSON.parse(data);
@@ -33,7 +34,7 @@ module.exports = {
 						let promArr = []
 						current_nodes.forEach(function(e){
 							promArr.push(new Promise(function(resolve, reject){
-								server.updateNode(e.IP, e.port, e.serverID, e.serverKey, resolve);
+								server.updateNode(e.IP, e.port, e.instanceID, e.serverID, e.serverKey, resolve);
 							}));
 						});
 
@@ -64,6 +65,7 @@ module.exports = {
 		var verifyData = {
 			IP: data.IP,
 			Port: data.Port,
+			instanceID: data.instanceID,
 			serverKey: data.serverKey,
 			serverID: data.serverID
 		}
@@ -72,7 +74,7 @@ module.exports = {
 		}
 
 		server.findAll(null, null, function(allNodes){
-			server.updateNode(data.IP, data.Port, data.serverID, data.serverKey, function(){
+			server.updateNode(data.IP, data.Port, data.instanceID, data.serverID, data.serverKey, function(){
 				res.json(allNodes);
 			});
 		})
@@ -80,66 +82,55 @@ module.exports = {
 
 	pingRequest: function(req, res, next){
 		var data = req.body;
-		if(data.instanceID == instanceID){
-			return res.json({sameNode: true});
-		}
+		if(data.instanceID == instanceID) return res.json({sameNode: true});
 
 		server.keyByServerID(data.serverID, false, function(serverKey){
-			if(!data.serverKey && !serverKey){
-				return res.json({sameNode: false, needKey: true});
-			}
+			if(!data.serverKey && !serverKey) return res.json({sameNode: false, needKey: true});
 
-			var verifyData = {
+			let verifyData = {
 				IP: data.IP,
 				Port: data.Port,
 				instanceID: data.instanceID,
 				serverID: data.serverID
 			}
-			if(data.serverKey){
-				verifyData["serverKey"] = data.serverKey
-			}
+			if(data.serverKey) verifyData["serverKey"] = data.serverKey;
 			if(!crypto.createVerify('SHA256').update(stringify(verifyData)).verify(data.serverKey || serverKey, data.serverSign, "base64")){
 				return console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Ping: server sign verification fail."));
 			}
 
-			server.updateNode(data.IP, data.Port, data.serverID, data.serverKey, null);
-			res.json({sameNode: false, needKey: false});
+			server.updateNode(data.IP, data.Port, data.instanceID, data.serverID, data.serverKey, null);
+			let myAddr = connection.getSelfAddr();
+			res.json({sameNode: false, needKey: false, IP: myAddr.IP, Port: myAddr.port});
 		})
 	},
 
 	pingAll: function(withKey){
 		var myAddr = connection.getSelfAddr();
-		server.updateNode(myAddr.IP, myAddr.port, serverID, serverPubKey, null);
+		server.updateNode(myAddr.IP, myAddr.port, instanceID, serverID, serverPubKey, null);
 
 		var form = {
 			IP: myAddr.IP,
 			Port: myAddr.port,
 			instanceID: instanceID
 		}
-		if(withKey){
-			form["serverKey"] = serverPubKey
-		}
+		if(withKey) form["serverKey"] = serverPubKey;
 
 		connection.broadcast("GET", "/handshake/ping", form, true, null, function(eIP, ePort, myIP, myPort, data){
 			data = JSON.parse(data);
 
-			if(data.sameNode){
-				return server.deleteNode(eIP, ePort, null);
-			}
+			if(data.sameNode) return server.deleteNode(eIP, ePort, null);
 			if(data.needKey){
 				console.log(chalk.black.bgGreenBright("[Handshake]"), `Key request from: ${eIP}:${ePort}`);
 				form["serverKey"] = serverPubKey
 				delete form.serverSign
-				connection.sendRequest("GET", `${eIP}:${ePort}`, "/handshake/ping", form, true, null, null);
+				return connection.sendRequest("GET", `${eIP}:${ePort}`, "/handshake/ping", form, true, null, null);
 			}
+			if(data.IP!=eIP || data.Port!=ePort) server.deleteNode(eIP, ePort, null);
 		}, function(eIP, ePort, myIP, myPort, err){
 			if(err.code != 'ECONNREFUSED' && err.code != 'ETIMEDOUT'){
 				console.log(err);
 			}
-
-			server.deleteNode(eIP, ePort, function(){
-				console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Ping fail & deleted: "), chalk.grey(eIP+":"+ePort));
-			})
+			server.deleteNode(eIP, ePort, () => console.log(chalk.black.bgGreenBright("[Handshake]"), chalk.redBright("Ping fail & deleted: "), chalk.grey(eIP+":"+ePort)));
 		}, null);
 	}
 
