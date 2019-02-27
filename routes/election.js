@@ -43,14 +43,14 @@ router.get('/:electionID/indexInfo', Election.electionPageMiddleware, Election.g
 router.get('/:electionID/voters', Election.electionPageMiddleware, (req, res, next) => res.render('eVoter'));
 router.get('/:electionID/voters/list', Election.electionPageMiddleware, Election.getVoterList);
 
-router.post('/tally/:electionID/end-election', Election.endElection);
-router.post('/tally/:electionID/start-tally-request', Election.tallyReq);
-router.post('/tally/:electionID/start-tally-confirm', Election.tallyConfirm);
-router.post('/tally/:electionID/decrypt-request', Election.decryptReq);
+router.post('/tally/:electionID/end-election', Election.electionPageMiddleware, Election.endElection);
+router.post('/tally/:electionID/start-tally-request', Election.tallyPageMiddleware, Election.tallyReq);
+router.post('/tally/:electionID/start-tally-confirm', Election.tallyPageMiddleware, Election.tallyConfirm);
+router.post('/tally/:electionID/decrypt-request', Election.tallyPageMiddleware, Election.decryptReq);
 
-router.get('/tally/:electionID/trustee-decrypt', Election.getForTrusteeDecrypt);
-router.post('/tally/:electionID/trustee-decrypt', Election.trusteeSubmitDecrypt);
+router.get('/tally/:electionID/trustee-decrypt', Election.tallyPageMiddleware, Election.getForTrusteeDecrypt);
+router.post('/tally/:electionID/trustee-decrypt', Election.tallyPageMiddleware, Election.trusteeSubmitDecrypt);
 
-router.get('/tally/:electionID/result', Election.getResult);
+router.get('/tally/:electionID/result', Election.tallyPageMiddleware, Election.getResult);
 
 module.exports = router;

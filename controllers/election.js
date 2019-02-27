@@ -33,6 +33,16 @@ module.exports = {
 		})		
 	},
 
+	tallyPageMiddleware: function(req, res, next){
+		blockQuery.cachedDetails(req.params.electionID, ["end"], false, function(result){
+			if(result.length==0) return res.status(404).send('Election not exist.');
+			blockQuery.allTallyBlocks(req.params.electionID, {"data.endAt": {$ne: null}}, true, function(tResult){
+				if(tResult.length==0 && new Date() < new Date(result.end)) return res.status(404).send('Election not yet ended.');
+				next();
+			})
+		})		
+	},
+
 	create: function(req, res, next){
 		var data = req.body;
 		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Create election:"), chalk.grey(JSON.stringify(data)));
@@ -573,8 +583,17 @@ module.exports = {
 				resolve();
 			})
 		})
+		var tProm = new Promise(function(resolve, reject){
+			blockQuery.allTallyBlocks(req.params.electionID, {"data.tallyAt": {$ne: null}}, true, function(result){
+				if(result.length>0){
+					res.json({success: false, msg: "Already started tallying."});
+					return reject();
+				}
+				resolve();
+			})
+		})
 
-		Promise.all([vProm, eProm]).then(function(){
+		Promise.all([vProm, eProm, tProm]).then(function(){
 			if(!serverList.every(s => allServers.includes(s))) return res.json({success: false, msg: "All tallying server must in the election setting."});
 			if(serverList.length > voterRes.total) return res.json({success: false, msg: "Number of server more than the number of voters."});
 
@@ -596,7 +615,7 @@ module.exports = {
 			}, 600);
 
 			res.json({success: true, tempID: tempID, signData: signData});
-		})
+		}).catch((err) => console.log(err));
 	},
 
 	tallyConfirm: function(req, res, next){
@@ -666,7 +685,7 @@ module.exports = {
 				}
 				res.render('eTallyDecrypt', {electionID: req.params.electionID, eDetails: eDetails, partialDecrypt: partialDecrypt})
 			})
-		})
+		}).catch((err) => console.log(err));
 	},
 
 	trusteeSubmitDecrypt: function(req, res, next){
@@ -739,14 +758,14 @@ module.exports = {
 		})
 		var rProm = new Promise(function(resolve, reject){
 			blockQuery.allTallyBlocks(req.params.electionID, {"data.result": {$ne: null}}, true, function(result){
-				eResult = result[0].data[0].result
+				eResult = result[0] ? result[0].data[0].result : null;
 				resolve();
 			})
 		})
 
 		Promise.all([eProm, rProm]).then(function(){
 			res.render('eTallyResult', {electionID: req.params.electionID, eDetails: eDetails, result: eResult})
-		})
+		}).catch((err) => console.log(err));
 	},
 
 	notifyNextDecrypt: function(eID){
