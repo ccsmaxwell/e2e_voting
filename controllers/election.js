@@ -2,8 +2,8 @@ var uuidv4 = require('uuid/v4');
 var crypto = require('crypto');
 var bigInt = require("big-integer");
 var chalk = require('chalk');
-var nodeRSA = require('node-rsa');
 var NodeCache = require("node-cache");
+var child_process = require('child_process');
 
 var encoding = require('./lib/encoding');
 var connection = require('./lib/connection');
@@ -188,30 +188,31 @@ module.exports = {
 		var voters = JSON.parse(req.body.voters);
 		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("Add voter request:"), chalk.grey(JSON.stringify(voters)));
 
-		var signData = [], fullData = [];
-		voters.forEach(function(v){
-			let key = new nodeRSA({b: 1024});
-			let pub = key.exportKey("public");
-			let pri = key.exportKey("pkcs8");
-
-			signData.push({
-				id: v.id,
-				public_key: pub
+		var keys = [];
+		var child = child_process.fork('./controllers/childProcess/rsaGen', [voters.length, 1024])
+		child.on('message', (msg) => keys.push(msg));
+		child.on('exit', function(){
+			let signData = [], fullData = [];
+			voters.forEach(function(v, vi){
+				signData.push({
+					id: v.id,
+					public_key: keys[vi].pub
+				})
+				fullData.push({
+					id: v.id,
+					email: v.email,
+					public_key: keys[vi].pub,
+					private_key: keys[vi].pri
+				})
 			})
-			fullData.push({
-				id: v.id,
-				email: v.email,
-				public_key: pub,
-				private_key: pri
-			})
-		})
-		var tempID = uuidv4();
-		reqCache.set(tempID, {
-			signData: signData,
-			fullData: fullData
-		}, 600);
+			var tempID = uuidv4();
+			reqCache.set(tempID, {
+				signData: signData,
+				fullData: fullData
+			}, 600);
 
-		res.json({success: true, tempID: tempID, signData: signData});
+			res.json({success: true, tempID: tempID, signData: signData});
+		});
 	},
 
 	addVoterConfirm: function(req, res, next){
