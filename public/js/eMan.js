@@ -27,7 +27,7 @@ $("#btn_freeze_submit").click(function(){
 
 				rsaSign($("#freeze_admin_pri").val(), JSON.stringify(res.signData), function(sign){
 					let data = {
-						adminSign: arrayBufferToBase64(sign),
+						adminSign: sign,
 						tempID: res.tempID
 					}
 

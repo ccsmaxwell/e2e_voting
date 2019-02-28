@@ -55,7 +55,7 @@ function ajaxCreateEdit(create){
 	}
 
 	rsaSign($("#admin_pri").val(), JSON.stringify(data), function(sign){
-		data["adminSign"] = arrayBufferToBase64(sign);
+		data["adminSign"] = sign;
 		if(create){
 			data.key = JSON.stringify(data.key);
 			data.admin = JSON.stringify(data.admin);

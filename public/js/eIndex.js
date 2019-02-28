@@ -50,7 +50,7 @@ $("#btn_end_submit").click(function(){
 	}
 
 	rsaSign($("#end_admin_pri").val(), JSON.stringify(data), function(sign){
-		data["adminSign"] = arrayBufferToBase64(sign);
+		data["adminSign"] = sign;
 
 		$.ajax({
 			type: "POST",
@@ -92,7 +92,7 @@ $("#btn_tally_submit").click(function(){
 
 				rsaSign($("#tally_admin_pri").val(), JSON.stringify(res.signData), function(sign){
 					let data = {
-						adminSign: arrayBufferToBase64(sign),
+						adminSign: sign,
 						tempID: res.tempID
 					}
 
@@ -127,7 +127,7 @@ $("#btn_decrypt_submit").click(function(){
 	}
 
 	rsaSign($("#decrypt_admin_pri").val(), JSON.stringify(data), function(sign){
-		data["adminSign"] = arrayBufferToBase64(sign);
+		data["adminSign"] = sign;
 
 		$.ajax({
 			type: "POST",

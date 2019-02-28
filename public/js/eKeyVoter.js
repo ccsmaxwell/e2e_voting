@@ -17,7 +17,7 @@ $("#btn_submit").click(function(){
 	}
 
 	rsaSign($("#curr_pri").val(), JSON.stringify(data), function(sign){
-		data["voterSign"] = arrayBufferToBase64(sign);
+		data["voterSign"] = sign;
 
 		$.ajax({
 			type: "POST",

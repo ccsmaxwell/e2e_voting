@@ -126,7 +126,7 @@ $("#btn_add_all").click(function(){
 				}
 
 				rsaSign($("#add_admin_pri").val(), JSON.stringify(data), function(sign){
-					data["adminSign"] = arrayBufferToBase64(sign);
+					data["adminSign"] = sign;
 					data["tempID"] = res.tempID;
 					delete data.trustees;
 
@@ -159,7 +159,7 @@ $("#btn_del_submit").click(function(){
 	}
 
 	rsaSign($("#del_admin_pri").val(), JSON.stringify(data), function(sign){
-		data["adminSign"] = arrayBufferToBase64(sign);
+		data["adminSign"] = sign;
 		data.trustees = JSON.stringify(data.trustees);
 
 		$.ajax({

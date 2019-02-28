@@ -5,6 +5,8 @@ var chalk = require('chalk');
 var NodeCache = require("node-cache");
 var child_process = require('child_process');
 
+var blockChainController = require('./blockchain');
+
 var encoding = require('./lib/encoding');
 var connection = require('./lib/connection');
 var email = require('./lib/email');
@@ -513,6 +515,8 @@ module.exports = {
 				let servers = result[0].servers.map((s) => s.serverID)
 				connection.broadcast("POST", "/blockchain/sync/election-freeze", form, false, servers, null, null, null);
 			})
+
+			blockChainController.initTimer(req.params.electionID, blockData.frozenAt);
 		}, true);
 	},
 

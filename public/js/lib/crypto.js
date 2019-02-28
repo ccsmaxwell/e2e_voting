@@ -1,52 +1,19 @@
 function rsaGenerate(successCallback) {
-	window.crypto.subtle.generateKey({
-		name: "RSASSA-PKCS1-v1_5",
-		modulusLength: 1024,
-		publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-		hash: {name: "SHA-256"},
-	}, true, ["sign", "verify"]).then(function(key){
-		let pubKey = null;
-		let priKey = null;
+	forge.pki.rsa.generateKeyPair({bits: 1024, workers: -1}, function(err, keypair) {
+		if(err){
+			return console.log(err)
+		}
 
-		let promPub = window.crypto.subtle.exportKey("spki", key.publicKey).then(function(keyData){
-			pubKey = "-----BEGIN PUBLIC KEY-----\n" + arrayBufferToBase64(keyData) + "\n-----END PUBLIC KEY-----";
-		}).catch(function(err){
-			console.log(err);
-		});
-		let promPri = window.crypto.subtle.exportKey("pkcs8", key.privateKey).then(function(keyData){
-			priKey = "-----BEGIN PRIVATE KEY-----\n" + arrayBufferToBase64(keyData) + "\n-----END PRIVATE KEY-----";
-		}).catch(function(err){
-			console.log(err);
-		});
-
-		Promise.all([promPub, promPri]).then(function(){
-			successCallback(pubKey, priKey);
-		})
-	}).catch(function(err){
-		console.log(err);
+		let pubKey = forge.pki.publicKeyToPem(keypair.publicKey)
+		let priKey = forge.pki.privateKeyInfoToPem(forge.pki.wrapRsaPrivateKey(forge.pki.privateKeyToAsn1(keypair.privateKey)))
+		successCallback(pubKey, priKey);
 	});
 }
 
 function rsaSign(priKeyStr, textStr, successCallback) {
-	window.crypto.subtle.importKey(
-		"pkcs8",
-		base64ToArrayBuffer(priKeyStr.split("-----")[2].replace(/[\r\n]*/g,'')),
-		{
-			name: "RSASSA-PKCS1-v1_5",
-			hash: {name: "SHA-256"}
-		},
-		false,
-		["sign"]
-	).then(function(privateKey) {
-		window.crypto.subtle.sign(
-			{name: "RSASSA-PKCS1-v1_5"},
-			privateKey,
-			new TextEncoder('utf-8').encode(textStr)
-		)
-		.then(function(signBuff){
-			successCallback(signBuff);
-		})
-	})
+	var key = forge.pki.privateKeyFromPem(priKeyStr);
+	var sign = key.sign(forge.md.sha256.create().update(textStr, 'utf8'))
+	successCallback(hexToBase64(forge.util.createBuffer(sign, 'raw').toHex()));
 }
 
 function uuidv4() {

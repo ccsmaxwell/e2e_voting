@@ -89,7 +89,7 @@ $("#btn_submit").click(function(){
 	}
 
 	rsaSign($("#admin_pri").val(), JSON.stringify(data), function(sign){
-		data["adminSign"] = arrayBufferToBase64(sign);
+		data["adminSign"] = sign;
 		data.questions = JSON.stringify(data.questions);
 
 		$.ajax({

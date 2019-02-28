@@ -43,7 +43,6 @@ $("#btn_encrypt").click(function(){
 	var p = bigInt(base64ToHex($("#key_p").val()), 16);
 
 	var answers = [];
-	var promArr = [];
 	$(".q_card").each(function(i){
 		answers.push({choices:[], overall_proof:[]})
 		let min_choice = parseInt($(this).find(".min_choice").val());
@@ -78,19 +77,16 @@ $("#btn_encrypt").click(function(){
 				c1: c1_base64,
 				c2: c2_base64
 			}
+			let e_sum = bigInt(forge.md.sha256.create().update(JSON.stringify(msg)).digest().toHex(), 16).mod(p);
 
-			promArr.push(window.crypto.subtle.digest('SHA-256', (new TextEncoder()).encode(JSON.stringify(msg))).then(function(hashBuffer){
-				let e_sum = bigInt(base64ToHex(arrayBufferToBase64(hashBuffer)), 16).mod(p);
+			let simProof = genSimProof(p,g,y,c1,c2,1-value);
+			let realProof = genRealProof(p,g,y,e_sum,simProof.e,r);
 
-				let simProof = genSimProof(p,g,y,c1,c2,1-value);
-				let realProof = genRealProof(p,g,y,e_sum,simProof.e,r);
+			let proof = [];
+			proof[1-value] = proofToBase64(simProof);
+			proof[value] = proofToBase64(realProof);
 
-				let proof = [];
-				proof[1-value] = proofToBase64(simProof);
-				proof[value] = proofToBase64(realProof);
-
-				answers[i].choices[j]["proof"] = proof;
-			}))
+			answers[i].choices[j]["proof"] = proof;
 		})
 
 		let msg = {
@@ -99,44 +95,39 @@ $("#btn_encrypt").click(function(){
 			question_c1: hexToBase64(question_c1.toString(16)),
 			question_c2: hexToBase64(question_c2.toString(16)),
 		}
+		let e_sum = bigInt(forge.md.sha256.create().update(JSON.stringify(msg)).digest().toHex(), 16).mod(p);
+		let e_sim_sum = bigInt(0);
+		
+		for (let v=min_choice ; v<=max_choice ; v++){
+			answers[i].overall_proof.push({});
 
-		promArr.push(window.crypto.subtle.digest('SHA-256', (new TextEncoder()).encode(JSON.stringify(msg))).then(function(hashBuffer){
-			let e_sum = bigInt(base64ToHex(arrayBufferToBase64(hashBuffer)), 16).mod(p);
-			let e_sim_sum = bigInt(0);
-			
-			for (let v=min_choice ; v<=max_choice ; v++){
-				answers[i].overall_proof.push({});
-
-				if(v != question_value){
-					let simProof = genSimProof(p,g,y,question_c1,question_c2,v);
-					e_sim_sum = e_sim_sum.add(simProof.e).mod(p);
-					answers[i].overall_proof[v-min_choice] = proofToBase64(simProof);
-				}
+			if(v != question_value){
+				let simProof = genSimProof(p,g,y,question_c1,question_c2,v);
+				e_sim_sum = e_sim_sum.add(simProof.e).mod(p);
+				answers[i].overall_proof[v-min_choice] = proofToBase64(simProof);
 			}
-
-			if(answers[i].overall_proof[question_value-min_choice]){
-				answers[i].overall_proof[question_value-min_choice] = proofToBase64(genRealProof(p,g,y,e_sum,e_sim_sum,question_r));
-			}
-		}))
-	})
-
-	Promise.all(promArr).then(function(){
-		let ballot = {
-			electionID: eID,
-			voterID: $("#voterID").val(),
-			answers: answers
 		}
 
-		rsaSign($("#priKey").val(), JSON.stringify(ballot), function(sign){
-			$("#encrypted_ans").text(JSON.stringify(answers));
-			$("#signature").text(arrayBufferToBase64(sign));
-			$("#encrypted_ballot_card").removeClass('hide');
+		if(answers[i].overall_proof[question_value-min_choice]){
+			answers[i].overall_proof[question_value-min_choice] = proofToBase64(genRealProof(p,g,y,e_sum,e_sim_sum,question_r));
+		}
+	})
 
-			$("#priKey").val("");
-			M.textareaAutoResize($("#priKey"));
-			M.updateTextFields();
-			$(".q_checkbox").prop('checked', false);
-		})
+	let ballot = {
+		electionID: eID,
+		voterID: $("#voterID").val(),
+		answers: answers
+	}
+
+	rsaSign($("#priKey").val(), JSON.stringify(ballot), function(sign){
+		$("#encrypted_ans").text(JSON.stringify(answers));
+		$("#signature").text(sign);
+		$("#encrypted_ballot_card").removeClass('hide');
+
+		$("#priKey").val("");
+		M.textareaAutoResize($("#priKey"));
+		M.updateTextFields();
+		$(".q_checkbox").prop('checked', false);
 	})
 })
 

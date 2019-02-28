@@ -30,17 +30,15 @@ $("#btn_decrypt").click(function(){
 				let a2 = c1.modPow(s, p);
 				let msg = $("#key_g").val() + hexToBase64(a1.toString(16)) + $("#pubKey").val() + hexToBase64(a2.toString(16)) + hexToBase64(d.toString(16));
 
-				promArr.push(window.crypto.subtle.digest('SHA-256', (new TextEncoder()).encode(JSON.stringify(msg))).then(function(hashBuffer){
-					let e = bigInt(base64ToHex(arrayBufferToBase64(hashBuffer)), 16);
-					let f = s.add(e.multiply(trustee_x)).mod(p.minus(1));
-					
-					proof[si][qi][ai] = {
-						a1: hexToBase64(a1.toString(16)),
-						a2: hexToBase64(a2.toString(16)),
-						f: hexToBase64(f.toString(16)),
-						d: hexToBase64(d.toString(16)),
-					}
-				}))
+				let e = bigInt(forge.md.sha256.create().update(JSON.stringify(msg)).digest().toHex(), 16);
+				let f = s.add(e.multiply(trustee_x)).mod(p.minus(1));
+				
+				proof[si][qi][ai] = {
+					a1: hexToBase64(a1.toString(16)),
+					a2: hexToBase64(a2.toString(16)),
+					f: hexToBase64(f.toString(16)),
+					d: hexToBase64(d.toString(16)),
+				}
 			})
 		})
 	})
