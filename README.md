@@ -24,6 +24,7 @@ npm install
   "awsAccessKeyId": "AKIAJPUVS2RHUAVXJKPQ", //Public access key for AWS API
   "awsSecretAccessKeyPath": "./key/aws-ses.secret", //Path to the private access key for AWS API
   "awsRegion": "us-west-2", //Region setting in AWS
+  "awsProxy": "", //Proxy URL for AWS services
 
   // Following configuration must be the same across all servers, DO NOT change unless you are confident enough
   "blockTimerInterval": 15000,  //Interval between generating block (in ms)

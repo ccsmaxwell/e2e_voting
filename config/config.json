@@ -11,6 +11,7 @@
 	"awsAccessKeyId": "AKIAJPUVS2RHUAVXJKPQ",
 	"awsSecretAccessKeyPath": "./key/aws-ses.secret",
 	"awsRegion": "us-west-2",
+	"awsProxy": "",
 
 	"blockTimerInterval": 15000,
 	"blockTimerBuffer": 3000,

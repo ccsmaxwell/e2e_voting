@@ -76,7 +76,7 @@ module.exports = {
 					return module.exports.generateBlock(eID, selectionSeq);
 				}
 
-				let lastHash =  new Buffer(allBallot[allBallot.length-1].voterSign, "ascii").reduce(function(acc, curr){return acc + curr}, 0);
+				let lastHash =  Buffer.from(allBallot[allBallot.length-1].voterSign, "ascii").reduce(function(acc, curr){return acc + curr}, 0);
 				let selectedNode = serverArr[lastHash%(serverArr.length)];
 
 				module.exports.bftUpdate(eID, selectionSeq, selectedNode, serverID, serverArr);

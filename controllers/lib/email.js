@@ -1,17 +1,14 @@
 var AWS = require('aws-sdk');
 var fs = require('fs');
 
-const awsEmailEnable = _config.awsEmailEnable;
-const awsEmailFrom = _config.awsEmailFrom;
-const awsAccessKeyId = _config.awsAccessKeyId;
-const awsSecretAccessKeyPath = _config.awsSecretAccessKeyPath;
-const awsRegion = _config.awsRegion;
+const {awsEmailEnable, awsEmailFrom, awsAccessKeyId, awsSecretAccessKeyPath, awsRegion, awsProxy} = _config;
 
 if(awsEmailEnable){
 	AWS.config.update({ 
 		"accessKeyId": awsAccessKeyId,
 		"secretAccessKey": fs.readFileSync(awsSecretAccessKeyPath),
-		"region": awsRegion
+		"region": awsRegion,
+		"httpOptions": {proxy: awsProxy}
 	});
 }
 

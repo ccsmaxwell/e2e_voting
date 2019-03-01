@@ -15,6 +15,7 @@ var configSchema = {
 	"awsAccessKeyId": "",
 	"awsSecretAccessKeyPath": "",
 	"awsRegion": "",
+	"awsProxy": "",
 	"blockTimerInterval": 0,
 	"blockTimerBuffer": 0,
 	"pingInterval": 0,
@@ -28,7 +29,7 @@ module.exports = {
 		var config = JSON.parse(fs.readFileSync(configPath));
 
 		Object.keys(configSchema).forEach(function(k){
-			if(!config[k] || typeof config[k] !== typeof configSchema[k]){
+			if(!k in config || typeof config[k] !== typeof configSchema[k]){
 				throw "Config key: " + k + " not exist / type mismatch";
 			}
 		})
