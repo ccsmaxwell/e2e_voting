@@ -42,7 +42,11 @@ rm config/key/key3001.pem
 
 ## Start
 ```bash
-node ./bin/www ./config/config1.json
+node ./bin/www <PATH_TO_CONFIG_FILE>
+```
+- Set proxy environment variable if you need to
+```bash
+http_proxy="" node ./bin/www <PATH_TO_CONFIG_FILE>
 ```
 
 ## Files

@@ -45,7 +45,7 @@ module.exports = {
 	findAll: function(filter, sort, successCallback){
 		var f = filter ? filter : {};
 		var s = sort ? sort : {};
-		Node_server.find(f).sort(s).then(successCallback);
+		Node_server.find(f).sort(s).then(successCallback).catch((err) => console.log(err));
 	}
 
 }

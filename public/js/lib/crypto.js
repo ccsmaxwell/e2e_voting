@@ -1,13 +1,8 @@
 function rsaGenerate(successCallback) {
-	forge.pki.rsa.generateKeyPair({bits: 1024, workers: -1}, function(err, keypair) {
-		if(err){
-			return console.log(err)
-		}
-
-		let pubKey = forge.pki.publicKeyToPem(keypair.publicKey)
-		let priKey = forge.pki.privateKeyInfoToPem(forge.pki.wrapRsaPrivateKey(forge.pki.privateKeyToAsn1(keypair.privateKey)))
-		successCallback(pubKey, priKey);
-	});
+	var keypair = forge.pki.rsa.generateKeyPair({bits: 1024});
+	var pubKey = forge.pki.publicKeyToPem(keypair.publicKey)
+	var priKey = forge.pki.privateKeyInfoToPem(forge.pki.wrapRsaPrivateKey(forge.pki.privateKeyToAsn1(keypair.privateKey)))
+	successCallback(pubKey, priKey);
 }
 
 function rsaSign(priKeyStr, textStr, successCallback) {
