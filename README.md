@@ -50,6 +50,12 @@ node ./bin/www <PATH_TO_CONFIG_FILE>
 http_proxy="" node ./bin/www <PATH_TO_CONFIG_FILE>
 ```
 
+## Performance analysis
+- Modify the parameters in the top of ballotGenerator.js first.
+```bash
+node ballotGenerator.js <PATH_TO_CONFIG_FILE>
+```
+
 ## Files
 - **/bin** server starting point
 - **/config** configuration files
@@ -59,7 +65,7 @@ http_proxy="" node ./bin/www <PATH_TO_CONFIG_FILE>
 - **/routes** route URL to backend code and view files
 - **/views** frontend html view
 
-## Reference:
+## Reference
 - Materialize: http://materializecss.com/
 - Mongoose (for MongoDB in Node.js): http://mongoosejs.com/
 - EJS (for view template): http://ejs.co/

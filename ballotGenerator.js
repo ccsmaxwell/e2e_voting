@@ -17,9 +17,10 @@ vv3yy4vTG8L5HSkR1Ho+bxN8Db5Vt4Sd1CH57eHRQfNKB+inqxMbAkEAjVay6rz4
 TDMl9hBmB0e3Oo5dBe+EjzcnpD2Q2Upnu3PG1CnOnE1ZJqY5+dKK4CHK3YNWXDz5
 E3myTx3IEQjOxw==
 -----END PRIVATE KEY-----`;
-const ballotPerTime = 10;
+const serversArr = ["127.0.0.1:3001"];
+const ballotPerTime = 1;
 const timeUnitInMs = 1*1000;
-const totalTimeInMs = 3*1000;
+const totalTimeInMs = 120*1000;
 // END config
 
 // BEGIN import/init
@@ -31,15 +32,24 @@ Config.init();
 var mongoose = require('./config/db');
 
 var encoding = require('./controllers/lib/encoding');
-var connection = require('./lib/connection');
-var server = require('./lib/server');
+var connection = require('./controllers/lib/connection');
 var blockQuery = require('./controllers/lib/blockQuery');
 // END import/init
 
 blockQuery.latestDetails(electionID, ["key", "questions"], function(result){
 	let loopSend = function(){
 		for(let i=0; i<ballotPerTime; i++){
-			console.log(genBallot(result[0], voterID, voterPriKey))
+			let addr = serversArr[Math.floor(Math.random()*serversArr.length)];
+			let ballot = genBallot(result[0], voterID, voterPriKey);
+			connection.sendRequest("POST", addr, "/ballot/submit", ballot, false, function(data){
+				try{
+					let res = JSON.parse(data);
+					if(!res.success) throw "";
+					console.log(ballot.voterTimestamp, "Voter:", ballot.voterID, "Address:", addr);
+				}catch(err){
+					console.log(err, data.toString());
+				}
+			}, null);
 		}
 	}
 
@@ -144,7 +154,7 @@ function genBallot(eDetails, vID, privateKey){
 	return {
 		electionID: eID,
 		voterID: vID,
-		answers: answers,
+		answers: JSON.stringify(answers),
 		voterSign: sign,
 		voterTimestamp: new Date()
 	}
