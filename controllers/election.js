@@ -25,14 +25,14 @@ module.exports = {
 		blockQuery.latestDetails(req.params.electionID, ["frozenAt"], function(result){
 			if(result.length==0 || result[0].frozenAt) return res.status(404).send('Election not exist / already frozen.');
 			next();
-		})		
+		})
 	},
 
 	electionPageMiddleware: function(req, res, next){
 		blockQuery.latestDetails(req.params.electionID, ["frozenAt"], function(result){
 			if(result.length==0 || !result[0].frozenAt) return res.status(404).send('Election not exist / not yet frozen.');
 			next();
-		})		
+		})
 	},
 
 	tallyPageMiddleware: function(req, res, next){
@@ -42,7 +42,7 @@ module.exports = {
 				if(tResult.length==0 && new Date() < new Date(result.end)) return res.status(404).send('Election not yet ended.');
 				next();
 			})
-		})		
+		})
 	},
 
 	create: function(req, res, next){

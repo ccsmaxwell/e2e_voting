@@ -43,6 +43,7 @@ module.exports = {
 			voterID: data.voterID,
 			answers: JSON.parse(data.answers),
 			voterSign: data.voterSign,
+			voterTimestamp: data.voterTimestamp,
 			receiveTime: new Date()
 		}
 		var verifyData = {
@@ -173,6 +174,7 @@ module.exports = {
 		newBallot.voterID = ballotData.voterID;
 		newBallot.answers = ballotData.answers;
 		newBallot.voterSign = ballotData.voterSign;
+		newBallot.voterTimestamp = ballotData.voterTimestamp;
 		newBallot.receiveTime = ballotData.receiveTime;
 		newBallot.save().then(function(row){
 			console.log(chalk.black.bgCyan("[Ballot]"), "Saved ballot");
@@ -228,6 +230,7 @@ module.exports = {
 				voterID: bRes[0].voterID,
 				answers: bRes[0].answers,
 				voterSign: voterSign,
+				voterTimestamp: bRes[0].voterTimestamp,
 				receiveTime: bRes[0].receiveTime
 			}
 

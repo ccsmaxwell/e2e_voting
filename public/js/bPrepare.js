@@ -135,11 +135,12 @@ $("#btn_submit").click(function(){
 	$.ajax({
 		type: "POST",
 		url: "/ballot/submit",
-		data:{			
+		data:{
 			electionID: $("#electionID").val(),
 			voterID: $("#voterID").val(),
 			answers: $("#encrypted_ans").text(),
-			voterSign: $("#signature").text()
+			voterSign: $("#signature").text(),
+			voterTimestamp: new Date()
 		},	
 		success: function(res){
 			if(res.success){
