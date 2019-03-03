@@ -1,0 +1,30 @@
+<%- include('./inc/header', { page_title: "eVoting", css: "<link href='/css/ePerformance.css' rel='stylesheet' type='text/css' />"}); %>
+
+<main>
+	<div class="container">
+		<div class="row">
+			<div class="col s12">
+				<div class="card">
+					<div class="card-content center-align">
+						<h1>Server Perfoemance</h1>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="col s12">
+				<div class="card cardRowMargin">
+					<div class="row">
+						<div class="col s12">
+							<!-- <h5>Election details</h5> -->
+						</div>
+						<canvas id="ballot_chart"></canvas>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</main>
+
+<%- include('./inc/footer', {script: "<script src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js'></script><script src='/js/ePerformance.js'></script>"}); %>

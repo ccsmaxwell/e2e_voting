@@ -176,6 +176,7 @@ module.exports = {
 				answers: e.answers,
 				voterSign: e.voterSign,
 				ballotID: e.ballotID,
+				voterTimestamp: e.voterTimestamp,
 				receiveTime: e.receiveTime,
 				sign: e.sign
 			})

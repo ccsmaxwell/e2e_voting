@@ -556,6 +556,12 @@ module.exports = {
 		})
 	},
 
+	getForChart: function(req, res, next){
+		blockQuery.getBallotTiming(req.params.electionID, function(result){
+			res.json(result);
+		})
+	},
+
 	endElection: function(req, res, next){
 		var data = req.body;
 		console.log(chalk.black.bgMagentaBright("[Election]"), chalk.whiteBright("End election:"), chalk.grey(JSON.stringify(data)));

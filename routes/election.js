@@ -43,6 +43,9 @@ router.get('/:electionID/indexInfo', Election.electionPageMiddleware, Election.g
 router.get('/:electionID/voters', Election.electionPageMiddleware, (req, res, next) => res.render('eVoter'));
 router.get('/:electionID/voters/list', Election.electionPageMiddleware, Election.getVoterList);
 
+router.get('/:electionID/performance', Election.electionPageMiddleware, (req, res, next) => res.render('ePerformance'));
+router.get('/:electionID/performance/data', Election.electionPageMiddleware, Election.getForChart);
+
 router.post('/tally/:electionID/end-election', Election.electionPageMiddleware, Election.endElection);
 router.post('/tally/:electionID/start-tally-request', Election.tallyPageMiddleware, Election.tallyReq);
 router.post('/tally/:electionID/start-tally-confirm', Election.tallyPageMiddleware, Election.tallyConfirm);

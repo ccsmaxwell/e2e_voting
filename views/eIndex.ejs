@@ -14,11 +14,16 @@
 		</div>
 
 		<div class="row">
-			<div class="col m6 s12 fullWidthBtn" id="vote_btn_col">
+			<div class="col s12 fullWidthBtn" id="vote_btn_col">
 				<a class="waves-effect waves-light btn-large" href="/ballot/prepare/<%= electionID %>"><i class="material-icons left">how_to_vote</i>Vote in this election</a>
 			</div>
+		</div>
+		<div class="row">
 			<div class="col m6 s12 fullWidthBtn" id="voter_list_col">
 				<a class="waves-effect waves-light btn-large white black-text" href="./<%= electionID %>/voters"><i class="material-icons left">contacts</i>Voter List</a>
+			</div>
+			<div class="col m6 s12 fullWidthBtn" id="voter_list_col">
+				<a class="waves-effect waves-light btn-large white black-text" href="./<%= electionID %>/performance"><i class="material-icons left">show_chart</i>Server Performance</a>
 			</div>
 		</div>
 

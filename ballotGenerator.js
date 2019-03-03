@@ -18,9 +18,9 @@ TDMl9hBmB0e3Oo5dBe+EjzcnpD2Q2Upnu3PG1CnOnE1ZJqY5+dKK4CHK3YNWXDz5
 E3myTx3IEQjOxw==
 -----END PRIVATE KEY-----`;
 const serversArr = ["127.0.0.1:3001"];
-const ballotPerTime = 1;
+const ballotPerTime = 2;
 const timeUnitInMs = 1*1000;
-const totalTimeInMs = 120*1000;
+const totalTimeInMs = 60*1000;
 // END config
 
 // BEGIN import/init

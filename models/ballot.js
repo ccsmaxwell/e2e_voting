@@ -10,6 +10,7 @@ var BallotSchema = new Schema({
 	voterID: String,
 	answers: [],
 	voterSign: String,
+	voterTimestamp: Date,
 	// global (by server)
 	receiveTime: Date,
 	// local

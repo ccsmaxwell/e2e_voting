@@ -168,6 +168,22 @@ module.exports = {
 		})
 	},
 
+	getBallotTiming: function(eID, successCallback){
+		Block.aggregate([
+			{$match: {
+				"electionID": eID,
+				"blockType": "Ballot"
+			}},
+			{$unwind: "$data"},
+			{$project: {
+				_id: null,
+				voterTimestamp: "$data.voterTimestamp",
+				receiveTime: "$data.receiveTime",
+				blockCreatedAt: "$createdAt"
+			}},
+		]).then(successCallback).catch((err) => console.log(err))
+	},
+
 	latestTrustees: function(eID, trusteeID, skip, limit, successCallback){
 		var aggr = [
 			{$match: {
