@@ -29,7 +29,7 @@ module.exports = {
 			{$unwind: "$data"},
 			{$group: group},
 			{$project: project}
-		]).then(successCallback).catch((err) => console.log(err))
+		]).allowDiskUse(true).then(successCallback).catch((err) => console.log(err))
 	},
 
 	cachedDetails: function(eID, fields, forceUpdate, successCallback){
@@ -91,7 +91,7 @@ module.exports = {
 			}}
 		)
 
-		Block.aggregate(aggr).then(function(result){
+		Block.aggregate(aggr).allowDiskUse(true).then(function(result){
 			successCallback(result[0]);
 		}).catch((err) => console.log(err))
 	},
@@ -162,7 +162,7 @@ module.exports = {
 					total: 1,
 					result: skip!=null ? { $slice:["$result", skip, limit] } : "$result"
 				}}
-			]).then(function(result){
+			]).allowDiskUse(true).then(function(result){
 				successCallback(result[0]);
 			}).catch((err) => console.log(err))
 		})
@@ -181,7 +181,7 @@ module.exports = {
 				receiveTime: "$data.receiveTime",
 				blockCreatedAt: "$createdAt"
 			}},
-		]).then(successCallback).catch((err) => console.log(err))
+		]).allowDiskUse(true).then(successCallback).catch((err) => console.log(err))
 	},
 
 	latestTrustees: function(eID, trusteeID, skip, limit, successCallback){
@@ -229,7 +229,7 @@ module.exports = {
 			}}
 		)
 
-		Block.aggregate(aggr).then(function(result){
+		Block.aggregate(aggr).allowDiskUse(true).then(function(result){
 			successCallback(result[0]);
 		}).catch((err) => console.log(err))
 	},
@@ -250,7 +250,7 @@ module.exports = {
 				{$limit: 1}
 			)
 
-			Block.aggregate(aggr).then(successCallback).catch((err) => console.log(err))
+			Block.aggregate(aggr).allowDiskUse(true).then(successCallback).catch((err) => console.log(err))
 		})
 	},
 
@@ -271,7 +271,7 @@ module.exports = {
 				{$sort: {"blockSeq": 1}},
 			)
 
-			Block.aggregate(aggr).then(successCallback).catch((err) => console.log(err))
+			Block.aggregate(aggr).allowDiskUse(true).then(successCallback).catch((err) => console.log(err))
 		})
 	},
 
@@ -320,7 +320,7 @@ module.exports = {
 			{$group: group},
 			{$project: project},
 			{$match: match2}
-		]).then(successCallback).catch((err) => console.log(err))
+		]).allowDiskUse(true).then(successCallback).catch((err) => console.log(err))
 	},
 
 	allElectionForSync: function(serverID, successCallback){
@@ -344,7 +344,7 @@ module.exports = {
 				frozenAt: {$ne: null},
 				"servers.serverID": {$in: [serverID ? serverID : /^.*/]}
 			}}
-		]).then(function(result){
+		]).allowDiskUse(true).then(function(result){
 			let allelectionID = result.map((e) => e._id);
 			Block.aggregate([
 				{$match: {
@@ -356,7 +356,7 @@ module.exports = {
 					maxSeq: {$first:"$blockSeq"},
 					lastHash: {$first:"$hash"}
 				}}
-			]).then(successCallback).catch((err) => console.log(err))
+			]).allowDiskUse(true).then(successCallback).catch((err) => console.log(err))
 		}).catch((err) => console.log(err))
 	},
 
