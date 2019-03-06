@@ -101,6 +101,9 @@ $.ajax({
 							displayFormats: {millisecond: 'kk:mm:ss.SSS'}
 						},
 						distribution: 'linear'
+					}],
+					yAxes: [{
+						ticks: {suggestedMin: 0}
 					}]
 				},
 				animation: {duration: 0},
@@ -129,6 +132,9 @@ $.ajax({
 							displayFormats: {second: 'kk:mm:ss'}
 						},
 						distribution: 'linear'
+					}],
+					yAxes: [{
+						ticks: {suggestedMin: 0}
 					}]
 				},
 				animation: {duration: 0},
@@ -157,6 +163,9 @@ $.ajax({
 							displayFormats: {second: 'kk:mm:ss'}
 						},
 						distribution: 'linear'
+					}],
+					yAxes: [{
+						ticks: {suggestedMin: 0}
 					}]
 				},
 				animation: {duration: 0},
