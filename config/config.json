@@ -15,6 +15,6 @@
 
 	"blockTimerInterval": 15000,
 	"blockTimerBuffer": 3000,
-	"pingInterval": 60000,
+	"pingInterval": 600000,
 	"keyChangeWaitTime": 5000
 }

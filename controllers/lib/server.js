@@ -34,7 +34,7 @@ module.exports = {
 
 		if(forceUpdate || !serverDetails[serverID].serverKey){
 			module.exports.findAll({serverID: serverID}, null, function(result){
-				serverDetails[serverID].serverKey = result[0].serverKey;
+				serverDetails[serverID].serverKey = result[0] ? result[0].serverKey : null;
 				successCallback(serverDetails[serverID].serverKey);
 			});
 		}else{

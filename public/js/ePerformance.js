@@ -19,49 +19,55 @@ $.ajax({
 		let data_latency = [];
 		let data_throughput = [];
 		for(let bi in res){
-			let roundedTime = new Date(Math.round(new Date(arrSort_voterTime[bi].voterTimestamp).getTime() / second) * second);
-			if(bi>0 && data_voterTime[data_voterTime.length-1].x.toISOString()==roundedTime.toISOString()){
-				data_voterTime[data_voterTime.length-1].y = ++count_voterTime;
-			}else{
-				data_voterTime.push({
-					x: roundedTime,
-					y: ++count_voterTime
-				})
+			if(arrSort_voterTime[bi].voterTimestamp){
+				let roundedTime = new Date(Math.round(new Date(arrSort_voterTime[bi].voterTimestamp).getTime() / second) * second);
+				if(bi>0 && data_voterTime[data_voterTime.length-1].x.toISOString()==roundedTime.toISOString()){
+					data_voterTime[data_voterTime.length-1].y = ++count_voterTime;
+				}else{
+					data_voterTime.push({
+						x: roundedTime,
+						y: ++count_voterTime
+					})
+				}
 			}
 
-			roundedTime = new Date(Math.round(new Date(arrSort_recTime[bi].receiveTime).getTime() / second) * second);
-			if(bi>0 && data_recTime[data_recTime.length-1].x.toISOString()==roundedTime.toISOString()){
-				data_recTime[data_recTime.length-1].y = ++count_recTime;
-			}else{
-				data_recTime.push({
-					x: roundedTime,
-					y: ++count_recTime
-				})
+			if(arrSort_voterTime[bi].receiveTime){
+				let roundedTime = new Date(Math.round(new Date(arrSort_recTime[bi].receiveTime).getTime() / second) * second);
+				if(bi>0 && data_recTime[data_recTime.length-1].x.toISOString()==roundedTime.toISOString()){
+					data_recTime[data_recTime.length-1].y = ++count_recTime;
+				}else{
+					data_recTime.push({
+						x: roundedTime,
+						y: ++count_recTime
+					})
+				}
 			}
 
-			roundedTime = new Date(Math.round(new Date(arrSort_blockTime[bi].blockCreatedAt).getTime() / second) * second);
-			if(bi>0 && data_blockTime[data_blockTime.length-1].x.toISOString()==roundedTime.toISOString()){
-				data_blockTime[data_blockTime.length-1].y = ++count_blockTime;
-			}else{
-				data_blockTime.push({
-					x: roundedTime,
-					y: ++count_blockTime
-				})
-			}
+			if(arrSort_voterTime[bi].blockCreatedAt){
+				let roundedTime = new Date(Math.round(new Date(arrSort_blockTime[bi].blockCreatedAt).getTime() / second) * second);
+				if(bi>0 && data_blockTime[data_blockTime.length-1].x.toISOString()==roundedTime.toISOString()){
+					data_blockTime[data_blockTime.length-1].y = ++count_blockTime;
+				}else{
+					data_blockTime.push({
+						x: roundedTime,
+						y: ++count_blockTime
+					})
+				}
 
-			roundedTime = new Date(Math.round(new Date(arrSort_blockTime[bi].blockCreatedAt).getTime() / minute) * minute);
-			if(bi>0 && data_latency[data_latency.length-1].x.toISOString()==roundedTime.toISOString()){
-				data_latency[data_latency.length-1].y += (new Date(arrSort_blockTime[bi].blockCreatedAt) - new Date(arrSort_blockTime[bi].voterTimestamp));
-				data_throughput[data_latency.length-1].y++;
-			}else{
-				data_latency.push({
-					x: roundedTime,
-					y: (new Date(arrSort_blockTime[bi].blockCreatedAt) - new Date(arrSort_blockTime[bi].voterTimestamp)),
-				})
-				data_throughput.push({
-					x: roundedTime,
-					y: 1
-				})
+				roundedTime = new Date(Math.round(new Date(arrSort_blockTime[bi].blockCreatedAt).getTime() / minute) * minute);
+				if(bi>0 && data_latency[data_latency.length-1].x.toISOString()==roundedTime.toISOString()){
+					data_latency[data_latency.length-1].y += (new Date(arrSort_blockTime[bi].blockCreatedAt) - new Date(arrSort_blockTime[bi].voterTimestamp));
+					data_throughput[data_latency.length-1].y++;
+				}else{
+					data_latency.push({
+						x: roundedTime,
+						y: (new Date(arrSort_blockTime[bi].blockCreatedAt) - new Date(arrSort_blockTime[bi].voterTimestamp)),
+					})
+					data_throughput.push({
+						x: roundedTime,
+						y: 1
+					})
+				}
 			}
 		}
 

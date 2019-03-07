@@ -29,7 +29,7 @@ npm install
   // Following configuration must be the same across all servers, DO NOT change unless you are confident enough
   "blockTimerInterval": 15000,  //Interval between generating block (in ms)
   "blockTimerBuffer": 3000, //Time buffer between ballot submission and block generation (in ms)
-  "pingInterval": 60000,  //Interval for each ping to other servers (in ms)
+  "pingInterval": 600000,  //Interval for each ping to other servers (in ms)
   "keyChangeWaitTime": 5000 //Voter/Trustee key change waiting time to generate a block for them
 }
 ```
