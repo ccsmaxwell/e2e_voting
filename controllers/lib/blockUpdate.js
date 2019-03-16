@@ -114,7 +114,7 @@ module.exports = {
 
 	tallyBlockExec: function(eID, blockUUID, block){
 		if(_electionTimer[eID]){
-			clearInterval(_electionTimer[eID]);
+			_electionTimer[eID].clearInterval();
 			delete _electionTimer[eID];
 		}
 

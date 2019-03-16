@@ -2,6 +2,7 @@ var crypto = require('crypto');
 var NodeCache = require("node-cache");
 var chalk = require('chalk');
 var stringify = require('fast-json-stable-stringify');
+var NanoTimer = require('nanotimer');
 
 var Ballot = require('../models/ballot');
 
@@ -29,7 +30,7 @@ module.exports = {
 	},
 
 	initTimer: function(eID, frozenAt){
-		if(_electionTimer[eID]) clearInterval(_electionTimer[eID]);
+		if(_electionTimer[eID]) _electionTimer[eID].clearInterval();
 
 		bftStatus[eID] = {
 			counter: null,
@@ -41,10 +42,11 @@ module.exports = {
 			bftStatus[eID].counter = ~~(((new Date()) - (new Date(frozenAt))) / blockTimerInterval);
 			if(nextRun > blockTimerBuffer) module.exports.nodeSelection(eID);
 
-			_electionTimer[eID] = setInterval(function(){
+			_electionTimer[eID] = new NanoTimer();
+			_electionTimer[eID].setInterval(function(){
 				bftStatus[eID].counter = ~~(((new Date()) - (new Date(frozenAt))) / blockTimerInterval);
 				module.exports.nodeSelection(eID);
-			}, blockTimerInterval);
+			}, '', blockTimerInterval+'m');
 		}, nextRun);
 	},
 

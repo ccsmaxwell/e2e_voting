@@ -140,7 +140,7 @@ $("#btn_submit").click(function(){
 			voterID: $("#voterID").val(),
 			answers: $("#encrypted_ans").text(),
 			voterSign: $("#signature").text(),
-			voterTimestamp: new Date()
+			voterTimestamp: (new Date()).toISOString()
 		},	
 		success: function(res){
 			if(res.success){

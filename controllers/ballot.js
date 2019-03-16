@@ -246,7 +246,7 @@ module.exports = {
 						if(crypto.createVerify('SHA256').update(JSON.stringify(verifyData)).verify(serverKey, s.ballotSign, "base64")){
 							resArr.push(s);
 						}else{
-							console.log(chalk.black.bgCyan("[Ballot]"), "Sign verification fail.", chalk.grey(s.serverID));
+							return console.log(chalk.black.bgCyan("[Ballot]"), "Sign verification fail.", chalk.grey(s.serverID));
 						}
 						resolve();
 					})
