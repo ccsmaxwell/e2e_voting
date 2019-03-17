@@ -28,8 +28,7 @@ module.exports = {
 						if(onData){
 							onData(e.IP, e.port, myAddr.IP, myAddr.port, data);
 						}
-					})
-					.on('error', function(err){
+					}).on('error', function(err){
 						if(onError){
 							onError(e.IP, e.port, myAddr.IP, myAddr.port, err);
 						}else{
@@ -50,13 +49,16 @@ module.exports = {
 			module.exports.signOnFormData(form);
 		}
 
+		var resData = "";
 		request({
 			method: method,
 			url: "http://"+addr+path,
 			form: form
 		}).on('data', function(data){
+			resData += data
+		}).on('end', function(){
 			if(onData){
-				onData(data);
+				onData(resData);
 			}
 		}).on('error', function(err){
 			if(onError){
