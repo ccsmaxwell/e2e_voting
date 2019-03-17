@@ -1,24 +1,23 @@
 // BEGIN config
-const electionID = "e284a977-3bf1-4c46-8fce-4ada9a3049a8";
+const electionID = "20736fe9-2261-444c-a8ae-e809aa6b6019";
 const voterID = "e40aa6ef-1476-41e6-8c8f-ddc461a0f9b0";
+const voterRange = 100;
+const voterPubKey = `-----BEGIN PUBLIC KEY-----
+MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKSgMaEkzRcQbVvqTopEbFqAR4rq6cdV
+56JsSaJSN+hLNq6dApOdFnBxMx3iqGZe3CZBi+WGH0LgzaOjQQ4AGbsCAwEAAQ==
+-----END PUBLIC KEY-----`;
 const voterPriKey = `-----BEGIN PRIVATE KEY-----
-MIICdgIBADANBgkqhkiG9w0BAQEFAASCAmAwggJcAgEAAoGBAIChxE/AY7Dy7Q2I
-Mk/78CFqKoIPQJcWBag4euWwYxBlZ/jiS+eaDwZ/RT4O33CzdqrvIpJjT8hg6ET8
-vefdec9AV1g9MvM+O9j/4SNCU/p42CoDPktlNcysPeehLJ+eeaKSR67/epBPavlN
-1pqJQM5Ksz/kRjSXqBtZ1UXzl8sjAgMBAAECgYAe8szgw1E5CbmvP82bIOqtn3WK
-xVCtCUdjKfOnv8CV+VACua+5kX97+LMYM0vfOc6bYd3Xir1vYKGBt62ZU9gyhKo1
-ZIcRGCPxl9SmlVBXpHgctSy+Qi01S4I7OHhHQ3ScEQ57sX6lpNUkpqPUpsqJn/To
-TFIrWxfJfgWr+xdZwQJBANYxR+2CfAk6ByaUSPaRU5hd0uVYnq/zYI86cmsr1zDe
-wtPs/g8Q4b1qkPSWfPRw10bqLsj0pOFFIyfmeUyH/u0CQQCZvTboOtR55LKdlRf1
-Z8hwQ0Ar5qhwfrJeWj2TuNT3WSkqYDLz4bVEi7+RnKs9zcAInWwBTUfNMe3XBy9Z
-/KBPAkAYa6X3vljF9Ie8LkvjUM5nIMtauq/c/7KSoedJsMXoHH26C9srfJFAN1Yv
-jLjSZcslmq2a28mwpWFMu0o5H4hBAkBszC3OPMvfE0ygHkHdRrvfTohcSRiMu+yo
-vv3yy4vTG8L5HSkR1Ho+bxN8Db5Vt4Sd1CH57eHRQfNKB+inqxMbAkEAjVay6rz4
-TDMl9hBmB0e3Oo5dBe+EjzcnpD2Q2Upnu3PG1CnOnE1ZJqY5+dKK4CHK3YNWXDz5
-E3myTx3IEQjOxw==
+MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEApKAxoSTNFxBtW+pO
+ikRsWoBHiurpx1XnomxJolI36Es2rp0Ck50WcHEzHeKoZl7cJkGL5YYfQuDNo6NB
+DgAZuwIDAQABAkAccBPCq3HGLy9E9ne0yNcS1yAErknOBlfqJdyebqd7t+LB/S6O
+UI0goy5TVPjY98Bj20/uugdCmdgzNqizG6ZZAiEA7T6mUkz+k86pg4chG/AA3M5E
+fEgm2cB7ndWbpej+BY8CIQCxo+JTH1DNdB4iuM3kKAXSZfKHNpM2qT3j3putSQuL
+FQIgYeRx+I+wlAi4RX9imAaGNJYgCDA1Z7BW0Z+sY98pwd0CICPpbrrBLPOsEt+Q
+HseOM8caJxKgvNgjFMj5Wt2IU9YVAiEA64E956VRxypm5hE13AzRIJRCSwUdyNwS
+xRL8aEyCx3Q=
 -----END PRIVATE KEY-----`;
 const serversArr = ["127.0.0.1:3001"];
-const ballotPerTime = 2;
+const ballotPerTime = 1;
 const timeUnitInMs = 1*1000;
 const totalTimeInMs = 60*1000;
 // END config
@@ -34,32 +33,86 @@ var mongoose = require('./config/db');
 var encoding = require('./controllers/lib/encoding');
 var connection = require('./controllers/lib/connection');
 var blockQuery = require('./controllers/lib/blockQuery');
+var blockUpdate = require('./controllers/lib/blockUpdate');
 // END import/init
 
-blockQuery.latestDetails(electionID, ["key", "questions"], function(result){
-	let loopSend = function(){
-		for(let i=0; i<ballotPerTime; i++){
-			let addr = serversArr[Math.floor(Math.random()*serversArr.length)];
-			let ballot = genBallot(result[0], voterID, voterPriKey);
-			connection.sendRequest("POST", addr, "/ballot/submit", ballot, false, function(data){
-				try{
-					let res = JSON.parse(data);
-					if(!res.success) throw "";
-					console.log(ballot.voterTimestamp, "Voter:", ballot.voterID, "Address:", addr);
-				}catch(err){
-					console.log(err, data.toString());
-				}
-			}, null);
-		}
-	}
+if(process.argv[3] == "createVoter"){
+	genAndSaveVoter();
+}else{
+	genAndSubmitBallot();
+}
 
-	loopSend();
-	let intervalObj = setInterval(loopSend, timeUnitInMs);
-	setTimeout(function(){
-		clearInterval(intervalObj);
-		process.exit();
-	}, totalTimeInMs);
-})
+function genAndSubmitBallot(){
+	var currVoter = voterRange>0 ? 0 : null;
+
+	blockQuery.latestDetails(electionID, ["key", "questions"], function(result){
+		let loopSend = function(){
+			for(let i=0; i<ballotPerTime; i++){
+				let addr = serversArr[Math.floor(Math.random()*serversArr.length)];
+				let selectedVoterID = currVoter==null ? voterID : "voterGen_"+((currVoter++)%voterRange);
+				let ballot = genBallot(result[0], selectedVoterID, voterPriKey);
+				connection.sendRequest("POST", addr, "/ballot/submit", ballot, false, function(data){
+					try{
+						let res = JSON.parse(data);
+						if(!res.success) throw "";
+						console.log(ballot.voterTimestamp, "Voter:", ballot.voterID, "Address:", addr);
+					}catch(err){
+						console.log(err, data.toString());
+					}
+				}, null);
+			}
+		}
+
+		loopSend();
+		let intervalObj = setInterval(loopSend, timeUnitInMs);
+		setTimeout(function(){
+			clearInterval(intervalObj);
+			process.exit();
+		}, totalTimeInMs);
+	})
+}
+
+function genAndSaveVoter(){
+	const voterPerBlock = 500;
+	var voterCount = 0;
+
+	blockQuery.latestDetails(electionID, [], function(result){
+		let blockSeq = result[0].blockSeq+1;
+		let previousHash = result[0].hash;
+
+		let loopGen = function(){
+			let data = [{
+				voters: [],
+				adminSign: ""
+			}]
+			let endLoop = voterCount+voterPerBlock>voterRange ? voterRange : voterCount+voterPerBlock;
+
+			while(voterCount<endLoop){
+				data[0].voters.push({
+					id: "voterGen_"+(voterCount++),
+					public_key: voterPubKey
+				})
+			}
+			data[0].adminSign = crypto.createSign('SHA256').update(JSON.stringify(data)).sign(voterPriKey, 'base64');
+
+			blockUpdate.createBlock(electionID, null, blockSeq, "Election Details", data, previousHash, null, false, false, function(newBlock){
+				console.log("Created", newBlock.data[0].voters.length, "voters");
+
+				blockSeq++;
+				previousHash = newBlock.hash;
+
+				if(voterCount<voterRange){
+					loopGen();
+				}else{
+					process.exit();
+				}
+			}, false);
+		}
+
+		loopGen();
+	})
+}
+
 
 function genBallot(eDetails, vID, privateKey){
 	let eID = eDetails._id;

@@ -348,7 +348,7 @@ module.exports = {
 	},
 
 	syncOneChain: function(fromAddr, electionID, fromSeq, toSeq){
-		var to = toSeq-fromSeq+1>10 ? fromSeq+9 : toSeq;
+		var to = toSeq-fromSeq+1>3 ? fromSeq+2 : toSeq;
 		connection.sendRequest("GET", fromAddr, "/blockchain/all-blocks", {
 			electionID: electionID,
 			fromSeq: fromSeq,

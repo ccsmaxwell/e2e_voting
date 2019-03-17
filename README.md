@@ -53,7 +53,10 @@ http_proxy="" node ./bin/www <PATH_TO_CONFIG_FILE>
 ## Performance analysis
 - Modify the parameters in the top of ballotGenerator.js first.
 ```bash
-node ballotGenerator.js <PATH_TO_CONFIG_FILE>
+# To generate ballot
+node ballotGenerator.js <PATH_TO_CONFIG_FILE> 
+# To generate voters with same public/private key
+node ballotGenerator.js <PATH_TO_CONFIG_FILE> createVoter
 ```
 
 ## Files
