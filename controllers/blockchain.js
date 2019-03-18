@@ -282,8 +282,8 @@ module.exports = {
 
 		module.exports.signVerify(data.electionID, data.blockUUID, [signData], function(verifiedArr){
 			if(verifiedArr){
-				blockUpdate.saveSign(data.electionID, data.blockUUID, [signData], function(result){
-					console.log(chalk.bgBlue("[Block]"), "Saved sign from: ", chalk.grey(signData.serverID));
+				blockUpdate.saveSign(data.electionID, data.blockUUID, verifiedArr, function(result){
+					console.log(chalk.bgBlue("[Block]"), "Saved sign if verified: ", chalk.grey(signData.serverID));
 					res.json({success: true});
 				});
 			}else{

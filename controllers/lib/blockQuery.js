@@ -283,10 +283,13 @@ module.exports = {
 		var match = {
 			electionID: eID
 		}
-		if(from!=null && to!=null && from>=0 && to>=from){
+
+		var fromSeq = parseInt(from);
+		var toSeq = parseInt(to);
+		if(from!=null && to!=null && fromSeq>=0 && toSeq>=fromSeq){
 			match["blockSeq"] = {
-				"$gte": from,
-				"$lte": to
+				"$gte": fromSeq,
+				"$lte": toSeq
 			}
 		}
 
