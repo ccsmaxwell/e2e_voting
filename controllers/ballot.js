@@ -97,7 +97,7 @@ module.exports = {
 					allSign = {}
 				}
 				allSign[signData.serverID] = signData;
-				ballotCache.set(data.voterSign, allSign, 600);
+				ballotCache.set(data.voterSign, allSign, blockTimerInterval/1000*2);
 				console.log(chalk.black.bgCyan("[Ballot]"), "Saved sign in cache.")
 				res.json({success: true});
 			}

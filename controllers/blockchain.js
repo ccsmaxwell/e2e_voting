@@ -290,7 +290,7 @@ module.exports = {
 				let allSign = signCache.get(data.blockUUID);
 				if(!allSign) allSign = {};
 				allSign[signData.serverID] = signData;
-				signCache.set(data.blockUUID, allSign, 600);
+				signCache.set(data.blockUUID, allSign, blockTimerInterval/1000*2);
 				console.log(chalk.bgBlue("[Block]"), "Saved sign in cache.")
 				res.json({success: true});
 			}
