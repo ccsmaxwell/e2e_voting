@@ -1,7 +1,7 @@
 // BEGIN config
-const electionID = "20736fe9-2261-444c-a8ae-e809aa6b6019";
+const electionID = "f650ac5e-aaef-417a-9d02-215233e21ecf";
 const voterID = "e40aa6ef-1476-41e6-8c8f-ddc461a0f9b0";
-const voterRange = 100;
+const voterRange = 1;
 const voterPubKey = `-----BEGIN PUBLIC KEY-----
 MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKSgMaEkzRcQbVvqTopEbFqAR4rq6cdV
 56JsSaJSN+hLNq6dApOdFnBxMx3iqGZe3CZBi+WGH0LgzaOjQQ4AGbsCAwEAAQ==
@@ -16,10 +16,10 @@ FQIgYeRx+I+wlAi4RX9imAaGNJYgCDA1Z7BW0Z+sY98pwd0CICPpbrrBLPOsEt+Q
 HseOM8caJxKgvNgjFMj5Wt2IU9YVAiEA64E956VRxypm5hE13AzRIJRCSwUdyNwS
 xRL8aEyCx3Q=
 -----END PRIVATE KEY-----`;
-const serversArr = ["127.0.0.1:3001"];
-const ballotPerTime = 1;
+const serversArr = ["137.189.89.41:3001", "137.189.89.42:3001", "137.189.89.44:3001"];
+const ballotPerTime = 6;
 const timeUnitInMs = 1*1000;
-const totalTimeInMs = 60*1000;
+const totalTimeInMs = 20*60*1000;
 // END config
 
 // BEGIN import/init

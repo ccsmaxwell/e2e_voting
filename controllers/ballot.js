@@ -13,7 +13,7 @@ var server = require('./lib/server');
 
 var ballotCache = new NodeCache();
 
-const {serverID, serverPriKey} = _config;
+const {serverID, serverPriKey, blockTimerInterval} = _config;
 
 module.exports = {
 
