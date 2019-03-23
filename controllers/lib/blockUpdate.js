@@ -122,21 +122,25 @@ module.exports = {
 			if(t.serverID != serverID) return;
 
 			let startTime = process.hrtime();
-			let bRes, eRes;
-			let bProm = new Promise(function(resolve, reject){
-				blockQuery.getVoterBallot(eID, true, t.start, t.end-t.start+1, function(result){
-					bRes = result
-					resolve();
-				})
-			})
-			let eProm = new Promise(function(resolve, reject){
+			let bRes=[], eRes;
+			let numSeg = Math.ceil((t.end-t.start+1)/1000);
+			let promArr = [];
+			for(let i=0; i<numSeg; i++){
+				promArr.push(new Promise(function(resolve, reject){
+					blockQuery.getVoterBallot(eID, true, t.start+i*1000, i==numSeg-1? t.end-t.start+1-1000*(numSeg-1) : 1000, function(result){
+						bRes.push(...result.result)
+						resolve();
+					})
+				}))
+			}
+			promArr.push(new Promise(function(resolve, reject){
 				blockQuery.cachedDetails(eID, ['questions', 'key'], false, function(result){
 					eRes = result
 					resolve();
 				})
-			})
+			}))
 
-			Promise.all([bProm, eProm]).then(function(){
+			Promise.all(promArr).then(function(){
 				let aggrAns = [];
 				let p = bigInt(encoding.base64ToHex(eRes.key.p),16);
 				eRes.questions.forEach(function(q){
@@ -146,7 +150,7 @@ module.exports = {
 					})
 				})
 
-				bRes.result.forEach(function(voter){
+				bRes.forEach(function(voter){
 					if(!voter.ballot || !voter.ballot[0]) return;
 
 					for(let i=0; i<aggrAns.length; i++){
