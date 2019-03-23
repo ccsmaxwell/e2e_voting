@@ -14,6 +14,7 @@ var blockUpdate = require('./lib/blockUpdate');
 var signCache = new NodeCache();
 var ballotCache = new NodeCache();
 var bftStatus = {};
+var tempBlock = [];
 
 global._electionTimer = {}
 
@@ -133,8 +134,7 @@ module.exports = {
 				count: {},
 				sum: 0,
 				result: null,
-				generated: false,
-				tempBlock: []
+				generated: false
 			}
 		}
 		var seqObj = bftStatus[electionID].seq[selectionSeq];
@@ -160,11 +160,11 @@ module.exports = {
 					seqObj.generated = true;
 					module.exports.generateBlock(electionID, selectionSeq);
 				}else{
-					seqObj.tempBlock.forEach((b) => module.exports.blockProcess(b.block, true, b.serverSign, selectionSeq, null))
+					tempBlock.forEach((b) => module.exports.blockProcess(b.block, true, b.serverSign, selectionSeq, null))
 				}
 			})
 		}else{
-			seqObj.tempBlock.forEach((b) => module.exports.blockProcess(b.block, true, b.serverSign, selectionSeq, null))
+			tempBlock.forEach((b) => module.exports.blockProcess(b.block, true, b.serverSign, selectionSeq, null))
 		}
 	},
 
@@ -198,8 +198,8 @@ module.exports = {
 
 		if(newBlock.blockType == "Ballot"){
 			let seqObj = bftStatus[newBlock.electionID].seq[bftStatus[newBlock.electionID].counter]
-			if(!seqObj.result){
-				seqObj.tempBlock.push({
+			if(!seqObj || !seqObj.result){
+				tempBlock.push({
 					block: newBlock,
 					serverSign: data.serverSign
 				})
