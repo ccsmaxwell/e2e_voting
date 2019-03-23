@@ -133,8 +133,7 @@ module.exports = {
 				receivedList: {},
 				count: {},
 				sum: 0,
-				result: null,
-				generated: false
+				result: null
 			}
 		}
 		var seqObj = bftStatus[electionID].seq[selectionSeq];
@@ -157,14 +156,13 @@ module.exports = {
 			server.findAll({serverID: serverID}, {IP: 1, port: 1}, function(allServer){
 				let myAddr = connection.getSelfAddr();
 				if(myAddr.IP+":"+myAddr.port == allServer[0].IP+":"+allServer[0].port){
-					seqObj.generated = true;
 					module.exports.generateBlock(electionID, selectionSeq);
 				}else{
-					tempBlock.forEach((b) => module.exports.blockProcess(b.block, true, b.serverSign, selectionSeq, null))
+					tempBlock.forEach((b) => module.exports.blockProcess(b.block, true, b.serverSign, null, null))
 				}
 			})
 		}else{
-			tempBlock.forEach((b) => module.exports.blockProcess(b.block, true, b.serverSign, selectionSeq, null))
+			tempBlock.forEach((b) => module.exports.blockProcess(b.block, true, b.serverSign, null, null))
 		}
 	},
 
@@ -215,11 +213,6 @@ module.exports = {
 	blockProcess: function(newBlock, checkPrevBlock, serverSign, bftCounter, successCallback){
 		let seqObj = bftCounter ? bftStatus[newBlock.electionID].seq[bftCounter] : null;
 		module.exports.blockVerify(newBlock, checkPrevBlock, seqObj?seqObj.result:null, serverSign, function(){
-			if(seqObj && seqObj.generated){
-				return console.log(chalk.bgBlue("[Block]"), "Block already generated, skip.");
-			}else if(seqObj){
-				seqObj.generated = true;
-			}
 			blockUpdate.createBlock(newBlock.electionID, newBlock.blockUUID, newBlock.blockSeq, newBlock.blockType, newBlock.data, newBlock.previousHash, null, false, true, function(result){
 				let cacheSign = signCache.get(newBlock.blockUUID);
 				if(cacheSign){
