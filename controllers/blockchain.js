@@ -70,7 +70,7 @@ module.exports = {
 				{$match: {
 					electionID: eID,
 					inBlock: {$ne: true},
-					receiveTime: {$lte: new Date(Date.now() - blockTimerBuffer)}
+					receiveTime: {$exists: true, $lte: new Date(Date.now() - blockTimerBuffer)}
 				}},
 				{$addFields: {"distinctSign": {$size: {$setDifference: ["$sign.serverID", []] }} }},
 				{$match: {

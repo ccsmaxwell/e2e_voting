@@ -3,7 +3,6 @@ const {serverID, serverPriKey, blockTimerInterval} = _config;
 require('../../config/db');
 
 var crypto = require('crypto');
-var NodeCache = require("node-cache");
 var chalk = require('chalk');
 var bigInt = require("big-integer");
 var ejs = require('ejs');
@@ -17,8 +16,6 @@ var zkProof = require('../lib/zkProof');
 var connection = require('../lib/connection');
 var blockQuery = require('../lib/blockQuery');
 var server = require('../lib/server');
-
-var ballotCache = new NodeCache();
 
 process.on('message', function(msg, socket){
 	try{
@@ -124,19 +121,15 @@ function signReceive(params, body, socket){
 	var signData = JSON.parse(data.sign);
 	verifySign(data.electionID, data.voterSign, [signData], function(verifiedArr){
 		if(verifiedArr){
-			saveSign(data.electionID, data.voterSign, [signData], function(result){
+			saveSign(data.electionID, data.voterSign, verifiedArr, function(result){
 				console.log(chalk.black.bgCyan("[Ballot]"), "Saved sign from: ", chalk.grey(signData.serverID));
 				jsonResponse(socket, {success: true});
 			});
 		}else{
-			let allSign = ballotCache.get(data.voterSign);
-			if(!allSign){
-				allSign = {}
-			}
-			allSign[signData.serverID] = signData;
-			ballotCache.set(data.voterSign, allSign, blockTimerInterval/1000*2);
-			console.log(chalk.black.bgCyan("[Ballot]"), "Saved sign in cache.")
-			jsonResponse(socket, {success: true});
+			saveSign(data.electionID, data.voterSign, [signData], function(result){
+				console.log(chalk.black.bgCyan("[Ballot]"), "Saved sign temporarily.");
+				jsonResponse(socket, {success: true});
+			});
 		}
 	})
 }
@@ -206,20 +199,22 @@ function verifyBallot(verifyData, voterSign, successCallBack){
 }
 
 function saveAndSignBallot(ballotData){
-	var newBallot = new Ballot();
-	newBallot.electionID = ballotData.electionID;
-	newBallot.voterID = ballotData.voterID;
-	newBallot.answers = ballotData.answers;
-	newBallot.voterSign = ballotData.voterSign;
-	newBallot.voterTimestamp = ballotData.voterTimestamp;
-	newBallot.receiveTime = ballotData.receiveTime;
-	newBallot.save().then(function(row){
+	Ballot.findOneAndUpdate({
+		electionID: ballotData.electionID,
+		voterSign: ballotData.voterSign
+	},{
+		voterID: ballotData.voterID,
+		answers: ballotData.answers,
+		voterTimestamp: ballotData.voterTimestamp,
+		receiveTime: ballotData.receiveTime,
+		sign: []
+	}, {
+		upsert: true
+	}).then(function(originalData){
 		console.log(chalk.black.bgCyan("[Ballot]"), "Saved ballot");
 
-		let cacheSign = ballotCache.get(newBallot.voterSign);
-		if(cacheSign){
-			ballotCache.del(newBallot.voterSign);
-			verifySign(ballotData.electionID, ballotData.voterSign, Object.values(cacheSign), function(verifiedArr){
+		if(originalData && originalData.sign){
+			verifySign(ballotData.electionID, ballotData.voterSign, originalData.sign, function(verifiedArr){
 				saveSign(ballotData.electionID, ballotData.voterSign, verifiedArr, () => console.log(chalk.black.bgCyan("[Ballot]"), "Saved cache sign."));
 			})
 		}
@@ -247,7 +242,8 @@ function verifySign(eID, voterSign, signArr, successCallBack){
 	var bRes, eRes;
 	var bProm = Ballot.find({
 		electionID: eID,
-		voterSign: voterSign
+		voterSign: voterSign,
+		receiveTime: {$exists: true}
 	}).then((result) => bRes = result);
 
 	var eProm = new Promise(function(resolve, reject){
@@ -304,6 +300,8 @@ function saveSign(eID, voterSign, signArr, successCallBack){
 		$push: {sign: {
 			$each: signArr
 		}}
+	}, {
+		upsert: true
 	}).then(function(result){
 		if(successCallBack){
 			successCallBack(result);
