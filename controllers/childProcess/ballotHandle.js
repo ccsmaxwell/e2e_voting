@@ -63,7 +63,6 @@ function verifyMiddleware(params, body, next){
 function getEmptyBallot(params, body, socket){
 	blockQuery.cachedDetails(params.electionID, ["name", "description", "start", "end", "key", "questions"], false, function(eDetails){
 		let bPrepare = fs.readFileSync('../../views/bPrepare.ejs', 'utf-8');
-		var path = require('path');
 		socket.end([
 			'HTTP/1.1 200 OK',
 			'Content-Type: text/html; charset=utf-8',

@@ -57,6 +57,14 @@ module.exports = {
 			delete bftStatus[eID].seq[selectionSeq-1];
 		}
 
+		Ballot.deleteMany({
+			electionID: eID,
+			inBlock: true,
+			receiveTime: {$lte: new Date(Date.now() - blockTimerInterval*4)}
+		}).then(function(result){
+			if(result.n>0) console.log("Removed old ballot documents for election:", eID);
+		}).catch((err) => console.log(err))
+
 		blockQuery.cachedDetails(eID, ["servers"], false, function(eDetails){
 			Ballot.aggregate([
 				{$match: {
