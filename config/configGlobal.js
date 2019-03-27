@@ -39,7 +39,7 @@ module.exports = {
 		config["serverPubKey"] = fs.readFileSync(pubKeyPath).toString();
 		config["serverID"] = crypto.createHash('sha256').update(config.serverPubKey.split("-----")[2].replace(/[\r\n]*/g,'')).digest('base64');
 		var priKeyPath = path.resolve(configDir, config.serverPriKeyPath);
-		config["serverPriKey"] = fs.readFileSync(priKeyPath);
+		config["serverPriKey"] = fs.readFileSync(priKeyPath).toString();
 		
 		config["instanceID"] = uuidv4();
 

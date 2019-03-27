@@ -35,6 +35,8 @@ var Handshake = require('./controllers/handshake');
 Handshake.init();
 var Blockchain = require('./controllers/blockchain');
 Blockchain.init();
+var Ballot = require('./controllers/ballot');
+Ballot.init();
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
