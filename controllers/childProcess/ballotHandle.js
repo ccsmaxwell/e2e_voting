@@ -1,5 +1,4 @@
-global._config = JSON.parse(process.argv[2]);
-const {serverID, serverPriKey, blockTimerInterval} = _config;
+require('../../config/configGlobal').init();
 require('../../config/db');
 
 var crypto = require('crypto');
@@ -16,6 +15,8 @@ var zkProof = require('../lib/zkProof');
 var connection = require('../lib/connection');
 var blockQuery = require('../lib/blockQuery');
 var server = require('../lib/server');
+
+const {serverID, serverPriKey, blockTimerInterval} = _config;
 
 process.on('message', function(msg, socket){
 	try{

@@ -1,5 +1,6 @@
 var child_process = require('child_process');
 var os = require('os');
+var path = require('path');
 
 var ballotChild = []
 var roundRobin = 0;
@@ -9,7 +10,7 @@ module.exports = {
 
 	init: function(){
 		var autoRestart = function(index){
-			ballotChild[index] = child_process.fork('./ballotHandle', [JSON.stringify(_config)], {cwd: './controllers/childProcess'});
+			ballotChild[index] = child_process.fork('./ballotHandle', [path.resolve(process.cwd(), process.argv[2])], {cwd: './controllers/childProcess'});
 			console.log("Fork Ballot child process "+index);
 			ballotChild[index].on('exit', function(){
 				console.log("Ballot child process "+index+" exited. Restart in 5 seconds.");
