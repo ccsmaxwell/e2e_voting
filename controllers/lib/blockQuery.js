@@ -96,7 +96,7 @@ module.exports = {
 		}).catch((err) => console.log(err))
 	},
 
-	getVoterBallot: function(eID, validBlock, skip, limit, successCallback){
+	getVoterBallot: function(eID, validBlock, sort, skip, limit, successCallback){
 		module.exports.cachedDetails(eID, ["servers"], false, function(eDetails){
 			var bAggr = [{$match: {
 				"electionID": eID,
@@ -137,6 +137,15 @@ module.exports = {
 					"public_key": {"$ne": ""},
 				}}
 			]
+			if(sort){
+				vAggr.push(
+					{$sort: {_id: 1}}
+				)
+			}
+			vAggr.push(
+				{$limit: skip+limit},
+				{$skip: skip}
+			)
 
 			Block.aggregate([
 				{$facet:{
@@ -151,19 +160,9 @@ module.exports = {
 						as: "b",
 						cond: {$eq: ["$voterList._id", "$$b.voterID"]}
 					}}
-				}},
-				{$sort: {_id: 1}},
-				{ $group :{
-					_id: null,
-					total: { $sum:1 },
-					result: { $push:"$$ROOT" }
-				}},
-				{ $project :{
-					total: 1,
-					result: skip!=null ? { $slice:["$result", skip, limit] } : "$result"
 				}}
 			]).allowDiskUse(true).then(function(result){
-				successCallback(result[0]);
+				successCallback(result);
 			}).catch((err) => console.log(err))
 		})
 	},

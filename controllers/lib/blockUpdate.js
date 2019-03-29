@@ -127,8 +127,8 @@ module.exports = {
 			let promArr = [];
 			for(let i=0; i<numSeg; i++){
 				promArr.push(new Promise(function(resolve, reject){
-					blockQuery.getVoterBallot(eID, true, t.start+i*1000, i==numSeg-1? t.end-t.start+1-1000*(numSeg-1) : 1000, function(result){
-						bRes.push(...result.result)
+					blockQuery.getVoterBallot(eID, true, false, t.start+i*1000, i==numSeg-1? t.end-t.start+1-1000*(numSeg-1) : 1000, function(result){
+						bRes.push(...result)
 						resolve();
 					})
 				}))

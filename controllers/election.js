@@ -551,8 +551,22 @@ module.exports = {
 		var limit = parseInt(req.query.limit);
 		var skip = (page-1)*limit;
 
-		blockQuery.getVoterBallot(req.params.electionID, true, skip, limit, function(bRes){
-			res.json(bRes)
+		var bRes = {};
+		var vProm = new Promise(function(resolve, reject){
+			blockQuery.latestVoters(req.params.electionID, null, 0, 1, function(result){
+				bRes["total"] = result.total
+				resolve()
+			})			
+		})
+		var bProm = new Promise(function(resolve, reject){
+			blockQuery.getVoterBallot(req.params.electionID, true, true, skip, limit, function(result){
+				bRes["result"] = result
+				resolve()
+			})
+		})
+
+		Promise.all([vProm, bProm]).then(function(){
+			res.json(bRes);
 		})
 	},
 
