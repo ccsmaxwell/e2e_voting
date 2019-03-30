@@ -123,11 +123,11 @@ module.exports = {
 
 			let startTime = process.hrtime();
 			let bRes=[], eRes;
-			let numSeg = Math.ceil((t.end-t.start+1)/1000);
+			let numSeg = Math.ceil((t.end-t.start+1)/3000);
 			let promArr = [];
 			for(let i=0; i<numSeg; i++){
 				promArr.push(new Promise(function(resolve, reject){
-					blockQuery.getVoterBallot(eID, true, false, t.start+i*1000, i==numSeg-1? t.end-t.start+1-1000*(numSeg-1) : 1000, function(result){
+					blockQuery.getVoterBallot(eID, true, false, t.start+i*3000, i==numSeg-1? t.end-t.start+1-3000*(numSeg-1) : 3000, function(result){
 						bRes.push(...result)
 						resolve();
 					})

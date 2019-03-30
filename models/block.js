@@ -20,6 +20,8 @@ var BlockSchema = new Schema({
 	}]
 }, { timestamps: {} });
 
-BlockSchema.index({ electionID: 1, blockUUID: 1}, { unique: true });
+BlockSchema.index({electionID: 1, blockUUID: 1}, { unique: true });
+BlockSchema.index({electionID: 1, blockType: 1, blockSeq: -1, "data.voters.id": 1});
+BlockSchema.index({electionID: 1, blockSeq: -1});
 
 module.exports = mongoose.model('Block', BlockSchema);

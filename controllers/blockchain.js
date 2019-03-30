@@ -177,6 +177,8 @@ module.exports = {
 	generateBlock: function(eID, selectionSeq){
 		var blockData = []
 		var allBallot = ballotCache.get(selectionSeq);
+		ballotCache.del(selectionSeq);
+
 		allBallot.forEach(function(e){
 			blockData.push({
 				electionID: e.electionID,
@@ -189,7 +191,6 @@ module.exports = {
 				sign: e.sign
 			})
 		});
-
 		blockQuery.lastBlock(eID, true, function(lastBlock){
 			blockUpdate.createBlock(eID, null, lastBlock[0].blockSeq+1, "Ballot", blockData, lastBlock[0].hash, null, true, true, function(newBlock){
 				console.log(chalk.whiteBright.bgBlueBright("[Block]"), chalk.whiteBright("New block: "), chalk.grey(newBlock));

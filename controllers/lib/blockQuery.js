@@ -57,11 +57,17 @@ module.exports = {
 				"electionID": eID,
 				"blockType": "Election Details"
 			}},
-			{$sort: {blockSeq: -1}},
-			{$unwind: "$data"},
-			{$unwind: "$data.voters"}
-		];
+			{$sort: {blockSeq: -1}}
+		]
 
+		if(voterID){
+			aggr.push({$match: {
+				"data.voters.id": voterID,
+			}})
+		}
+		aggr.push(
+			{$unwind: "$data"},
+			{$unwind: "$data.voters"})
 		if(voterID){
 			aggr.push({$match: {
 				"data.voters.id": voterID,
@@ -239,9 +245,10 @@ module.exports = {
 
 	lastBlock: function(eID, checkValid, successCallback){
 		module.exports.cachedDetails(eID, ["servers"], false, function(eDetails){
-			let aggr = [{$match: {
-				"electionID": eID,
-			}}]
+			let aggr = [
+				{$match: {"electionID": eID}},
+				{$sort: {"blockSeq": -1}}
+			]
 			if(checkValid){
 				aggr.push(
 					{$addFields: {"distinctSign": {$size: {$setDifference: ["$sign.serverID", []] }} }},
@@ -249,7 +256,6 @@ module.exports = {
 				)
 			}
 			aggr.push(
-				{$sort: {"blockSeq": -1}},
 				{$limit: 1}
 			)
 
@@ -263,16 +269,16 @@ module.exports = {
 			match["electionID"] = eID;
 			match["blockType"] = "Election Tally";
 
-			let aggr = [{$match: match}]
+			let aggr = [
+				{$match: match},
+				{$sort: {"blockSeq": 1}}
+			]
 			if(checkValid){
 				aggr.push(
 					{$addFields: {"distinctSign": {$size: {$setDifference: ["$sign.serverID", []] }} }},
 					{$match: {distinctSign: {$gt: eDetails.servers.length/2}} }
 				)
 			}
-			aggr.push(
-				{$sort: {"blockSeq": 1}},
-			)
 
 			Block.aggregate(aggr).allowDiskUse(true).then(successCallback).catch((err) => console.log(err))
 		})
