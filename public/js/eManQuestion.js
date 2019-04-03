@@ -33,7 +33,7 @@ $("#btn_add_col").children().click(function(){
 					'</div>',
 					'<div class="input-field col s12 optDiv">',
 						$('<i class="material-icons prefix">check_box_outline_blank</i>').prop('outerHTML'),
-						$('<input type="text">').attr("id", i+"ans0").prop('outerHTML'),
+						$('<input type="text">').attr("id", i+"ans0").attr("value", "Abstention").prop('outerHTML'),
 						$('<label>Option</label>').attr("for", i+"ans0").prop('outerHTML'),
 					'</div>',
 					'<div class="col s12 center-align btn_opt_add">',
@@ -56,6 +56,7 @@ $("#btn_add_col").children().click(function(){
 	optAddListener(element.find('.btn_opt_add'));
 
 	$("#btn_add_col").before(element);
+	M.updateTextFields();
 })
 
 $("#btn_submit").click(function(){
