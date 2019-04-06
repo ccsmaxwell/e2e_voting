@@ -22,13 +22,13 @@ process.on('message', function(msg, socket){
 	try{
 		switch(msg.func){
 			case "getEmptyBallot":
-				verifyMiddleware(msg.params, msg.body, () => getEmptyBallot(msg.params, msg.body, socket));
+				verifyMiddleware(msg.params, msg.body, socket, () => getEmptyBallot(msg.params, msg.body, socket));
 				break;
 			case "ballotSubmit":
-				verifyMiddleware(msg.params, msg.body, () => ballotSubmit(msg.params, msg.body, socket));
+				verifyMiddleware(msg.params, msg.body, socket, () => ballotSubmit(msg.params, msg.body, socket));
 				break;
 			case "ballotReceive":
-				verifyMiddleware(msg.params, msg.body, () => ballotReceive(msg.params, msg.body, socket));
+				verifyMiddleware(msg.params, msg.body, socket, () => ballotReceive(msg.params, msg.body, socket));
 				break;
 			case "signReceive":
 				signReceive(msg.params, msg.body, socket);
@@ -47,12 +47,12 @@ function jsonResponse(socket, obj){
 	].join('\n') + '\n\n' + JSON.stringify(obj))
 }
 
-function verifyMiddleware(params, body, next){
+function verifyMiddleware(params, body, socket, next){
 	var eID = body.ballotData ? JSON.parse(body.ballotData).electionID : (body.electionID?body.electionID:params.electionID);
 	blockQuery.latestDetails(eID, ["frozenAt", "end"], function(result){
-		if(result.length==0 || !result[0].frozenAt || new Date() > new Date(result[0].end)) return res.status(404).send('Election not exist / not yet frozen / already ended.');
+		if(result.length==0 || !result[0].frozenAt || new Date() > new Date(result[0].end)) return jsonResponse(socket, 'Election not exist / not yet frozen / already ended.');
 		blockQuery.allTallyBlocks(eID, {"data.endAt": {$ne: null}}, true, function(result){
-			if(result.length>0) return res.status(404).send('Election already ended.');
+			if(result.length>0) return jsonResponse(socket, 'Election already ended.');
 			next();
 		})
 	})

@@ -12,7 +12,7 @@ var blockQuery = require('./lib/blockQuery');
 var blockUpdate = require('./lib/blockUpdate');
 
 var signCache = new NodeCache();
-var ballotCache = new NodeCache();
+var tempBallot = {};
 var bftStatus = {};
 var tempBlock = [];
 
@@ -80,7 +80,8 @@ module.exports = {
 			]).then(function(allBallot){
 				if(allBallot.length == 0) return;
 
-				ballotCache.set(selectionSeq, allBallot, blockTimerInterval/1000*2);
+				tempBallot = {}
+				tempBallot[selectionSeq] = allBallot;
 
 				let serverArr = eDetails.servers.map((s) => s.serverID);
 				if(serverArr.length <= 1){
@@ -176,8 +177,7 @@ module.exports = {
 
 	generateBlock: function(eID, selectionSeq){
 		var blockData = []
-		var allBallot = ballotCache.get(selectionSeq);
-		ballotCache.del(selectionSeq);
+		var allBallot = tempBallot[selectionSeq];
 
 		allBallot.forEach(function(e){
 			blockData.push({

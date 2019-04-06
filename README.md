@@ -49,6 +49,10 @@ node ./bin/www <PATH_TO_CONFIG_FILE>
 ```bash
 http_proxy="" node ./bin/www <PATH_TO_CONFIG_FILE>
 ```
+- (For development) Debugging using chrome://inspect
+```bash
+node --inspect --inspect-port=0 ./bin/www <PATH_TO_CONFIG_FILE>
+```
 
 ## Performance analysis
 - Modify the parameters in the top of ballotGenerator.js first.
